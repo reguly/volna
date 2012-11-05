@@ -10,3 +10,15 @@
 *.lai
 *.la
 *.a
+*_seq
+*_openmp
+*_cuda
+*.txt
+*.dat
+*DS_*
+*.dSYM
+*.m~
+*_mpi
+*.h5
+*.vln
+*.vtk

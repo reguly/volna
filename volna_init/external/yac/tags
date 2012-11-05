@@ -1,0 +1,554 @@
+
+yac_binary_op_parser.hpp,1313
+#define YAC_BINARY_OP_PARSER_HPP9,390
+namespace yac 20,650
+template <typename TermT,yac::TermT22,667
+struct binary_op_parser yac::binary_op_parser23,707
+    binary_op_parser(yac::binary_op_parser::binary_op_parser25,734
+    typedef stack result_t;yac::binary_op_parser::result_t29,850
+    operator()(yac::binary_op_parser::operator()33,931
+            typename spirit::match_result<yac::binary_op_parser::spirit::match_result42,1152
+    typename spirit::as_parser<TermT>::type::embed_t term;yac::binary_op_parser::term68,1825
+    typename spirit::as_parser<OpT>::type::embed_t op_table;yac::binary_op_parser::op_table69,1884
+struct binary_op_parser_gen74,1985
+    template <typename TermT,binary_op_parser_gen::TermT76,2015
+    spirit::functor_parser<binary_op_parser_gen::spirit::functor_parser77,2059
+    operator()(binary_op_parser_gen::operator()83,2225
+        typedef typename spirit::as_parser<binary_op_parser_gen::spirit::as_parser85,2296
+        typedef typename spirit::as_parser<binary_op_parser_gen::spirit::as_parser86,2360
+        typedef binary_op_parser<term_t, op_t> functor_t;binary_op_parser_gen::functor_t87,2420
+        typedef spirit::functor_parser<functor_t> return_t;binary_op_parser_gen::return_t88,2478
+const binary_op_parser_gen binary_op_p 100,2774
+
+yac_expression_grammar.hpp,5935
+#define YAC_EXPRESSION_GRAMMAR_HPP9,392
+namespace yac 27,848
+checked_find(yac::checked_find30,893
+struct checked_find_impl 38,1136
+    typedef boost::shared_ptr<function> function_ptr_t;checked_find_impl::function_ptr_t39,1163
+    typedef spirit::symbols<function_ptr_t> function_table_t;checked_find_impl::function_table_t40,1219
+    template <typename T1,checked_find_impl::T142,1282
+    struct result checked_find_impl::result43,1322
+        typedef function_ptr_t type;checked_find_impl::result::type44,1342
+    function_ptr_t operator()(checked_find_impl::operator()47,1387
+phoenix::function<checked_find_impl> const checked_find_ 55,1635
+struct func_expr_closure58,1717
+    member1 stk;func_expr_closure::stk62,1862
+    member2 name;func_expr_closure::name63,1879
+    member3 arity;func_expr_closure::arity64,1897
+    member4 func_ptr;func_expr_closure::func_ptr65,1916
+struct logical_closure69,1943
+    member1 stk;logical_closure::stk72,2020
+    member2 or_op;logical_closure::or_op73,2037
+struct conditional_closure77,2061
+    member1 stk;conditional_closure::stk80,2154
+    member2 stk1;conditional_closure::stk181,2171
+    member3 stk2;conditional_closure::stk282,2189
+struct expression_grammar86,2212
+    typedef boost::shared_ptr<function> function_ptr_t;expression_grammar::function_ptr_t89,2308
+    typedef spirit::symbols<function_ptr_t> function_table_t;expression_grammar::function_table_t90,2364
+    typedef spirit::symbols<double> var_table_t;expression_grammar::var_table_t91,2426
+    var_table_t const dummy_local_vars;expression_grammar::dummy_local_vars93,2476
+    function_table_t const & functions;expression_grammar::functions95,2517
+    var_table_t const & global_vars;expression_grammar::global_vars96,2557
+    var_table_t const & local_vars;expression_grammar::local_vars97,2594
+    expression_grammar(expression_grammar::expression_grammar99,2631
+    expression_grammar(expression_grammar::expression_grammar104,2821
+    struct definition expression_grammar::definition111,3083
+        definition(expression_grammar::definition::definition112,3107
+        typedef ScannerT scanner_t;expression_grammar::definition::scanner_t338,10753
+        typedef spirit::rule<scanner_t> rule_t;expression_grammar::definition::rule_t339,10789
+        rule_t const & start(expression_grammar::definition::start341,10838
+        typedef spirit::rule<scanner_t,expression_grammar::definition::scanner_t344,10905
+        typedef spirit::rule<scanner_t, stack_closure::context_t> srule_t;expression_grammar::definition::srule_t344,10905
+        typedef spirit::rule<scanner_t,expression_grammar::definition::scanner_t345,10980
+        typedef spirit::rule<scanner_t, func_expr_closure::context_t> frule_t;expression_grammar::definition::frule_t345,10980
+        typedef spirit::rule<scanner_t,expression_grammar::definition::scanner_t346,11059
+        typedef spirit::rule<scanner_t, logical_closure::context_t> lrule_t;expression_grammar::definition::lrule_t346,11059
+        typedef spirit::rule<scanner_t,expression_grammar::definition::scanner_t347,11136
+        typedef spirit::rule<scanner_t, conditional_closure::context_t> crule_t;expression_grammar::definition::crule_t347,11136
+        rule_t arg,expression_grammar::definition::arg349,11218
+        rule_t arg, top;expression_grammar::definition::top349,11218
+        srule_t add_expr,expression_grammar::definition::add_expr350,11243
+        srule_t add_expr, and_expr,expression_grammar::definition::and_expr350,11243
+        srule_t add_expr, and_expr, bitwise_expr,expression_grammar::definition::bitwise_expr350,11243
+        srule_t add_expr, and_expr, bitwise_expr, compare_expr,expression_grammar::definition::compare_expr350,11243
+            equality_expr,expression_grammar::definition::equality_expr351,11307
+            equality_expr, expr,expression_grammar::definition::expr351,11307
+            equality_expr, expr, expr_atom,expression_grammar::definition::expr_atom351,11307
+            equality_expr, expr, expr_atom, logical_expr,expression_grammar::definition::logical_expr351,11307
+            number,expression_grammar::definition::number352,11365
+            number, or_expr,expression_grammar::definition::or_expr352,11365
+            number, or_expr, or_op,expression_grammar::definition::or_op352,11365
+            number, or_expr, or_op, mult_expr,expression_grammar::definition::mult_expr352,11365
+            number, or_expr, or_op, mult_expr, shift_expr;expression_grammar::definition::shift_expr352,11365
+        frule_t unary_expr,expression_grammar::definition::unary_expr353,11424
+        frule_t unary_expr, func;expression_grammar::definition::func353,11424
+        crule_t conditional_expr_helper;expression_grammar::definition::conditional_expr_helper354,11458
+        lrule_t logical_expr_helper;expression_grammar::definition::logical_expr_helper355,11499
+        name_grammar name;expression_grammar::definition::name356,11536
+        spirit::symbols<bool> boolean_op;expression_grammar::definition::boolean_op358,11564
+        function_table_t and_op,expression_grammar::definition::and_op359,11606
+        function_table_t and_op, add_op,expression_grammar::definition::add_op359,11606
+        function_table_t and_op, add_op, bitwise_op,expression_grammar::definition::bitwise_op359,11606
+        function_table_t and_op, add_op, bitwise_op, compare_op,expression_grammar::definition::compare_op359,11606
+        function_table_t and_op, add_op, bitwise_op, compare_op, equality_op,expression_grammar::definition::equality_op359,11606
+            shift_op,expression_grammar::definition::shift_op360,11684
+            shift_op, mult_op,expression_grammar::definition::mult_op360,11684
+            shift_op, mult_op, unary_op;expression_grammar::definition::unary_op360,11684
+
+yac_function_grammar.hpp,1821
+#define YAC_FUNCTION_GRAMMAR_HPP9,390
+namespace yac 29,912
+struct func_closureyac::func_closure31,929
+    member1 name;yac::func_closure::name39,1234
+    member2 args;yac::func_closure::args40,1252
+    member3 local_vars;yac::func_closure::local_vars41,1270
+    member4 mangled_name;yac::func_closure::mangled_name42,1294
+    member5 expr;yac::func_closure::expr43,1320
+struct function_grammar47,1343
+    typedef spirit::symbols<boost::shared_ptr<function> > function_table_t;function_grammar::function_table_t50,1442
+    typedef spirit::symbols<double> var_table_t;function_grammar::var_table_t51,1518
+    function_table_t & functions;function_grammar::functions53,1568
+    var_table_t const & global_vars;function_grammar::global_vars54,1602
+    function_grammar(function_grammar::function_grammar56,1640
+    struct definition function_grammar::definition61,1786
+        definition(function_grammar::definition::definition62,1810
+                shared_symbols_dbl_ptr;function_grammar::definition::shared_symbols_dbl_ptr77,2235
+        typedef ScannerT scanner_t;function_grammar::definition::scanner_t144,5244
+        typedef spirit::rule<scanner_t> rule_t;function_grammar::definition::rule_t145,5280
+        rule_t const & start(function_grammar::definition::start147,5329
+        typename spirit::rule<function_grammar::definition::spirit::rule151,5412
+        typename spirit::rule<scanner_t, func_closure::context_t> func_rule_t;function_grammar::definition::func_rule_t151,5412
+        rule_t top,function_grammar::definition::top153,5492
+        rule_t top, func_decl;function_grammar::definition::func_decl153,5492
+        func_rule_t func_def;function_grammar::definition::func_def154,5523
+        name_grammar name;function_grammar::definition::name156,5554
+
+yac_gnuplot_grammar.hpp,1698
+#define YAC_GNUPLOT_GRAMMAR_HPP9,389
+namespace yac 24,805
+struct gnuplot_grammaryac::gnuplot_grammar26,822
+    typedef spirit::symbols<boost::shared_ptr<function> > function_table_t;yac::gnuplot_grammar::function_table_t29,912
+    typedef spirit::symbols<double> var_table_t;yac::gnuplot_grammar::var_table_t30,988
+    function_table_t & functions;yac::gnuplot_grammar::functions32,1038
+    var_table_t & vars;yac::gnuplot_grammar::vars33,1072
+    gnuplot_grammar(yac::gnuplot_grammar::gnuplot_grammar35,1097
+    struct definition yac::gnuplot_grammar::definition40,1229
+        definition(yac::gnuplot_grammar::definition::definition41,1253
+        typedef ScannerT scanner_t;yac::gnuplot_grammar::definition::scanner_t70,2105
+        typedef spirit::rule<scanner_t> rule_t;yac::gnuplot_grammar::definition::rule_t71,2141
+        rule_t const & start(yac::gnuplot_grammar::definition::start73,2190
+        typedef spirit::rule<scanner_t,yac::gnuplot_grammar::definition::scanner_t76,2268
+        typedef spirit::rule<scanner_t, stack_closure::context_t> stk_rule_t;yac::gnuplot_grammar::definition::stk_rule_t76,2268
+        rule_t expr,yac::gnuplot_grammar::definition::expr78,2347
+        rule_t expr, statement_list,yac::gnuplot_grammar::definition::statement_list78,2347
+        rule_t expr, statement_list, statement;yac::gnuplot_grammar::definition::statement78,2347
+        variable_grammar var_assign;yac::gnuplot_grammar::definition::var_assign80,2396
+        function_grammar function_definition;yac::gnuplot_grammar::definition::function_definition81,2433
+        expression_grammar expression;yac::gnuplot_grammar::definition::expression82,2479
+
+yac_lazy_functions.hpp,2657
+#define YAC_LAZY_FUNCTIONS_HPP9,388
+namespace yac 20,599
+struct add_symbol_impl yac::add_symbol_impl27,830
+    typedef boost::shared_ptr<function> function_ptr;yac::add_symbol_impl::function_ptr28,855
+    typedef spirit::symbols<function_ptr> function_table_t;yac::add_symbol_impl::function_table_t29,909
+    template <typename T,yac::add_symbol_impl::T31,970
+    template <typename T, typename Arg1,yac::add_symbol_impl::Arg131,970
+        typedef void type;yac::add_symbol_impl::type34,1066
+    void operator()(yac::add_symbol_impl::operator()38,1133
+    void operator()(yac::add_symbol_impl::operator()44,1272
+phoenix::function<add_symbol_impl> const add_symbol 57,1649
+struct find_symbol_impl 65,1939
+    template <typename T,find_symbol_impl::T66,1965
+    struct resultfind_symbol_impl::result67,2005
+        typedef typename T::symbol_data_t * type;find_symbol_impl::result::type69,2029
+    typename result<find_symbol_impl::result73,2119
+    operator()(find_symbol_impl::operator()74,2167
+phoenix::function<find_symbol_impl> const find_symbol 80,2297
+struct push_back_impl 89,2641
+    template <typename T,push_back_impl::T90,2665
+    struct resultpush_back_impl::result91,2705
+        typedef void type;push_back_impl::result::type93,2729
+    void operator()(push_back_impl::operator()96,2764
+    void operator()(push_back_impl::operator()103,2912
+phoenix::function<push_back_impl> const push_back 110,3063
+struct size_impl 118,3347
+    struct result size_impl::result121,3402
+        typedef std::size_t type;size_impl::result::type122,3422
+    std::size_t operator()(size_impl::operator()126,3499
+phoenix::function<size_impl> const size 132,3595
+struct mangled_name_impl 141,3920
+    template <typename NameT,mangled_name_impl::NameT143,3948
+    struct result mangled_name_impl::result144,3995
+        typedef std::string const type;mangled_name_impl::result::type145,4015
+    std::string const operator()(mangled_name_impl::operator()148,4063
+phoenix::function<mangled_name_impl> const mangled_name 155,4244
+struct reset_impl 163,4546
+    template <typename T1,reset_impl::T1164,4566
+    struct result reset_impl::result165,4606
+        typedef void type;reset_impl::result::type166,4626
+    void operator()(reset_impl::operator()170,4687
+phoenix::function<reset_impl> const reset 176,4800
+struct address_of_impl 184,5099
+    struct result address_of_impl::result186,5150
+        typedef double * type;address_of_impl::result::type187,5170
+    double * const operator()(address_of_impl::operator()190,5209
+phoenix::function<address_of_impl> const address_of 196,5341
+
+yac_name_grammar.hpp,959
+#define YAC_NAME_GRAMMAR_HPP9,386
+namespace yac 16,529
+class name_grammar yac::name_grammar23,724
+    spirit::symbols<char> dummy_reserved_keywords;yac::name_grammar::dummy_reserved_keywords25,784
+    static spirit::symbols<char> reserved_keywords;yac::name_grammar::reserved_keywords30,956
+    spirit::symbols<char> const & keywords;yac::name_grammar::keywords31,1008
+    name_grammar(yac::name_grammar::name_grammar33,1053
+    struct definition yac::name_grammar::definition40,1276
+        definition(yac::name_grammar::definition::definition41,1300
+        typedef ScannerT scanner_t;yac::name_grammar::definition::scanner_t56,1668
+        typedef typename spirit::rule<scanner_t> rule_t;yac::name_grammar::definition::rule_t57,1704
+        rule_t const & start(yac::name_grammar::definition::start59,1762
+        rule_t name;yac::name_grammar::definition::name62,1830
+spirit::symbols<char> name_grammar::reserved_keywords;66,1862
+
+yac_skip_grammar.hpp,557
+#define YAC_SKIP_GRAMMAR_HPP9,386
+namespace yac 15,485
+struct skip_grammar yac::skip_grammar22,683
+    struct definition yac::skip_grammar::definition25,770
+        definition(yac::skip_grammar::definition::definition26,794
+        typedef typename spirit::rule<ScannerT> rule_t;yac::skip_grammar::definition::rule_t40,1125
+        rule_t const & start(yac::skip_grammar::definition::start42,1182
+        rule_t skip,yac::skip_grammar::definition::skip45,1250
+        rule_t skip, whitespace;yac::skip_grammar::definition::whitespace45,1250
+
+yac_stack_closure.hpp,154
+#define YAC_STACK_CLOSURE_HPP9,387
+namespace yac 18,569
+struct stack_closure yac::stack_closure20,586
+    member1 stk;yac::stack_closure::stk22,649
+
+yac_variable_grammar.hpp,1593
+#define YAC_VARIABLE_GRAMMAR_HPP9,390
+namespace yac 21,677
+struct var_closureyac::var_closure23,694
+    member1 name;yac::var_closure::name26,770
+    member2 stk;yac::var_closure::stk27,788
+struct variable_grammar31,810
+    typedef spirit::symbols<boost::shared_ptr<function> > function_table_t;variable_grammar::function_table_t34,902
+    typedef spirit::symbols<double> var_table_t;variable_grammar::var_table_t35,978
+    function_table_t const & functions;variable_grammar::functions37,1028
+    var_table_t & vars;variable_grammar::vars38,1068
+    variable_grammar(variable_grammar::variable_grammar40,1093
+    struct definitionvariable_grammar::definition45,1232
+        definition(variable_grammar::definition::definition47,1260
+        typedef ScannerT scanner_t;variable_grammar::definition::scanner_t96,2956
+        typedef typename spirit::rule<scanner_t> rule_t;variable_grammar::definition::rule_t97,2992
+        rule_t const & start(variable_grammar::definition::start99,3050
+        typename spirit::rule<variable_grammar::definition::spirit::rule103,3133
+        typename spirit::rule<scanner_t, var_closure::context_t> var_rule_t;variable_grammar::definition::var_rule_t103,3133
+        rule_t top,variable_grammar::definition::top105,3211
+        rule_t top, step1;variable_grammar::definition::step1105,3211
+        var_rule_t step2;variable_grammar::definition::step2106,3238
+        name_grammar name;variable_grammar::definition::name108,3265
+        expression_grammar expression;variable_grammar::definition::expression109,3292
+
+yac_virtual_machine.hpp,3849
+#define YAC_VIRTUAL_MACHINE_HPP9,389
+namespace yac 30,947
+struct nodeyac::node35,1013
+    virtual ~node(yac::node::~node37,1027
+    virtual std::size_t nbranches(yac::node::nbranches39,1105
+    virtual stack * branch(yac::node::branch40,1161
+class stack45,1255
+    typedef boost::shared_ptr<node> node_ptr;stack::node_ptr47,1269
+    typedef std::list<node_ptr> container_t;stack::container_t50,1324
+    typedef container_t::size_type size_type;stack::size_type51,1369
+    typedef container_t::difference_type difference_type;stack::difference_type52,1415
+    typedef boost::indirect_iterator<container_t::iterator> iterator;stack::iterator53,1473
+    typedef boost::indirect_iterator<container_t::const_iterator> const_iterator;stack::const_iterator54,1543
+    stack(stack::stack56,1626
+    container_t data;stack::data79,2133
+struct virtual_machine85,2212
+    stack stk;virtual_machine::stk87,2237
+    spirit::symbols<double> global_vars;virtual_machine::global_vars88,2252
+    spirit::symbols<boost::shared_ptr<function> > funcs;virtual_machine::funcs89,2293
+struct function103,2587
+    typedef std::size_t size_type;function::size_type113,2770
+    std::string name_;function::name_120,2992
+struct function1 130,3255
+    typedef T value_type;function1::value_type132,3292
+    typedef value_type(* func_ptr_type)function1::func_ptr_type133,3318
+    function1(function1::function1135,3372
+    size_type arity(function1::arity140,3488
+    double eval_priv(function1::eval_priv143,3540
+    func_ptr_type func_;function1::func_148,3674
+struct function2 154,3761
+    typedef T value_type;function2::value_type156,3798
+    typedef value_type(* func_ptr_type)function2::func_ptr_type157,3824
+    function2(function2::function2159,3890
+    size_type arity(function2::arity164,4006
+    double eval_priv(function2::eval_priv167,4058
+    func_ptr_type func_;function2::func_173,4249
+struct user_function 178,4314
+    typedef spirit::symbols<double> symbol_table_t;user_function::symbol_table_t180,4355
+    typedef boost::shared_ptr<symbol_table_t> symbol_table_ptr;user_function::symbol_table_ptr181,4407
+    size_type arity_;user_function::arity_198,4940
+    std::vector<std::string> arg_names_;user_function::arg_names_199,4962
+    symbol_table_t local_vars_;user_function::local_vars_200,5003
+    stack stk_;user_function::stk_201,5035
+struct number_node 210,5264
+struct function_node 217,5377
+struct const_value_node 224,5501
+    double val_;const_value_node::val_230,5660
+struct variable_node 235,5717
+    double * ptr_;variable_node::ptr_241,5889
+struct sys_function_node 246,5948
+    boost::shared_ptr<function> func_ptr_;sys_function_node::func_ptr_252,6154
+struct print_node 257,6237
+struct assign_node 264,6354
+struct user_func_expression272,6521
+    typedef boost::shared_ptr<spirit::symbols<double> > symbol_table_ptr;user_func_expression::symbol_table_ptr274,6551
+    user_func_expression(user_func_expression::user_func_expression276,6626
+    std::vector<std::string> arg_names;user_func_expression::arg_names282,6840
+    symbol_table_ptr local_vars;user_func_expression::local_vars283,6880
+    stack stk;user_func_expression::stk284,6913
+struct func_def_node 289,6968
+    boost::shared_ptr<function> func_ptr_;func_def_node::func_ptr_298,7201
+    user_func_expression val_;func_def_node::val_299,7244
+struct or_node 304,7315
+    struct or_func or_node::or_func317,7543
+        stack rhs_stk_;or_node::or_func::rhs_stk_323,7717
+    or_func func_;or_node::func_326,7749
+struct branch_node 331,7808
+    struct branch_func branch_node::branch_func344,8071
+        stack stk1_;branch_node::branch_func::stk1_350,8278
+        stack stk2_;branch_node::branch_func::stk2_351,8299
+    branch_func func_;branch_node::func_354,8328
+
+example_parser.cpp,3656
+using std::string;26,812
+using std::cin;27,831
+using std::cout;28,847
+using std::cerr;29,864
+using std::endl;30,881
+struct skip_grammar 32,899
+    struct definition skip_grammar::definition35,986
+        definition(skip_grammar::definition::definition36,1010
+        typedef typename spirit::rule<ScannerT> rule_t;skip_grammar::definition::rule_t50,1341
+        rule_t const & start(skip_grammar::definition::start52,1398
+        rule_t skip,skip_grammar::definition::skip55,1466
+        rule_t skip, whitespace;skip_grammar::definition::whitespace55,1466
+struct expression_grammar 60,1511
+    struct definitionexpression_grammar::definition63,1617
+        definition(expression_grammar::definition::definition65,1645
+        typedef typename spirit::rule<ScannerT> rule_t;expression_grammar::definition::rule_t112,3345
+        rule_t const & start(expression_grammar::definition::start114,3402
+        rule_t add_expr,expression_grammar::definition::add_expr117,3470
+        rule_t add_expr, arg_list,expression_grammar::definition::arg_list117,3470
+        rule_t add_expr, arg_list, bitwise_expr,expression_grammar::definition::bitwise_expr117,3470
+        rule_t add_expr, arg_list, bitwise_expr, compare_expr,expression_grammar::definition::compare_expr117,3470
+            conditional_expr_helper,expression_grammar::definition::conditional_expr_helper118,3533
+            conditional_expr_helper, equality_expr,expression_grammar::definition::equality_expr118,3533
+            conditional_expr_helper, equality_expr, expr,expression_grammar::definition::expr118,3533
+            conditional_expr_helper, equality_expr, expr, expr_atom,expression_grammar::definition::expr_atom118,3533
+            function,expression_grammar::definition::function119,3602
+            function, global_vars,expression_grammar::definition::global_vars119,3602
+            function, global_vars, local_vars,expression_grammar::definition::local_vars119,3602
+            function, global_vars, local_vars, logical_expr,expression_grammar::definition::logical_expr119,3602
+            function, global_vars, local_vars, logical_expr, mult_expr,expression_grammar::definition::mult_expr119,3602
+            name,expression_grammar::definition::name120,3674
+            name, number,expression_grammar::definition::number120,3674
+            name, number, shift_expr;expression_grammar::definition::shift_expr120,3674
+struct yac_grammar 125,3724
+    struct definitionyac_grammar::definition128,3816
+        definition(yac_grammar::definition::definition130,3844
+        typedef typename spirit::rule<ScannerT> rule_t;yac_grammar::definition::rule_t154,4625
+        rule_t const & start(yac_grammar::definition::start156,4682
+        rule_t expression_list,yac_grammar::definition::expression_list159,4760
+        rule_t expression_list, function_definition,yac_grammar::definition::function_definition159,4760
+        rule_t expression_list, function_definition, name,yac_grammar::definition::name159,4760
+        rule_t expression_list, function_definition, name, name_list,yac_grammar::definition::name_list159,4760
+            statement,yac_grammar::definition::statement160,4830
+            statement, statement_list,yac_grammar::definition::statement_list160,4830
+            statement, statement_list, var_assignment;yac_grammar::definition::var_assignment160,4830
+        expression_grammar expression;yac_grammar::definition::expression161,4885
+char const * prompt(::prompt168,4949
+int main(176,5018
+    typedef spirit::parse_info<string::const_iterator> parse_info_t;178,5031
+
+example_vm.cpp,587
+#define YAC_SINGLE_COMPILATION_UNIT8,357
+using std::cout;16,503
+using std::string;17,520
+using std::vector;18,539
+using boost::shared_ptr;20,559
+int main(32,693
+double add(::add44,805
+double subt(::subt45,854
+double mult(::mult46,904
+double div(::div47,954
+double less(::less48,1003
+typedef double(* func2_ptr_t)::func2_ptr_t51,1055
+typedef double(* func1_ptr_t)::func1_ptr_t52,1102
+make_function(::make_function55,1168
+make_function(64,1378
+make_function(73,1588
+void evaluate1(81,1758
+void evaluate2(117,2984
+void evaluate3(167,4279
+void evaluate4(293,8228
+
+yac.cpp,2067
+#undef PHOENIX_LIMIT9,404
+#define PHOENIX_LIMIT 13,455
+#define YAC_SINGLE_COMPILATION_UNIT16,487
+using std::cerr;31,887
+using std::cin;32,904
+using std::cout;33,920
+using std::endl;34,937
+using std::string;35,954
+int    bitwise_and(::bitwise_and41,1022
+int    bitwise_or(::bitwise_or42,1073
+int    bitwise_xor(::bitwise_xor43,1123
+bool   logical_and(::logical_and44,1174
+double logical_not(::logical_not45,1228
+double equal(::equal46,1272
+double not_equal(::not_equal47,1324
+double less(::less48,1380
+double greater(::greater49,1430
+double less_equal(::less_equal50,1483
+double greater_equal(::greater_equal51,1540
+int    shift_left(::shift_left52,1600
+int    shift_right(::shift_right53,1651
+double add(::add54,1703
+double subtract(::subtract55,1752
+double multiply(::multiply56,1806
+double divide(::divide57,1860
+int    mod(::mod58,1912
+double negate(::negate59,1955
+double sgn(::sgn60,1994
+typedef int(* ifunc2_ptr_t)::ifunc2_ptr_t62,2050
+typedef bool(* bfunc2_ptr_t)::bfunc2_ptr_t63,2089
+typedef double(* dfunc2_ptr_t)::dfunc2_ptr_t64,2131
+typedef double(* dfunc1_ptr_t)::dfunc1_ptr_t65,2179
+namespace yac 69,2241
+boost::shared_ptr<function> make_func(yac::make_func71,2258
+boost::shared_ptr<function> make_func(77,2415
+boost::shared_ptr<function> make_func(82,2571
+boost::shared_ptr<function> make_func(87,2725
+class controller 92,2878
+    controller(controller::controller94,2905
+    void parse(controller::parse170,6665
+        typedef spirit::parse_info<ItT> parse_info_t;controller::parse_info_t175,6765
+    virtual_machine vm;controller::vm192,7309
+char const * prompt(::prompt205,7664
+int usage(211,7712
+enum input_mode 222,8002
+    file_mode,input_mode::file_mode223,8020
+    piped_mode,input_mode::piped_mode224,8035
+    interactive_mode,input_mode::interactive_mode225,8051
+    unrecognized_modeinput_mode::unrecognized_mode226,8073
+input_mode get_input_mode(230,8100
+int main(244,8452
+        typedef spirit::parse_info<string::const_iterator> parse_info_t;289,9436
+
+yac_deriv.cpp,509
+#define YAC_SINGLE_COMPILATION_UNIT8,357
+using std::cout;16,503
+using std::string;17,520
+using std::vector;18,539
+using boost::shared_ptr;20,559
+int main(29,639
+double add(::add38,700
+double subt(::subt39,749
+double mult(::mult40,799
+double div(::div41,849
+double less(::less42,898
+typedef double(* func2_ptr_t)::func2_ptr_t45,950
+typedef double(* func1_ptr_t)::func1_ptr_t46,997
+make_function(::make_function49,1063
+make_function(58,1273
+make_function(67,1483
+void evaluate1(77,1722
+
+yac_virtual_machine.cpp,3264
+using std::map;17,509
+using std::ostringstream;18,525
+using std::string;19,551
+using std::vector;20,570
+namespace yac 23,591
+void copy(yac::copy27,621
+stack::stack(40,919
+stack & stack::operator=(stack::operator=46,987
+stack & stack::operator+=(stack::operator+=54,1113
+void stack::push_back(63,1313
+stack::size_type stack::size(70,1426
+bool stack::empty(76,1493
+void stack::clear(82,1550
+stack::iterator make_iterator(::make_iterator89,1607
+stack::const_iterator make_iterator(95,1722
+stack::iterator stack::begin(103,1870
+stack::iterator stack::end(109,1947
+stack::const_iterator stack::begin(115,2020
+stack::const_iterator stack::end(121,2109
+stack::iterator stack::erase(127,2194
+stack::iterator stack::erase(133,2299
+stack::iterator stack::insert(139,2430
+function::function(146,2600
+function::function(150,2626
+function::~function(155,2683
+user_function * function::as_user_function(159,2710
+string const & function::name(165,2775
+double function::eval(171,2837
+user_function::user_function(187,3243
+user_function::user_function(192,3295
+user_function::user_function(198,3445
+user_function & user_function::operator=(user_function::operator=209,3725
+user_function * user_function::as_user_function(223,4054
+spirit::symbols<double> const & user_function::local_vars(229,4127
+function::size_type user_function::arity(235,4223
+double user_function::eval_priv(241,4297
+void update_stack(::update_stack268,5155
+    typedef map<double *, double *> map_t;::map_t270,5229
+void update_stack(301,6150
+    typedef map<double *, double *> map_t;311,6539
+const_value_node::const_value_node(327,7032
+boost::shared_ptr<node> const_value_node::clone(332,7100
+double const_value_node::value(338,7227
+variable_node::variable_node(344,7289
+boost::shared_ptr<node> variable_node::clone(351,7378
+double variable_node::value(357,7499
+double & variable_node::var(363,7559
+sys_function_node::sys_function_node(369,7619
+boost::shared_ptr<node> sys_function_node::clone(375,7734
+function const & sys_function_node::func(381,7863
+boost::shared_ptr<node> print_node::clone(387,7941
+boost::shared_ptr<node> assign_node::clone(393,8056
+void assign_node::assign(399,8173
+func_def_node::func_def_node(405,8251
+boost::shared_ptr<node> func_def_node::clone(411,8431
+void func_def_node::assign(417,8552
+or_node::or_node(426,8728
+boost::shared_ptr<node> or_node::clone(431,8786
+function const & or_node::func(437,8895
+std::size_t or_node::nbranches(443,8958
+stack * or_node::branch(449,9017
+or_node::or_func::or_func(455,9103
+function::size_type or_node::or_func::arity(461,9196
+double or_node::or_func::eval_priv(467,9268
+branch_node::branch_node(473,9408
+boost::shared_ptr<node> branch_node::clone(478,9502
+function const & branch_node::func(484,9619
+std::size_t branch_node::nbranches(490,9686
+stack * branch_node::branch(496,9749
+branch_node::branch_func::branch_func(504,9880
+function::size_type branch_node::branch_func::arity(510,10019
+double branch_node::branch_func::eval_priv(516,10099
+string const name_mangler(522,10233
+number_node * get_number_node(::get_number_node533,10425
+variable_node * get_variable_node(541,10576
+std::vector<double> const make_arg_list(549,10735
+double evaluate(565,11106
