@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   GaussianLandslideParams gaussian_landslide_params;
   BoreParams bore_params;
   RectangleDomainParams rect_params;
-  int n_initBathymetry; // Number of initBathymetry files
+  int n_initBathymetry = 0; // Number of initBathymetry files
   hid_t file;
   //herr_t status;
   const char *filename_h5 = argv[1]; // = "stlaurent_35k.h5";
