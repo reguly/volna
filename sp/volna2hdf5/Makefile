@@ -29,8 +29,8 @@ MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-#	CPPFLAGS = -g0 -msse3 -fPIC -DUNIX -Wall
-	CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
+	CPPFLAGS = -O3 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
+	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	#CPPFLAGS = -g -fPIC -DUNIX -Wall
 	OMPFLAGS = -fopenmp
 	MPICPP = mpic++
@@ -38,7 +38,8 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CCFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
+	#CCFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
+	CCFLAGS = -O3 -vec-report -xSSE4.2 -parallel
 	#CCFLAGS = -g -vec-report -xSSE4.2 -parallel
 	CPPFLAGS = $(CCFLAGS)
 	OMPFLAGS = -openmp -openmp-report2
@@ -65,8 +66,6 @@ VOLNA_OBJECTS = $(VOLNA_SOURCES:.cpp=.o)
 
 all: clean volna2hdf5
 
-#$(CPP) $(CPPFLAGS) volna2hdf5.cpp $(VOLNA_OBJECTS) $(VOLNA_INC) $(OP2_INC) $(MPI_INC) $(OP2_LIB) -lop2_seq -lop2_hdf5 -o volna2hdf5
-
 volna2hdf5: volna2hdf5.cpp $(VOLNA_OBJECTS) Makefile
 	$(MPICPP) $(CPPFLAGS) volna2hdf5.cpp $(VOLNA_OBJECTS) -I$(VOLNA_INSTALL_PATH) \
             -I$(VOLNA_INSTALL_PATH)/external $(VOLNA_INC) $(HDF5_INC) $(OP2_INC) \
@@ -75,7 +74,6 @@ volna2hdf5: volna2hdf5.cpp $(VOLNA_OBJECTS) Makefile
 #
 # cleanup
 #
-
 clean:
 		rm -f volna2hdf5 *.o $(VOLNA_OBJECTS)
 

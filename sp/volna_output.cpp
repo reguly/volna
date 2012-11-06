@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include "op_seq.h"
 
-
+/*
+ * Utility function for binary output: swaps byte endianneses
+ */
 inline float swapEndiannesDouble(double d) {
   union {
     double d;
@@ -23,6 +25,9 @@ inline float swapEndiannesDouble(double d) {
   return dat2.d;
 }
 
+/*
+ * Utility function for binary output: swaps byte endianneses
+ */
 inline float swapEndiannesFloat(float f) {
   union {
     float f;
@@ -36,6 +41,9 @@ inline float swapEndiannesFloat(float f) {
   return dat2.f;
 }
 
+/*
+ * Utility function for binary output: swaps byte endianneses
+ */
 inline int swapEndiannesInt(int d) {
   union {
     int d;
@@ -49,6 +57,9 @@ inline int swapEndiannesInt(int d) {
   return dat2.d;
 }
 
+/*
+ * Write simulation output to binary file
+ */
 inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
   op_printf("Writing binary output file: %s \n",filename);
   FILE* fp;
@@ -108,7 +119,6 @@ inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nn
   strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
   float* values_data;
   values_data = (float*) values->data;
-
     sprintf(s, "CELL_DATA %d\n"
                   "SCALARS Eta float 1\n"
                   "LOOKUP_TABLE default\n",
@@ -165,6 +175,9 @@ inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nn
   }
 }
 
+/*
+ * Write simulation output to ASCII file
+ */
 inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
   FILE* fp;
   fp = fopen(filename, "w");
@@ -320,24 +333,20 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
   }
 }
 
-
+/*
+ * Write H + Zb on the given location (x,y) to ASCII file
+ */
 void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
-  //op_printf("Write OutputLocation to file: %s \n", filename);
+  op_printf("Write OutputLocation to file: %s \n", filename);
   int nnode = nodeCoords->set->size;
   int ncell = cellsToNodes->from->size;
-  //const char* substituteIndexPattern = "%i";
-  //char* pos;
-  //pos = strstr(filename, substituteIndexPattern);
-  //char substituteIndex[255];
-  //sprintf(substituteIndex, "%04d.vtk", timer->iter);
-  //strcpy(pos, substituteIndex);
 
   FILE* fp;
 
-  // erase the file if it already exists, first time the event
-  // happens
+  // The first time this event happens, erase the file if it already
+  // exists
   if ( (timer->istart == 0 || timer->start == 0) && timer->iter == 0 ) {
     fp = fopen(filename, "w");
   } else {
@@ -349,7 +358,8 @@ void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat
     exit(-1);
   }
 
-  float val = -1.0f * INFINITY;
+  float val = 0.0f;
+  // Find the traingle's index in which the location coordinates fall
   op_par_loop(triangleIndex, "triangleIndex", cells,
       op_arg_gbl(&val, 1, "float", OP_MAX),
       op_arg_gbl(&(event->location_x), 1, "float", OP_READ),
@@ -359,33 +369,17 @@ void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat
       op_arg_dat(nodeCoords, 2, cellsToNodes, 2, "float", OP_READ),
       op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ)
       );
-
-//  if ( val == 0.0f ) {
-//    op_printf("Warning: data might not be relevant! "
-//        "Given point ( %f, %f ) might not be inside any cell. \n",
-//        event->location_x, event->location_y);
-//  } else {
-////    op_fetch_data(values);
-////    float* values_data;
-////    values_data = (float*) (values->data);
-////    fprintf(fp, "%lf %10.20g\n", timer->t, values_data[id*4]+values_data[id*4+3]);
-    fprintf(fp, "%lf %10.20g\n", timer->t, val);
-//  }
+  fprintf(fp, "%lf %10.20g\n", timer->t, val);
 
   if(fclose(fp)) {
     op_printf("can't close file %s\n",filename);
     exit(-1);
   }
-
-
-//  const Point point( x, y, 0. );
-//  int id = mesh.TriangleIndex( point );
-//  std::ofstream stream( streamName.c_str(), std::ofstream::app );
-//  stream << timer.t << " "
-//   << V.H(id) + V.Zb( id ) << "\n";
-//  stream.close();
 }
 
+/*
+ * Write output simulation either to binary or ASCII file
+ */
 void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
@@ -407,7 +401,6 @@ void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat n
     WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
     break;
   }
-
 }
 
 float normcomp(op_dat dat, int off) {

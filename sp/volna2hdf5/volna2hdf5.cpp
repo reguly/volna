@@ -21,6 +21,7 @@
 #include "simulation.hpp"
 #include "paramFileParser.hpp"
 #include "event.hpp"
+
 //
 // Define meta data
 //
@@ -35,7 +36,7 @@
 #define check_hdf5_error(err) __check_hdf5_error(err, __FILE__, __LINE__)
 void __check_hdf5_error(herr_t err, const char *file, const int line) {
   if (err < 0) {
-    printf("%s(%i) : OP2_HDF5_error() Runtime API error %d.\n", file,
+    op_printf("%s(%i) : OP2_HDF5_error() Runtime API error %d.\n", file,
         line, (int) err);
     exit(-1);
   }
@@ -79,13 +80,14 @@ int main(int argc, char **argv) {
   ////////////// INIT VOLNA TO GAIN DATA IMPORT //////////////
   //
 
-  printf("Importing data from VOLNA Framework ...\n");
+  op_printf("Importing data from VOLNA Framework ...\n");
   //  op_mesh_io_import(filename_msh, 2, 3, &x, &cell, &edge, &ecell,
   //      &bedge, &becell, &bound, &nnode, &ncell, &nedge, &nbedge);
 
   char const * const file = argv[1];
   spirit::file_iterator<> file_it(file);
 
+  op_printf("Initializing original Volna code... \n");
   Simulation sim;
   ParamFileController fileParser;
 
@@ -143,6 +145,7 @@ int main(int argc, char **argv) {
   }
   // Initialize simulation: load mesh, calculate geometry data
   sim.init();
+  op_printf("Initializing original volna code... done\n");
 
   //
   ////////////// INITIALIZE OP2 DATA /////////////////////
@@ -150,6 +153,8 @@ int main(int argc, char **argv) {
 
   op_printf("Initializing OP2...\n");
   op_init(argc, argv, 2);
+
+  op_printf("Importing data to OP2...\n");
 
   int *cell = NULL; // Node IDs of cells
   int *ecell = NULL; // Cell IDs of edge
@@ -196,17 +201,12 @@ int main(int argc, char **argv) {
   initBathymetry = (float*) malloc(ncell * sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
   w = (float*) malloc(N_STATEVAR * ncell * sizeof(float));
-  //wold = (float*) malloc(N_STATEVAR * ncell * sizeof(float));
-  //res = (float*) malloc(N_STATEVAR * nedge * sizeof(float));
-
   float *event_data;
   event_data = (float*) malloc(ncell*sizeof(float));
-
 
   //
   ////////////// USE VOLNA FOR DATA IMPORT //////////////
   //
-
   int i = 0;
   std::cout << "Number of nodes according to sim.mesh.Nodes.size() = "
       << sim.mesh.Nodes.size() << std::endl;
@@ -325,7 +325,6 @@ int main(int argc, char **argv) {
     if (event_streamName[i] == "" || event_post_update[i] == 1) {
       op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
     } else {
-      //      read_event_data(event_streamName[i].c_str(), &event_data, ncell);
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
         read_event_data(event_streamName[i].c_str(), &initEta, ncell);
       }
@@ -334,8 +333,6 @@ int main(int argc, char **argv) {
       }
     }
   }
-
-
 
   //
   // Define OP2 sets
@@ -373,11 +370,6 @@ int main(int argc, char **argv) {
   op_decl_dat(cells, 1, "float", initEta, "initEta");
   op_decl_dat(cells, 1, "float", initBathymetry, "initBathymetry");
 
-  //  op_dat p_wold = op_decl_dat(cells, N_STATEVAR, "float", wold,
-  //      "p_wold");
-  //  op_dat p_res = op_decl_dat(cells, N_STATEVAR, "float", res,
-  //      "p_res");
-
   //
   // Define HDF5 filename
   //
@@ -390,6 +382,7 @@ int main(int argc, char **argv) {
   sprintf(substituteIndex, ".h5");
   strcpy(pos, substituteIndex);
   op_printf("Writing data to HDF5 file: %s \n", filename_h5);
+
   //
   // Write mesh and geometry data to HDF5
   //
@@ -405,7 +398,6 @@ int main(int argc, char **argv) {
   op_write_const_hdf5("ftime", 1, "float", (char *) &ftime,
       filename_h5);
   float dtmax = sim.Dtmax; // Maximum timestep
-//  op_printf("dtmax = %f <====================== \n", dtmax);
   op_write_const_hdf5("dtmax", 1, "float", (char *) &dtmax,
       filename_h5);
   float g = 9.81; // Gravity constant
@@ -452,8 +444,6 @@ int main(int argc, char **argv) {
       H5LTmake_dataset_float(h5file, "ymin", 1, &dims, (float*)&sim.mesh.ymin));
   check_hdf5_error(
       H5LTmake_dataset_float(h5file, "ymax", 1, &dims, (float*)&sim.mesh.ymax));
-
-
 
   /*
    * Put event (and init) data to HDF5
@@ -511,7 +501,6 @@ int main(int argc, char **argv) {
         H5LTset_attribute_int(h5file, buffer, "length", &length, 1));
   }
 
-  //...
   check_hdf5_error(H5Fclose(h5file));
   op_printf("HDF5 file written and closed successfully.\n");
 
