@@ -406,9 +406,9 @@ int main(int argc, char **argv) {
 		float def = -1.0f*INFINITY;
 		int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
 		float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
-		int j = 0;
 		outputLocation = op_decl_set(num_outputLocation, "outputLocation");
 		for (int e = 0; e < ncell; e++) {
+			int j = 0;
 			for (int i = 0; i < event_className.size(); i++) {
 				if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
 				triangleIndex(&def, &event_location_x[i], &event_location_y[i], &x[2*cell[3*e]]
@@ -416,9 +416,9 @@ int main(int argc, char **argv) {
 				if (def != -1.0f*INFINITY) {
 					output_map[j] = e;
 					def = -1.0f*INFINITY;
-					j++;
 					printf("Location %d found in cell %d\n", j, e);
 				}
+				j++;
 			}
 		}
 		outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
