@@ -118,7 +118,9 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], temp_initBathymetry!=NULL, firstTime);
-        }
+        } else {
+					InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime);
+				}
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
         InitBore(cells, cellCenters, values, bore_params);
       } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {
