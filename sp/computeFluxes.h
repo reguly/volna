@@ -157,7 +157,7 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   out[0] *= *edgeLength;
   out[1] *= *edgeLength;
   out[2] *= *edgeLength;
-  out[3] = 0.0;
+//  out[3] = 0.0;
 
   float maximum = fabs(uLn + cL);
   maximum = maximum > fabs(uLn - cL) ? maximum : fabs(uLn - cL);

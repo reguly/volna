@@ -190,7 +190,7 @@ int main(int argc, char **argv) {
   op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
   //SpaceDiscretization
   op_dat bathySource = op_decl_dat_temp(edges, 2, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
-  op_dat edgeFluxes = op_decl_dat_temp(edges, 4, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
+  op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
 
