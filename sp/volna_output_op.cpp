@@ -410,7 +410,7 @@ void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat
 void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
-  op_printf("Write OutputSimulation to file: %s \n", filename);
+  //op_printf("Write OutputSimulation to file: %s \n", filename);
   int nnode = nodeCoords->set->size;
   int ncell = cellsToNodes->from->size;
   const char* substituteIndexPattern = "%i";

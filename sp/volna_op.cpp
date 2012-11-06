@@ -8,6 +8,7 @@
 #include "simulation_1.h"
 
 #include "op_lib_cpp.h"
+
 int op2_stride = 1;
 #define OP2_STRIDE(arr, idx) arr[op2_stride*(idx)]
 

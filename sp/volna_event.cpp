@@ -115,7 +115,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
         if(n_initBathymetry == 1) {
           InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
-        } else {
+        } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], temp_initBathymetry!=NULL, firstTime);
         }
