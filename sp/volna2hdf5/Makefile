@@ -13,9 +13,6 @@
 
 VOLNA_INSTALL_PATH ?= ../../volna_init
 
-LIBMESH_INC = -I$(LIBMESH_INSTALL_PATH)/include
-LIBMESH_LIB = -L$(LIBMESH_INSTALL_PATH)/lib
-
 OP2_INC = -I$(OP2_INSTALL_PATH)/c/include
 OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib
 
@@ -31,18 +28,13 @@ ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
 	CPPFLAGS = -O3 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
-	#CPPFLAGS = -g -fPIC -DUNIX -Wall
-	OMPFLAGS = -fopenmp
 	MPICPP = mpic++
 	MPIFLAGS = $(CCFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	#CCFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
-	CCFLAGS = -O3 -vec-report -xSSE4.2 -parallel
-	#CCFLAGS = -g -vec-report -xSSE4.2 -parallel
-	CPPFLAGS = $(CCFLAGS)
-	OMPFLAGS = -openmp -openmp-report2
+	#CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	CPPFLAGS = -O3 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
 	MPICPP = mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else

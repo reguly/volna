@@ -61,16 +61,6 @@ int main(int argc, char **argv) {
 
   check_hdf5_error(H5Fclose(file));
 
-
-  /*
-   * Define HDF5 filename
-   */
-//  char *filename_msh; // = "stlaurent_35k.msh";
-//  char *filename_h5; // = "stlaurent_35k.h5";
-//  filename_msh = strdup(sim.MeshFileName.c_str());
-//  filename_h5 = strndup(filename_msh, strlen(filename_msh) - 4);
-//  strcat(filename_h5, ".h5");
-
   /*
    * Define OP2 sets - Read mesh and geometry data from HDF5
    */
@@ -269,7 +259,6 @@ int main(int argc, char **argv) {
 
     itercount++;
     timestamp += timestep;
-    //TODO: mesh.mathParser.updateTime( timer.t ); ??
 
     //processing events
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,

@@ -4,20 +4,20 @@
 
 // user function
 
-#include "NumericalFluxes.h"
+#include "triangleIndex.h"
 
 
 // x86 kernel function
 
-void op_x86_NumericalFluxes(
+void op_x86_triangleIndex(
   int    blockIdx,
   float *ind_arg0,
-  float *ind_arg1,
   int   *ind_map,
   short *arg_map,
+  float *arg0,
+  const float *arg1,
+  const float *arg2,
   float *arg6,
-  float *arg7,
-  float *arg8,
   int   *ind_arg_sizes,
   int   *ind_arg_offs,
   int    block_offset,
@@ -28,13 +28,9 @@ void op_x86_NumericalFluxes(
   int   *colors,
   int   set_size) {
 
-  float *arg0_vec[3];
-  float *arg1_vec[3];
 
   int   *ind_arg0_map, ind_arg0_size;
-  int   *ind_arg1_map, ind_arg1_size;
   float *ind_arg0_s;
-  float *ind_arg1_s;
   int    nelem, offset_b;
 
   char shared[128000];
@@ -47,51 +43,38 @@ void op_x86_NumericalFluxes(
     nelem    = nelems[blockId];
     offset_b = offset[blockId];
 
-    ind_arg0_size = ind_arg_sizes[0+blockId*2];
-    ind_arg1_size = ind_arg_sizes[1+blockId*2];
+    ind_arg0_size = ind_arg_sizes[0+blockId*1];
 
-    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*2];
-    ind_arg1_map = &ind_map[3*set_size] + ind_arg_offs[1+blockId*2];
+    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*1];
 
     // set shared memory pointers
 
     int nbytes = 0;
     ind_arg0_s = (float *) &shared[nbytes];
-    nbytes    += ROUND_UP(ind_arg0_size*sizeof(float)*1);
-    ind_arg1_s = (float *) &shared[nbytes];
   }
 
   // copy indirect datasets into shared memory or zero increment
 
   for (int n=0; n<ind_arg0_size; n++)
-    for (int d=0; d<1; d++)
-      ind_arg0_s[d+n*1] = ind_arg0[d+ind_arg0_map[n]*1];
-
-  for (int n=0; n<ind_arg1_size; n++)
-    for (int d=0; d<1; d++)
-      ind_arg1_s[d+n*1] = ind_arg1[d+ind_arg1_map[n]*1];
+    for (int d=0; d<2; d++)
+      ind_arg0_s[d+n*2] = ind_arg0[d+ind_arg0_map[n]*2];
 
 
   // process set elements
 
   for (int n=0; n<nelem; n++) {
 
-    arg0_vec[0] = ind_arg0_s+arg_map[0*set_size+n+offset_b]*1;
-    arg0_vec[1] = ind_arg0_s+arg_map[1*set_size+n+offset_b]*1;
-    arg0_vec[2] = ind_arg0_s+arg_map[2*set_size+n+offset_b]*1;
-
-    arg1_vec[0] = ind_arg1_s+arg_map[3*set_size+n+offset_b]*1;
-    arg1_vec[1] = ind_arg1_s+arg_map[4*set_size+n+offset_b]*1;
-    arg1_vec[2] = ind_arg1_s+arg_map[5*set_size+n+offset_b]*1;
 
     // user-supplied kernel call
 
 
-    NumericalFluxes(  arg0_vec,
-                      arg1_vec,
-                      arg6+(n+offset_b)*1,
-                      arg7+(n+offset_b)*4,
-                      arg8 );
+    triangleIndex(  arg0,
+                    arg1,
+                    arg2,
+                    ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
+                    ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
+                    ind_arg0_s+arg_map[2*set_size+n+offset_b]*2,
+                    arg6+(n+offset_b)*4 );
   }
 
 }
@@ -99,43 +82,39 @@ void op_x86_NumericalFluxes(
 
 // host stub function
 
-void op_par_loop_NumericalFluxes(char const *name, op_set set,
+void op_par_loop_triangleIndex(char const *name, op_set set,
   op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
   op_arg arg3,
-  op_arg arg6,
-  op_arg arg7,
-  op_arg arg8 ){
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6 ){
 
-  float *arg8h = (float *)arg8.data;
+  float *arg0h = (float *)arg0.data;
 
-  int    nargs   = 9;
-  op_arg args[9];
+  int    nargs   = 7;
+  op_arg args[7];
 
-  arg0.idx = 0;
   args[0] = arg0;
-  for (int v = 1; v < 3; v++) {
-    args[0 + v] = op_arg_dat(arg0.dat, v, arg0.map, 1, "float", OP_READ);
-  }
-  arg3.idx = 0;
+  args[1] = arg1;
+  args[2] = arg2;
   args[3] = arg3;
-  for (int v = 1; v < 3; v++) {
-    args[3 + v] = op_arg_dat(arg3.dat, v, arg3.map, 1, "float", OP_READ);
-  }
+  args[4] = arg4;
+  args[5] = arg5;
   args[6] = arg6;
-  args[7] = arg7;
-  args[8] = arg8;
 
-  int    ninds   = 2;
-  int    inds[9] = {0,0,0,1,1,1,-1,-1,-1};
+  int    ninds   = 1;
+  int    inds[7] = {-1,-1,-1,0,0,0,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: NumericalFluxes\n");
+    printf(" kernel routine with indirection: triangleIndex\n");
   }
 
   // get plan
 
-  #ifdef OP_PART_SIZE_16
-    int part_size = OP_PART_SIZE_16;
+  #ifdef OP_PART_SIZE_14
+    int part_size = OP_PART_SIZE_14;
   #else
     int part_size = OP_part_size;
   #endif
@@ -145,9 +124,9 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   // initialise timers
 
   double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
-  op_timing_realloc(16);
-  OP_kernels[16].name      = name;
-  OP_kernels[16].count    += 1;
+  op_timing_realloc(14);
+  OP_kernels[14].name      = name;
+  OP_kernels[14].count    += 1;
 
   // set number of threads
 
@@ -159,9 +138,9 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
   // allocate and initialise arrays for global reduction
 
-  float arg8_l[1+64*64];
+  float arg0_l[1+64*64];
   for (int thr=0; thr<nthreads; thr++)
-    for (int d=0; d<1; d++) arg8_l[d+thr*64]=arg8h[d];
+    for (int d=0; d<1; d++) arg0_l[d+thr*64]=arg0h[d];
 
   if (set->size >0) {
 
@@ -180,14 +159,14 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
 #pragma omp parallel for
       for (int blockIdx=0; blockIdx<nblocks; blockIdx++)
-      op_x86_NumericalFluxes( blockIdx,
-         (float *)arg0.data,
+      op_x86_triangleIndex( blockIdx,
          (float *)arg3.data,
          Plan->ind_map,
          Plan->loc_map,
+         &arg0_l[64*omp_get_thread_num()],
+         (float *)arg1.data,
+         (float *)arg2.data,
          (float *)arg6.data,
-         (float *)arg7.data,
-         &arg8_l[64*omp_get_thread_num()],
          Plan->ind_sizes,
          Plan->ind_offs,
          block_offset,
@@ -202,28 +181,28 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   // combine reduction data
     if (col == Plan->ncolors_owned-1) {
       for (int thr=0; thr<nthreads; thr++)
-        for(int d=0; d<1; d++) arg8h[d]  = MIN(arg8h[d],arg8_l[d+thr*64]);
+        for(int d=0; d<1; d++) arg0h[d]  = MAX(arg0h[d],arg0_l[d+thr*64]);
     }
 
       block_offset += nblocks;
     }
 
-  op_timing_realloc(16);
-  OP_kernels[16].transfer  += Plan->transfer;
-  OP_kernels[16].transfer2 += Plan->transfer2;
+  op_timing_realloc(14);
+  OP_kernels[14].transfer  += Plan->transfer;
+  OP_kernels[14].transfer2 += Plan->transfer2;
 
   }
 
 
   // combine reduction data
 
-  op_mpi_reduce(&arg8,arg8h);
+  op_mpi_reduce(&arg0,arg0h);
 
   op_mpi_set_dirtybit(nargs, args);
 
   // update kernel record
 
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[16].time     += wall_t2 - wall_t1;
+  OP_kernels[14].time     += wall_t2 - wall_t1;
 }
 
