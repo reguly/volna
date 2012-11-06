@@ -42,8 +42,7 @@ void __check_hdf5_error(herr_t err, const char *file, const int line) {
   }
 }
 
-void read_event_data(const char *streamname, float* event_data, int ncell, int dim) {
-  op_printf("File: %s \n", streamname);
+void read_event_data(const char *streamname, float* event_data, int ncell, int n_dim, int dim) {
   FILE* fp;
   fp = fopen(streamname, "r");
   if(fp == NULL) {
@@ -53,7 +52,7 @@ void read_event_data(const char *streamname, float* event_data, int ncell, int d
   float a;
   for(int i=0; i<ncell; i++) {
     if(fscanf(fp, "%e \n", &a)) {
-      event_data[dim*ncell+i] = a;
+      event_data[i*n_dim+dim] = a;
   //    op_printf("a = %lf \n",(*event_data)[i]);
     }
 //    if(fscanf(fp, "%e \n", (*event_data)[i])) {
@@ -209,11 +208,6 @@ int main(int argc, char **argv) {
   ////////////// USE VOLNA FOR DATA IMPORT //////////////
   //
   int i = 0;
-  std::cout << "Number of nodes according to sim.mesh.Nodes.size() = "
-      << sim.mesh.Nodes.size() << std::endl;
-  std::cout << "Number of nodes according to sim.mesh.NPoints      = "
-      << sim.mesh.NPoints << "  <=== Accept this one! " << std::endl;
-
   // Import node coordinates
   for (i = 0; i < sim.mesh.NPoints; i++) {
     x[i * MESH_DIM] = sim.mesh.Nodes[i+1].x();
@@ -313,11 +307,6 @@ int main(int argc, char **argv) {
     //        << std::endl;
   }
 
-  std::cout << "Number of edges according to sim.mesh.Facets.size() = "
-      << sim.mesh.Facets.size() << std::endl;
-  std::cout << "Number of edges according to sim.mesh.NFaces      = "
-      << sim.mesh.NFaces << "  <=== Accept this one! " << std::endl;
-
   /*
    * If event data is stored in a file, import it and put in HDF5
    */
@@ -327,7 +316,7 @@ int main(int argc, char **argv) {
       op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
-        read_event_data(event_streamName[i].c_str(), initEta, ncell, 0);
+        read_event_data(event_streamName[i].c_str(), initEta, ncell, 1, 0);
       }
       if(strncmp(event_className[i].c_str(), "InitBathymetry",14) == 0) {
         char filename[255];
@@ -339,7 +328,7 @@ int main(int argc, char **argv) {
         if(pos == NULL) {
           initBathymetry = (float*) malloc(ncell * sizeof(float));
           op_printf("Reading InitBathymetry from file: %s \n", filename);
-          read_event_data(event_streamName[i].c_str(), initBathymetry, ncell, 0);
+          read_event_data(event_streamName[i].c_str(), initBathymetry, ncell, 1, 0);
         }
         else {
           op_printf("Reading InitBathymetry from multiple files: \n");
@@ -353,7 +342,7 @@ int main(int argc, char **argv) {
             //          pos = strstr(tmp_filename, substituteIndexPattern);
             strcpy(pos, substituteIndex);
             op_printf("  %s\n", filename);
-            read_event_data(filename, initBathymetry, ncell, k);
+            read_event_data(filename, initBathymetry, ncell, n_initBathymetry, k);
           }
         }
       }
