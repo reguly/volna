@@ -42,18 +42,18 @@ void __check_hdf5_error(herr_t err, const char *file, const int line) {
   }
 }
 
-void read_event_data(const char *streamname, float** event_data, int ncell) {
+void read_event_data(const char *streamname, float* event_data, int ncell, int dim) {
   op_printf("File: %s \n", streamname);
   FILE* fp;
   fp = fopen(streamname, "r");
   if(fp == NULL) {
-    op_printf("can't open file %s\n",streamname);
+    op_printf("can't open file %s. Check if the file exists.\n",streamname);
     exit(-1);
   }
   float a;
   for(int i=0; i<ncell; i++) {
     if(fscanf(fp, "%e \n", &a)) {
-      (*event_data)[i] = a;
+      event_data[dim*ncell+i] = a;
   //    op_printf("a = %lf \n",(*event_data)[i]);
     }
 //    if(fscanf(fp, "%e \n", (*event_data)[i])) {
@@ -198,11 +198,12 @@ int main(int argc, char **argv) {
   eleng = (float*) malloc(nedge * sizeof(float));
   isBoundary = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
-  initBathymetry = (float*) malloc(ncell * sizeof(float));
+//  initBathymetry = (float*) malloc(ncell * sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
   w = (float*) malloc(N_STATEVAR * ncell * sizeof(float));
   float *event_data;
   event_data = (float*) malloc(ncell*sizeof(float));
+  int n_initBathymetry; // Number of initBathymetry input files
 
   //
   ////////////// USE VOLNA FOR DATA IMPORT //////////////
@@ -326,10 +327,35 @@ int main(int argc, char **argv) {
       op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
-        read_event_data(event_streamName[i].c_str(), &initEta, ncell);
+        read_event_data(event_streamName[i].c_str(), initEta, ncell, 0);
       }
       if(strncmp(event_className[i].c_str(), "InitBathymetry",14) == 0) {
-        read_event_data(event_streamName[i].c_str(), &initBathymetry, ncell);
+        char filename[255];
+        strcpy(filename, event_streamName[i].c_str());
+
+        const char* substituteIndexPattern = "%i";
+        char* pos;
+        pos = strstr(filename, substituteIndexPattern);
+        if(pos == NULL) {
+          initBathymetry = (float*) malloc(ncell * sizeof(float));
+          op_printf("Reading InitBathymetry from file: %s \n", filename);
+          read_event_data(event_streamName[i].c_str(), initBathymetry, ncell, 0);
+        }
+        else {
+          op_printf("Reading InitBathymetry from multiple files: \n");
+          n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+          initBathymetry = (float*) malloc( n_initBathymetry * ncell * sizeof(float));
+          for(int k=0; k < n_initBathymetry; k++) {
+            char substituteIndex[255];
+            char tmp_filename[255];
+            //          strcpy(tmp_filename, event->streamName[i].c_str());
+            sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
+            //          pos = strstr(tmp_filename, substituteIndexPattern);
+            strcpy(pos, substituteIndex);
+            op_printf("  %s\n", filename);
+            read_event_data(filename, initBathymetry, ncell, k);
+          }
+        }
       }
     }
   }
@@ -368,7 +394,7 @@ int main(int argc, char **argv) {
   op_decl_dat(cells, N_STATEVAR, "float", w, "values");
   op_decl_dat(edges, 1, "int", isBoundary, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
-  op_decl_dat(cells, 1, "float", initBathymetry, "initBathymetry");
+  op_decl_dat(cells, n_initBathymetry, "float", initBathymetry, "initBathymetry");
 
   //
   // Define HDF5 filename
