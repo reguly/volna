@@ -30,6 +30,7 @@ int main(int argc, char **argv) {
   GaussianLandslideParams gaussian_landslide_params;
   BoreParams bore_params;
   RectangleDomainParams rect_params;
+  int n_initBathymetry; // Number of initBathymetry files
   hid_t file;
   //herr_t status;
   const char *filename_h5 = argv[1]; // = "stlaurent_35k.h5";
@@ -77,9 +78,6 @@ int main(int argc, char **argv) {
   op_map edgesToCells = op_decl_map_hdf5(edges, cells, N_CELLSPEREDGE,
                                   filename_h5,
                                   "edgesToCells");
-  //op_map cellsToCells = op_decl_map_hdf5(cells, cells, N_NODESPERCELL,
-  //                                filename_h5,
-  //                                "cellsToCells");
   op_map cellsToEdges = op_decl_map_hdf5(cells, edges, N_NODESPERCELL,
                                   filename_h5,
                                   "cellsToEdges");
@@ -98,10 +96,6 @@ int main(int argc, char **argv) {
   op_dat edgeNormals = op_decl_dat_hdf5(edges, MESH_DIM, "float",
                                     filename_h5,
                                     "edgeNormals");
-
-//  op_dat edgeCenters = op_decl_dat_hdf5(edges, MESH_DIM, "float",
-//                                    filename_h5,
-//                                    "edgeCenters");
 
   op_dat edgeLength = op_decl_dat_hdf5(edges, 1, "float",
                                     filename_h5,
@@ -134,8 +128,9 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &EPS);
   op_decl_const(1, "float", &g);
 
-  op_dat temp_initEta        = NULL;
-  op_dat temp_initBathymetry = NULL;
+  op_dat temp_initEta         = NULL;
+  op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
+
 
   //Very first Init loop
   for (unsigned int i = 0; i < events.size(); i++) {
@@ -145,10 +140,27 @@ int main(int argc, char **argv) {
               filename_h5,
               "initEta");
       } else if (!strcmp(events[i].className.c_str(), "InitBathymetry")) {
-        if (strcmp(events[i].streamName.c_str(), ""))
-          temp_initBathymetry = op_decl_dat_hdf5(cells, 1, "float",
-              filename_h5,
-              "initBathymetry");
+        if (strcmp(events[i].streamName.c_str(), "")){
+          // If one initBathymetry file is used
+          if (strstr(events[i].streamName.c_str(), "%i") == NULL){
+            n_initBathymetry = 1;
+            temp_initBathymetry = (op_dat*) malloc(sizeof(op_dat));
+            temp_initBathymetry[0] = op_decl_dat_hdf5(cells, 1, "float",
+                          filename_h5,
+                          "initBathymetry");
+          // If multiple initBathymetry files are used
+          } else{
+            n_initBathymetry = (timers[i].iend - timers[i].istart) / timers[i].istep + 1;
+            temp_initBathymetry = (op_dat*) malloc(n_initBathymetry * sizeof(op_dat));
+            for(int k=0; k<n_initBathymetry; k++) {
+                char dat_name[255];
+                sprintf(dat_name,"initBathymetry%d",k);
+                temp_initBathymetry[k] = op_decl_dat_hdf5(cells, 1, "float",
+                                filename_h5,
+                                dat_name);
+            }
+          }
+        }
       }
   }
 
@@ -161,7 +173,7 @@ int main(int argc, char **argv) {
 
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
-                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, bore_params, gaussian_landslide_params);
+                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params);
 
 
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
@@ -187,7 +199,7 @@ int main(int argc, char **argv) {
   while (timestamp < ftime) {
 
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
-                       cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, bore_params, gaussian_landslide_params);
+                       cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params);
     
 #ifdef DEBUG
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
@@ -262,7 +274,7 @@ int main(int argc, char **argv) {
 
     //processing events
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
-                         cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, bore_params, gaussian_landslide_params);
+                         cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params);
   }
 
   //simulation

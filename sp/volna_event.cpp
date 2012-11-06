@@ -100,7 +100,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 }
 
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers, float timeIncrement, int removeFinished, int initPrePost,
-    op_set cells, op_dat values, op_dat cellVolumes, op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat temp_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params) {
+    op_set cells, op_dat values, op_dat cellVolumes, op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params) {
   //op_printf("processEvents()... \n");
   int size = (*timers).size();
   int i = 0;
@@ -113,7 +113,12 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
-        InitBathymetry(cells, cellCenters, values, temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
+        if(n_initBathymetry == 1) {
+          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
+        } else {
+          int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
+          InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], temp_initBathymetry!=NULL, firstTime);
+        }
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
         InitBore(cells, cellCenters, values, bore_params);
       } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {
@@ -128,7 +133,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "OutputSimulation") == 0) {
         OutputSimulation(1, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {
-         OutputMaxElevation(&(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
+        OutputMaxElevation(&(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
       } else {
         op_printf("Unrecognized event %s\n", (*events)[i].className.c_str());
 //        exit(-1);

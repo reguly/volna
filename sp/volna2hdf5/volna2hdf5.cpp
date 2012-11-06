@@ -42,7 +42,8 @@ void __check_hdf5_error(herr_t err, const char *file, const int line) {
   }
 }
 
-void read_event_data(const char *streamname, float* event_data, int ncell, int n_dim, int dim) {
+// Read event data from file. Each data is in a new line.
+void read_event_data(const char *streamname, float* event_data, int ncell) {
   FILE* fp;
   fp = fopen(streamname, "r");
   if(fp == NULL) {
@@ -52,13 +53,8 @@ void read_event_data(const char *streamname, float* event_data, int ncell, int n
   float a;
   for(int i=0; i<ncell; i++) {
     if(fscanf(fp, "%e \n", &a)) {
-      event_data[i*n_dim+dim] = a;
-  //    op_printf("a = %lf \n",(*event_data)[i]);
+      event_data[i] = a;
     }
-//    if(fscanf(fp, "%e \n", (*event_data)[i])) {
-//      op_printf("Error reading file %s \n", streamname);
-//      exit(-1);
-//    }
   }
   if(fclose(fp) != 0) {
     op_printf("can't close file %s\n",streamname);
@@ -166,7 +162,7 @@ int main(int argc, char **argv) {
   float *eleng = NULL; // Edge length
   int   *isBoundary = NULL;
   float *initEta = NULL;
-  float *initBathymetry = NULL;
+  float **initBathymetry = NULL;
   float *x = NULL; // Node coordinates in 2D
   float *w = NULL; // Conservative variables
 
@@ -203,6 +199,7 @@ int main(int argc, char **argv) {
   float *event_data;
   event_data = (float*) malloc(ncell*sizeof(float));
   int n_initBathymetry; // Number of initBathymetry input files
+
 
   //
   ////////////// USE VOLNA FOR DATA IMPORT //////////////
@@ -316,7 +313,7 @@ int main(int argc, char **argv) {
       op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
-        read_event_data(event_streamName[i].c_str(), initEta, ncell, 1, 0);
+        read_event_data(event_streamName[i].c_str(), initEta, ncell);
       }
       if(strncmp(event_className[i].c_str(), "InitBathymetry",14) == 0) {
         char filename[255];
@@ -326,15 +323,18 @@ int main(int argc, char **argv) {
         char* pos;
         pos = strstr(filename, substituteIndexPattern);
         if(pos == NULL) {
-          initBathymetry = (float*) malloc(ncell * sizeof(float));
+          n_initBathymetry = 1;
+          initBathymetry = (float**) malloc(sizeof(float*));
+          initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
           op_printf("Reading InitBathymetry from file: %s \n", filename);
-          read_event_data(event_streamName[i].c_str(), initBathymetry, ncell, 1, 0);
+          read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
         }
         else {
           op_printf("Reading InitBathymetry from multiple files: \n");
           n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
-          initBathymetry = (float*) malloc( n_initBathymetry * ncell * sizeof(float));
+          initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
           for(int k=0; k < n_initBathymetry; k++) {
+            initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
             char substituteIndex[255];
             char tmp_filename[255];
             //          strcpy(tmp_filename, event->streamName[i].c_str());
@@ -342,7 +342,7 @@ int main(int argc, char **argv) {
             //          pos = strstr(tmp_filename, substituteIndexPattern);
             strcpy(pos, substituteIndex);
             op_printf("  %s\n", filename);
-            read_event_data(filename, initBathymetry, ncell, n_initBathymetry, k);
+            read_event_data(filename, initBathymetry[k], ncell);
           }
         }
       }
@@ -383,7 +383,15 @@ int main(int argc, char **argv) {
   op_decl_dat(cells, N_STATEVAR, "float", w, "values");
   op_decl_dat(edges, 1, "int", isBoundary, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
-  op_decl_dat(cells, n_initBathymetry, "float", initBathymetry, "initBathymetry");
+  if(n_initBathymetry == 1) {
+    op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+  } else {
+    for(int k=0; k<n_initBathymetry; k++) {
+      char dat_name[255];
+      sprintf(dat_name,"initBathymetry%d",k);
+      op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
+    }
+  }
 
   //
   // Define HDF5 filename
