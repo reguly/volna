@@ -369,7 +369,7 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
 void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
-  op_printf("Write OutputLocation to file: %s \n", filename);
+  //op_printf("Write OutputLocation to file: %s \n", filename);
 
   FILE* fp;
 

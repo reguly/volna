@@ -20,7 +20,7 @@ int timer_happens(TimerParams *p) {
   return result;
 }
 
-void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events) {
+void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation) {
   std::vector<float> timer_start(num_events);
   std::vector<float> timer_end(num_events);
   std::vector<float> timer_step(num_events);
@@ -76,6 +76,9 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
     eventBuffer.resize(length);
     check_hdf5_error(H5LTread_dataset_string(h5file, buffer, &eventBuffer[0]));
     (*events)[i].className.assign(&eventBuffer[0], length);
+
+		if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0)
+			(*num_outputLocation)++;
 //    free(eventBuffer);
 
     memset(buffer,0,22);
@@ -99,11 +102,15 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 
 }
 
-void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers, float timeIncrement, int removeFinished, int initPrePost,
-    op_set cells, op_dat values, op_dat cellVolumes, op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params) {
+void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
+ 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
+									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry,
+									 int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
+									 op_dat outputLocation_dat) {
   //op_printf("processEvents()... \n");
   int size = (*timers).size();
   int i = 0;
+	int j = 0;
   while (i < size){
     if (timer_happens(&(*timers)[i]) && (initPrePost==2 || (*events)[i].post_update==initPrePost)) {
       if (strcmp((*events)[i].className.c_str(), "InitEta") == 0) {
@@ -131,7 +138,8 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "OutputConservedQuantities") == 0) {
         OutputConservedQuantities(cells, cellVolumes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
-        OutputLocation(&(*events)[i], &(*timers)[i], cells, nodeCoords, cellsToNodes, values);
+        OutputLocation(&(*events)[i], j, &(*timers)[i], cells, nodeCoords, cellsToNodes, values, outputLocation_map, outputLocation_dat);
+				j++;
       } else if (strcmp((*events)[i].className.c_str(), "OutputSimulation") == 0) {
         OutputSimulation(1, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {

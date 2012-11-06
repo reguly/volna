@@ -4,7 +4,9 @@
 #include "triangleIndex.h"
 #include <stdio.h>
 #include "op_seq.h"
+#include "gatherLocations.h"
 
+int outputLocation_lastupdate = -1;
 /*
  * Utility function for binary output: swaps byte endianneses
  */
@@ -337,7 +339,7 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
 /*
  * Write H + Zb on the given location (x,y) to ASCII file
  */
-void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
+void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_map outputLocation_map, op_dat outputLocation_dat) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   //op_printf("Write OutputLocation to file: %s \n", filename);
@@ -357,17 +359,27 @@ void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat
     exit(-1);
   }
 
-  float val = 0.0f;
-  // Find the traingle's index in which the location coordinates fall
-  op_par_loop(triangleIndex, "triangleIndex", cells,
-      op_arg_gbl(&val, 1, "float", OP_MAX),
-      op_arg_gbl(&(event->location_x), 1, "float", OP_READ),
-      op_arg_gbl(&(event->location_y), 1, "float", OP_READ),
-      op_arg_dat(nodeCoords, 0, cellsToNodes, 2, "float", OP_READ),
-      op_arg_dat(nodeCoords, 1, cellsToNodes, 2, "float", OP_READ),
-      op_arg_dat(nodeCoords, 2, cellsToNodes, 2, "float", OP_READ),
-      op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ)
-      );
+	if (outputLocation_lastupdate == -1 || timer->iter != (unsigned int)outputLocation_lastupdate) {
+		op_par_loop(gatherLocations, "gatherLocations", outputLocation_map->from,
+								op_arg_dat(values, 0, outputLocation_map, 4, "float", OP_READ),
+								op_arg_dat(outputLocation_dat, -1, OP_ID, 1, "float", OP_WRITE));
+		op_fetch_data(outputLocation_dat);
+		outputLocation_lastupdate = timer->iter;
+	}
+	float val = ((float*)(outputLocation_dat->data))[eventid];
+  // 
+  // float val = 0.0f;
+  // // Find the traingle's index in which the location coordinates fall
+  // op_par_loop(triangleIndex, "triangleIndex", cells,
+  //     op_arg_gbl(&val, 1, "float", OP_MAX),
+  //     op_arg_gbl(&(event->location_x), 1, "float", OP_READ),
+  //     op_arg_gbl(&(event->location_y), 1, "float", OP_READ),
+  //     op_arg_dat(nodeCoords, 0, cellsToNodes, 2, "float", OP_READ),
+  //     op_arg_dat(nodeCoords, 1, cellsToNodes, 2, "float", OP_READ),
+  //     op_arg_dat(nodeCoords, 2, cellsToNodes, 2, "float", OP_READ),
+  //     op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ)
+  //     );
+
   fprintf(fp, "%lf %10.20g\n", timer->t, val);
 
   if(fclose(fp)) {

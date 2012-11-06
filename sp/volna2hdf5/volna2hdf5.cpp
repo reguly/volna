@@ -63,6 +63,46 @@ void read_event_data(const char *streamname, float* event_data, int ncell) {
 
 }
 
+void triangleIndex(float *val, const float* x, const float* y, float* nodeCoordsA, float* nodeCoordsB, float* nodeCoordsC, float* values) {
+  // Return value on cell if the given point is inside the cell
+  bool isInside = false;
+
+  // First, check if the point is in the bounding box of the triangle
+  // vertices (else, the algorithm is not nearly robust enough)
+  float xmin = MIN(MIN(nodeCoordsA[0], nodeCoordsB[0]), nodeCoordsC[0]);
+  float xmax = MAX(MAX(nodeCoordsA[0], nodeCoordsB[0]), nodeCoordsC[0]);
+  float ymin = MIN(MIN(nodeCoordsA[1], nodeCoordsB[1]), nodeCoordsC[1]);
+  float ymax = MAX(MAX(nodeCoordsA[1], nodeCoordsB[1]), nodeCoordsC[1]);
+
+  if ( ( *x < xmin ) || ( *x > xmax ) ||
+      ( *y < ymin ) || ( *y > ymax ) ) {
+    isInside = false;
+  }else{
+    // Case where the point is in the bounding box. Here, if abc is not
+    // Check if the Triangle vertices are clockwise or
+    // counter-clockwise
+    float insider = 1.0f;
+    float p[2] = {*x, *y};
+
+#define ORIENT2D(pA, pB, pC) (pA[0] - pC[0]) * (pB[1] - pC[1]) - (pA[1] - pC[1]) * (pB[0] - pC[0])
+    if ( ORIENT2D(nodeCoordsA, nodeCoordsB, nodeCoordsC) > 0 ) {  // counter clockwise
+      insider =  ORIENT2D( nodeCoordsA, p, nodeCoordsC);
+      insider *= ORIENT2D( nodeCoordsA, nodeCoordsB, p);
+      insider *= ORIENT2D( nodeCoordsB, nodeCoordsC, p);
+    }
+    else {      // clockwise
+      insider =  ORIENT2D( nodeCoordsA, p, nodeCoordsB);
+      insider *= ORIENT2D( nodeCoordsA, nodeCoordsC, p);
+      insider *= ORIENT2D( nodeCoordsC, nodeCoordsB, p);
+    }
+    isInside = insider > 0.0f;
+  }
+
+  if ( isInside )
+    *val = values[0] + values[3]; // H + Zb
+}
+
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     printf("Wrong parameters! Please specify the VOLNA configuration "
@@ -119,7 +159,8 @@ int main(int argc, char **argv) {
   std::vector < std::string > event_className(num_events);
   std::vector < std::string > event_formula(num_events);
   std::vector < std::string > event_streamName(num_events);
-
+	int num_outputLocation = 0;
+	
   for (int i = 0; i < num_events; i++) {
     TimerParams t_p;
     EventParams e_p;
@@ -137,6 +178,7 @@ int main(int argc, char **argv) {
     event_className[i] = e_p.className;
     event_streamName[i] = e_p.streamName;
     event_formula[i] = e_p.formula;
+		if (strcmp(e_p.className.c_str(), "OutputLocation") == 0) num_outputLocation++;
   }
   // Initialize simulation: load mesh, calculate geometry data
   sim.init();
@@ -355,6 +397,34 @@ int main(int argc, char **argv) {
   op_set nodes = op_decl_set(nnode, "nodes");
   op_set edges = op_decl_set(nedge, "edges");
   op_set cells = op_decl_set(ncell, "cells");
+
+
+	op_set outputLocation = NULL;
+	op_map outputLocation_map = NULL;
+	op_dat outputLocation_dat = NULL;
+	if (num_outputLocation) {
+		float def = -1.0f*INFINITY;
+		int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
+		float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
+		int j = 0;
+		outputLocation = op_decl_set(num_outputLocation, "outputLocation");
+		for (int e = 0; e < ncell; e++) {
+			for (int i = 0; i < event_className.size(); i++) {
+				if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
+				triangleIndex(&def, &event_location_x[i], &event_location_y[i], &x[2*cell[3*e]]
+							, &x[2*cell[3*e+1]], &x[2*cell[3*e+2]],	&w[4*e]);
+				if (def != -1.0f*INFINITY) {
+					output_map[j] = e;
+					def = -1.0f*INFINITY;
+					j++;
+					printf("Location %d found in cell %d\n", j, e);
+				}
+			}
+		}
+		outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
+		outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
+	}
+
 
   //
   // Define OP2 set maps
