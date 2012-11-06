@@ -76,7 +76,8 @@ inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nn
 
   // write vertices
   sprintf(s,"POINTS %d float\n", nnode); fwrite(s, sizeof(char), strlen(s), fp);
-   float* nodeCoords_data;
+  
+	float* nodeCoords_data;
   nodeCoords_data = (float*)nodeCoords->data;
   float tmp_float;
   int i = 0;
@@ -123,7 +124,7 @@ inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nn
                   "SCALARS Eta float 1\n"
                   "LOOKUP_TABLE default\n",
                   ncell); fwrite(s, sizeof(char), strlen(s), fp);
-  float tmp = 0.0;
+
   for ( i=0; i<ncell; ++i ) {
     tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR] + values_data[i*N_STATEVAR+3]);
     fwrite(&tmp_float, sizeof(float), 1, fp);
@@ -246,7 +247,7 @@ inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nno
 
   fprintf(fp, "SCALARS Visual float 1\n"
               "LOOKUP_TABLE default\n");
-  float hundred = 100.0;
+
   for ( i=0; i<ncell; ++i ) {
     if(values_data[i*N_STATEVAR] < 1e-3)
       fprintf(fp, "%g\n", 100.0);
@@ -295,7 +296,7 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   op_printf("Write OutputMaxElevation to file: %s \n", filename);
-  int nnode = nodeCoords->set->size;
+
   int ncell = cellsToNodes->from->size;
   const char* substituteIndexPattern = "%i";
   char* pos;
@@ -340,8 +341,6 @@ void OutputLocation(EventParams *event, TimerParams* timer, op_set cells, op_dat
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   op_printf("Write OutputLocation to file: %s \n", filename);
-  int nnode = nodeCoords->set->size;
-  int ncell = cellsToNodes->from->size;
 
   FILE* fp;
 

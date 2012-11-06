@@ -1,7 +1,8 @@
 inline void initEta_formula(float *coords, float *values, const float *time) {
+	//UNCOMMENT THE ONES USED
   float x = coords[0];
   float y = coords[1];
-  float t = *time;
+  //float t = *time; 
   //insert user formula here
   //float val = x*x+y*y<1.0;//0.1f* exp(-1.0 * x*x - y*y);
   float val = 0.5f*exp(-x*x-y*y);

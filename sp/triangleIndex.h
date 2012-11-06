@@ -1,4 +1,4 @@
-inline void triangleIndex(float *val, float* x, float* y, float* nodeCoordsA, float* nodeCoordsB, float* nodeCoordsC, float* values) {
+inline void triangleIndex(float *val, const float* x, const float* y, float* nodeCoordsA, float* nodeCoordsB, float* nodeCoordsC, float* values) {
   // Return value on cell if the given point is inside the cell
   bool isInside = false;
 
