@@ -1,10 +1,10 @@
 #include "volna_common.h"
 #include "getTotalVol.h"
 #include "getMaxElevation.h"
-#include "triangleIndex.h"
+#include "gatherLocations.h"
 #include <stdio.h>
 #include "op_seq.h"
-#include "gatherLocations.h"
+
 
 int outputLocation_lastupdate = -1;
 /*
@@ -367,18 +367,6 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
 		outputLocation_lastupdate = timer->iter;
 	}
 	float val = ((float*)(outputLocation_dat->data))[eventid];
-  // 
-  // float val = 0.0f;
-  // // Find the traingle's index in which the location coordinates fall
-  // op_par_loop(triangleIndex, "triangleIndex", cells,
-  //     op_arg_gbl(&val, 1, "float", OP_MAX),
-  //     op_arg_gbl(&(event->location_x), 1, "float", OP_READ),
-  //     op_arg_gbl(&(event->location_y), 1, "float", OP_READ),
-  //     op_arg_dat(nodeCoords, 0, cellsToNodes, 2, "float", OP_READ),
-  //     op_arg_dat(nodeCoords, 1, cellsToNodes, 2, "float", OP_READ),
-  //     op_arg_dat(nodeCoords, 2, cellsToNodes, 2, "float", OP_READ),
-  //     op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ)
-  //     );
 
   fprintf(fp, "%lf %10.20g\n", timer->t, val);
 
