@@ -26,16 +26,20 @@ int main(int argc, char **argv) {
 
   op_init(argc, argv, 2);
 
-  EPS = 1e-6; //for doubles 1e-11
+  EPS = 1e-6; //machine epsilon, for doubles 1e-11
+	
+	//Some simulation parameters when using InitGaussianLandslide and InitBore
   GaussianLandslideParams gaussian_landslide_params;
   BoreParams bore_params;
+
+	//Parameters for the rectangualr domain special case
   RectangleDomainParams rect_params;
-  int n_initBathymetry = 0; // Number of initBathymetry files
+
   hid_t file;
-  //herr_t status;
-  const char *filename_h5 = argv[1]; // = "stlaurent_35k.h5";
+  const char *filename_h5 = argv[1];
   file = H5Fopen(filename_h5, H5F_ACC_RDONLY, H5P_DEFAULT);
 
+	//Read the above parameters
   check_hdf5_error(H5LTread_dataset_float(file, "BoreParamsx0", &bore_params.x0));
   check_hdf5_error(H5LTread_dataset_float(file, "BoreParamsHl", &bore_params.Hl));
   check_hdf5_error(H5LTread_dataset_float(file, "BoreParamsul", &bore_params.ul));
@@ -58,7 +62,8 @@ int main(int argc, char **argv) {
   check_hdf5_error(H5LTread_dataset_int(file, "numEvents", &num_events));
   std::vector<TimerParams> timers(num_events);
   std::vector<EventParams> events(num_events);
-
+	
+	//Read Event "objects" (Init and Output events) into timers and events
   read_events_hdf5(file, num_events, &timers, &events, &num_outputLocation);
 
   check_hdf5_error(H5Fclose(file));
@@ -84,6 +89,8 @@ int main(int argc, char **argv) {
                                   filename_h5,
                                   "cellsToEdges");
 
+  //When using OutputLocation events we have already computed the cell index of the points
+  //so we don't have to locate the cell every time
 	op_set outputLocation = NULL;
 	op_map outputLocation_map = NULL;
 	op_dat outputLocation_dat = NULL;
@@ -133,7 +140,7 @@ int main(int argc, char **argv) {
    */
   float ftime, dtmax;
   op_get_const_hdf5("CFL", 1, "float", (char *) &CFL, filename_h5);
-//  op_get_const_hdf5("EPS", 1, "float", (char *) &EPS, filename_h5);
+
   // Final time: as defined by Volna the end of real-time simulation
   op_get_const_hdf5("ftime", 1, "float", (char *) &ftime, filename_h5);
   op_get_const_hdf5("dtmax", 1, "float", (char *) &dtmax, filename_h5);
@@ -143,11 +150,12 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &EPS);
   op_decl_const(1, "float", &g);
 
+	//op_dats storing InitBathymetry and InitEta event files
   op_dat temp_initEta         = NULL;
   op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
-
-
-  //Very first Init loop
+  int n_initBathymetry = 0; // Number of initBathymetry files
+	
+	//Read InitBathymetry and InitEta event data when they come from files
   for (unsigned int i = 0; i < events.size(); i++) {
       if (!strcmp(events[i].className.c_str(), "InitEta")) {
         if (strcmp(events[i].streamName.c_str(), ""))
@@ -195,6 +203,10 @@ int main(int argc, char **argv) {
   //and in and out in EvolveValuesRK2() (timeStepper.hpp)
 
   float *tmp_elem = NULL;
+
+	/*
+	*  Declaring temporary dats
+	*/
   op_dat values_new = op_decl_dat_temp(cells, 4, "float",tmp_elem,"values_new"); //tmp - cells - dim 4
 
   //temporary dats
@@ -212,9 +224,11 @@ int main(int argc, char **argv) {
   double timestep;
 
   while (timestamp < ftime) {
-
+		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
-                       cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat);
+                  cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
+ 									temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params,
+									gaussian_landslide_params, outputLocation_map, outputLocation_dat);
     
 #ifdef DEBUG
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
@@ -287,11 +301,16 @@ int main(int argc, char **argv) {
     itercount++;
     timestamp += timestep;
 
-    //processing events
+		//process post_update==true events (usually Output events)
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
-                         cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat);
+                  cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
+									temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params,
+									gaussian_landslide_params, outputLocation_map, outputLocation_dat);
   }
 
+	/*
+	*	 Free temporary dats
+	*/
   //simulation
   if (op_free_dat_temp(values_new) < 0)
         op_printf("Error: temporary op_dat %s cannot be removed\n",values_new->name);
