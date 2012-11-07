@@ -1,0 +1,9 @@
+volna2hdf5 tool - save Volna data to HDF5 file
+----------------------------------------------
+
+volna2hdf5 <filename.vln>
+
+Transfares Volna specific data to OP2 HDF5 file. The Volna config file with *.vln extension has to be specified. The tool uses the given config file to produce an HDF5 file that contains all the data necessary to run the OP2 port of Volna. The produced HDF5 file has the same file name with *.h5 extension. 
+
+If necessary, the HDF5 file can be viewed using h5dump: e.g. h5dump file.h5 > log && vim log
+

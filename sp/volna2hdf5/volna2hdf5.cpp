@@ -236,11 +236,13 @@ int main(int argc, char **argv) {
   isBoundary = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
 //  initBathymetry = (float*) malloc(ncell * sizeof(float));
+  initBathymetry = (float**) malloc(sizeof(float*));
+  initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
   w = (float*) malloc(N_STATEVAR * ncell * sizeof(float));
   float *event_data;
   event_data = (float*) malloc(ncell*sizeof(float));
-  int n_initBathymetry; // Number of initBathymetry input files
+  int n_initBathymetry = 0; // Number of initBathymetry input files
 
 
   //
@@ -358,33 +360,36 @@ int main(int argc, char **argv) {
         read_event_data(event_streamName[i].c_str(), initEta, ncell);
       }
       if(strncmp(event_className[i].c_str(), "InitBathymetry",14) == 0) {
-        char filename[255];
-        strcpy(filename, event_streamName[i].c_str());
-
-        const char* substituteIndexPattern = "%i";
-        char* pos;
-        pos = strstr(filename, substituteIndexPattern);
-        if(pos == NULL) {
-          n_initBathymetry = 1;
-          initBathymetry = (float**) malloc(sizeof(float*));
-          initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
-          op_printf("Reading InitBathymetry from file: %s \n", filename);
-          read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
-        }
-        else {
-          op_printf("Reading InitBathymetry from multiple files: \n");
-          n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
-          initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
-          for(int k=0; k < n_initBathymetry; k++) {
-            initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
-            char substituteIndex[255];
-            char tmp_filename[255];
-            //          strcpy(tmp_filename, event->streamName[i].c_str());
-            sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
-            //          pos = strstr(tmp_filename, substituteIndexPattern);
-            strcpy(pos, substituteIndex);
-            op_printf("  %s\n", filename);
-            read_event_data(filename, initBathymetry[k], ncell);
+        if(strcmp(event_streamName[i].c_str(), "") != 0) {
+          free(initBathymetry[0]);
+          free(initBathymetry);
+          char filename[255];
+          strcpy(filename, event_streamName[i].c_str());
+          const char* substituteIndexPattern = "%i";
+          char* pos;
+          pos = strstr(filename, substituteIndexPattern);
+          if(pos == NULL) {
+            n_initBathymetry = 1;
+            initBathymetry = (float**) malloc(sizeof(float*));
+            initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
+            op_printf("Reading InitBathymetry from file: %s \n", filename);
+            read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
+          }
+          else {
+            op_printf("Reading InitBathymetry from multiple files: \n");
+            n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+            initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
+            for(int k=0; k < n_initBathymetry; k++) {
+              initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
+              char substituteIndex[255];
+              char tmp_filename[255];
+              //          strcpy(tmp_filename, event->streamName[i].c_str());
+              sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
+              //          pos = strstr(tmp_filename, substituteIndexPattern);
+              strcpy(pos, substituteIndex);
+              op_printf("  %s\n", filename);
+              read_event_data(filename, initBathymetry[k], ncell);
+            }
           }
         }
       }
@@ -453,9 +458,11 @@ int main(int argc, char **argv) {
   op_decl_dat(cells, N_STATEVAR, "float", w, "values");
   op_decl_dat(edges, 1, "int", isBoundary, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
-  if(n_initBathymetry == 1) {
+  if(n_initBathymetry == 0) {
     op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
-  } else {
+  } else if(n_initBathymetry == 1) {
+    op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+  } else if (n_initBathymetry > 1){
     for(int k=0; k<n_initBathymetry; k++) {
       char dat_name[255];
       sprintf(dat_name,"initBathymetry%d",k);
