@@ -25,10 +25,8 @@ Afterwards, call volna-op2 with the above input file, e.g.:
  * ./volna_openmp gaussian_landslide.h5
  * when using the CUDA version we suggest adding "OP_PART_SIZE=128 OP_BLOCK_SIZE=128" to the execution line
 
-***Important*** Currently you have to manually insert the Init formulas (such as InitBathymetry) into the volna-OP2 header files and then recompile. Note that according to C++ standards you may also have to modify the formula to operate on floating-point numbers because e.g. the expression 5/4 is interpreted by default to work with integers, thus you need to modify it to be 5.0f/4.0f.
-
 ## Recommendations, restrictions
 Some restriction, constantly updated as they are fixed:
  * Currently Volna does not work well with MPI, and there is no support for distributed file output (e.g. OutputSimulation or OutputLocation into files).
  * Refrain from using OutputSimulation too often because (compared to the actual simulation) it may take a lot of time.
- * When moving large h5 files around, try compressing them, e.g. h5repack -i gaussian.h5 -o gaussian_compressed.h5 -f GZIP=9
+ * When using large h5 files, try compressing them, e.g. h5repack -i gaussian.h5 -o gaussian_compressed.h5 -f GZIP=9
