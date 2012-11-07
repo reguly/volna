@@ -160,7 +160,7 @@ int main(int argc, char **argv) {
   std::vector < std::string > event_formula(num_events);
   std::vector < std::string > event_streamName(num_events);
 	int num_outputLocation = 0;
-	
+  std::string numbers("0123456789.");
   for (int i = 0; i < num_events; i++) {
     TimerParams t_p;
     EventParams e_p;
@@ -177,7 +177,76 @@ int main(int argc, char **argv) {
     event_post_update[i] = e_p.post_update;
     event_className[i] = e_p.className;
     event_streamName[i] = e_p.streamName;
-    event_formula[i] = e_p.formula;
+    int prev = 0;
+    int fl = 0;
+    std::string temp;
+    int str_i = e_p.formula.find("return");
+    if (str_i >= 0 && str_i < e_p.formula.length()) {
+      str_i += 6;
+      for (; str_i < e_p.formula.length(); str_i++) {
+        temp = e_p.formula.substr(str_i, 1);
+        if (numbers.find(temp) < 11 && numbers.find(temp) >= 0) {
+          if (temp == ".") fl = 1;
+          prev = 1;
+          event_formula[i] += temp;
+        } else {
+          if (prev && sizeof(RealType)==4 && temp != "f") {
+            if (fl)
+              event_formula[i] += "f";
+            else
+              event_formula[i] += ".0f";
+          } else if (prev && !fl) {
+            event_formula[i] += ".0";
+          }
+          event_formula[i] += temp;
+          fl = 0;
+          prev = 0;
+        }
+      }
+      FILE* fp;
+      if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
+          fp = fopen("../initBathymetry_formula.h", "w");
+      } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
+        fp = fopen("../initU_formula.h", "w");
+      } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
+        fp = fopen("../initV_formula.h", "w");
+      } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
+        fp = fopen("../initEta_formula.h", "w");
+      } else {
+        printf("Error: Unrecognized Init event with a formula %s\n", e_p.className.c_str());
+        exit(-1);
+      }
+      fprintf(fp, "inline void init");
+      if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
+        fprintf(fp, "Bathymetry");
+      } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
+        fprintf(fp, "U");
+      } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
+        fprintf(fp, "V");
+      } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
+        fprintf(fp, "Eta");
+      }
+      fprintf(fp, "_formula(float *coords, float *values, const float *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
+      fprintf(fp,"%s;\n", event_formula[i].c_str());
+      if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
+        fprintf(fp, "  values[3] = val;\n}");
+      } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
+        fprintf(fp, "  values[1] += val;\n}");
+      } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
+        fprintf(fp, "  values[2] += val;\n}");
+      } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
+        fprintf(fp, "  values[0] += val;\n}");
+      }
+      if(fclose(fp)) {
+        printf("can't close %s formula header file\n",e_p.className.c_str());
+        exit(-1);
+      } else {
+        printf("Written expression to formula file (%s): %s\n", e_p.className.c_str(), event_formula[i].c_str());
+      }
+    } else {
+      event_formula[i] = "";
+    }
+        //event_formula[i] = e_p.formula;
 		if (strcmp(e_p.className.c_str(), "OutputLocation") == 0) num_outputLocation++;
   }
   // Initialize simulation: load mesh, calculate geometry data

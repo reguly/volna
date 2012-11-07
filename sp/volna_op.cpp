@@ -9,7 +9,7 @@
 
 #include "op_lib_cpp.h"
 
- "int op2_stride = 1;
+int op2_stride = 1;
 #define OP2_STRIDE(arr, idx) arr[op2_stride*(idx)]
 //
 // op_par_loop declarations
