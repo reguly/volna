@@ -2,6 +2,7 @@
 #include "EvolveValuesRK2_1.h"
 #include "EvolveValuesRK2_2.h"
 #include "simulation_1.h"
+#include "limits.h"
 
 #include "op_seq.h"
 
@@ -57,7 +58,7 @@ int main(int argc, char **argv) {
   check_hdf5_error(H5LTread_dataset_float(file, "ymax", &rect_params.ymax));
 
   int num_events = 0;
-	int num_outputLocation = 0;
+  int num_outputLocation = 0;
 
   check_hdf5_error(H5LTread_dataset_int(file, "numEvents", &num_events));
   std::vector<TimerParams> timers(num_events);
@@ -173,15 +174,23 @@ int main(int argc, char **argv) {
                           "initBathymetry");
           // If multiple initBathymetry files are used
           } else{
-            n_initBathymetry = (timers[i].iend - timers[i].istart) / timers[i].istep + 1;
+            if(timers[i].iend != INT_MAX) {
+              n_initBathymetry = (timers[i].iend - timers[i].istart) / timers[i].istep + 1;
+            } else {
+              int tmp_iend = ftime/dtmax;
+              n_initBathymetry = (tmp_iend-timers[i].istart)/timers[i].istep + 1;
+            }
+            op_printf("Reading %d consecutive InitBathymetry data array... ", n_initBathymetry);
             temp_initBathymetry = (op_dat*) malloc(n_initBathymetry * sizeof(op_dat));
             for(int k=0; k<n_initBathymetry; k++) {
                 char dat_name[255];
+                // iniBathymetry data is stored with sequential numbering instead of iteration step numbering!
                 sprintf(dat_name,"initBathymetry%d",k);
                 temp_initBathymetry[k] = op_decl_dat_hdf5(cells, 1, "float",
                                 filename_h5,
                                 dat_name);
             }
+            op_printf("done.\n");
           }
         }
       }

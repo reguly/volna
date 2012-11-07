@@ -6,6 +6,7 @@
 #include<iostream>
 #include<string>
 #include<map>
+#include<limits.h>
 
 #include<hdf5.h>
 #include<hdf5_hl.h>
@@ -145,6 +146,7 @@ int main(int argc, char **argv) {
       << "'" << std::endl;
 
   int num_events = sim.events.size();
+  int const MAXINT = std::numeric_limits<int>::max();
 
   std::vector<float> timer_start(num_events);
   std::vector<float> timer_end(num_events);
@@ -159,7 +161,7 @@ int main(int argc, char **argv) {
   std::vector < std::string > event_className(num_events);
   std::vector < std::string > event_formula(num_events);
   std::vector < std::string > event_streamName(num_events);
-	int num_outputLocation = 0;
+  int num_outputLocation = 0;
   std::string numbers("0123456789.");
   for (int i = 0; i < num_events; i++) {
     TimerParams t_p;
@@ -171,7 +173,7 @@ int main(int argc, char **argv) {
     timer_end[i] = t_p.end;
     timer_start[i] = t_p.istart;
     timer_istep[i] = t_p.istep;
-    timer_iend[i] = t_p.iend;
+    timer_iend[i] = t_p.iend == MAXINT ? INT_MAX : t_p.iend;
     event_location_x[i] = e_p.location_x;
     event_location_y[i] = e_p.location_y;
     event_post_update[i] = e_p.post_update;
@@ -287,10 +289,10 @@ int main(int argc, char **argv) {
   nedge = sim.mesh.NFaces;
 
   printf("GMSH file data statistics: \n");
-  printf("  No. nodes = %d\n", nnode);
-  printf("  No. cells = %d\n", ncell);
+  printf("  No. nodes    = %d\n", nnode);
+  printf("  No. cells    = %d\n", ncell);
   printf("Connectivity data statistics: \n");
-  printf("  No. of edges           = %d\n", nedge);
+  printf("  No. of edges = %d\n", nedge);
 
   // Arrays for mapping data
   cell = (int*) malloc(N_NODESPERCELL * ncell * sizeof(int));
@@ -445,8 +447,20 @@ int main(int argc, char **argv) {
             read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
           }
           else {
-            op_printf("Reading InitBathymetry from multiple files: \n");
-            n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+
+            if(timer_iend[i] != MAXINT) {
+              n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+              op_printf("timer_iend[i] = %d \n",timer_iend[i]);
+              op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+            } else {
+              int tmp_iend = sim.FinalTime/sim.Dtmax;
+              n_initBathymetry = (tmp_iend-timer_istart[i])/timer_istep[i] + 1;
+              op_printf("tmp_iend = %d \n",tmp_iend);
+              op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+            }
+            op_printf("Reading InitBathymetry from %d files: \n", n_initBathymetry);
+
+
             initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
             for(int k=0; k < n_initBathymetry; k++) {
               initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
@@ -534,6 +548,7 @@ int main(int argc, char **argv) {
   } else if (n_initBathymetry > 1){
     for(int k=0; k<n_initBathymetry; k++) {
       char dat_name[255];
+      // Store iniBathymetry data with sequential numbering instead of iteration step numbering
       sprintf(dat_name,"initBathymetry%d",k);
       op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
     }
