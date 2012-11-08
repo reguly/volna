@@ -12,25 +12,26 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   leftCellValues[1] = cellLeft[1];
   leftCellValues[2] = cellLeft[2];
   leftCellValues[3] = cellLeft[3];
-
+//  printf("%g %g %g %g\n", leftCellValues[0], leftCellValues[1], leftCellValues[2], leftCellValues[3]);
   if (!*isRightBoundary) {
     rightCellValues[0] = cellRight[0];
     rightCellValues[1] = cellRight[1];
     rightCellValues[2] = cellRight[2];
     rightCellValues[3] = cellRight[3];
+//    printf("%g %g %g %g\n", rightCellValues[0], rightCellValues[1], rightCellValues[2], rightCellValues[3]);
   } else {
     rightCellValues[3] = cellLeft[3];
     float nx = edgeNormals[0];
     float ny = edgeNormals[1];
     float inNormalVelocity = cellLeft[1] * nx + cellLeft[2] * ny;
-    float inTangentVelocity = -1.0 *  cellLeft[1] * ny + cellLeft[2] * nx;
+    float inTangentVelocity = -1.0f *  cellLeft[1] * ny + cellLeft[2] * nx;
 
-    float outNormalVelocity = 0.0;
-    float outTangentVelocity = 0.0;
+    float outNormalVelocity = 0.0f;
+    float outTangentVelocity = 0.0f;
 
     //WALL
     rightCellValues[0] = cellLeft[0];
-    outNormalVelocity = -1.0 * inNormalVelocity;
+    outNormalVelocity = -1.0f * inNormalVelocity;
     outTangentVelocity = inTangentVelocity;
 
 
@@ -61,42 +62,43 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
 
     rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
     rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+//    printf("%g %g %g %g\n", rightCellValues[0], rightCellValues[1], rightCellValues[2], rightCellValues[3]);
   }
 
   InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   //SpaceDiscretization_1
-  bathySource[0] = .5 * g * (leftCellValues[0]*leftCellValues[0]);
-  bathySource[1] = .5 * g * (rightCellValues[0]*rightCellValues[0]);
+  bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
+  bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
   leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  leftCellValues[0] = leftCellValues[0] > 0.0 ? leftCellValues[0] : 0.0;
+  leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  rightCellValues[0] = rightCellValues[0] > 0.0 ? rightCellValues[0] : 0.0;
+  rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
   //NumericalFluxes_1
-  bathySource[0] -= .5 * g * (leftCellValues[0]*leftCellValues[0]);
-  bathySource[1] -= .5 * g * (rightCellValues[0]*rightCellValues[0]);
+  bathySource[0] -= .5f * g * (leftCellValues[0]*leftCellValues[0]);
+  bathySource[1] -= .5f * g * (rightCellValues[0]*rightCellValues[0]);
   bathySource[0] *= *edgeLength;
   bathySource[1] *= *edgeLength;
   float cL = sqrt(g * leftCellValues[0]);
-  cL = cL > 0.0 ? cL : 0.0;
+  cL = cL > 0.0f ? cL : 0.0f;
   float cR = sqrt(g * rightCellValues[0]);
-  cR = cR > 0.0 ? cR : 0.0;
+  cR = cR > 0.0f ? cR : 0.0f;
 
   float uLn = leftCellValues[1] * edgeNormals[0] + leftCellValues[2] * edgeNormals[1];
   float uRn = rightCellValues[1] * edgeNormals[0] + rightCellValues[2] * edgeNormals[1];
 
-  float unStar = 0.5 * (uLn + uRn) - 0.25* (cL+cR);
-  float cStar = 0.5 * (cL + cR) - 0.25* (uLn-uRn);
+  float unStar = 0.5f * (uLn + uRn) - 0.25f* (cL+cR);
+  float cStar = 0.5f * (cL + cR) - 0.25f* (uLn-uRn);
 
   float sL = (uLn - cL) < (unStar - cStar) ? (uLn - cL) : (unStar - cStar);
-  float sLMinus = sL < 0.0 ? sL : 0.0;
+  float sLMinus = sL < 0.0f ? sL : 0.0f;
 
   float sR = (uRn + cR) > (unStar + cStar) ? (uRn + cR) : (unStar + cStar);
-  float sRPlus = sR > 0.0 ? sR : 0.0;
+  float sRPlus = sR > 0.0f ? sR : 0.0f;
 
-  sL = leftCellValues[0] < EPS ? uRn - 2.0*cR : sL; // is this 2.0 or 2? (i.e. float/int)
+  sL = leftCellValues[0] < EPS ? uRn - 2.0f*cR : sL; // is this 2.0 or 2? (i.e. float/int)
   sR = leftCellValues[0] < EPS ? uRn + cR : sR;
 
-  sR = rightCellValues[0] < EPS ? uLn + 2.0*cL : sR; // is this 2.0 or 2? (i.e. float/int)
+  sR = rightCellValues[0] < EPS ? uLn + 2.0f*cL : sR; // is this 2.0 or 2? (i.e. float/int)
   sL = rightCellValues[0] < EPS ? uLn - cL : sL;
 
   float sRMinussL = sRPlus - sLMinus;
@@ -119,8 +121,8 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   LeftFluxes_U = HuDotN * leftCellValues[1];
   LeftFluxes_V = HuDotN * leftCellValues[2];
 
-  LeftFluxes_U += (.5 * g * edgeNormals[0] ) * ( leftCellValues[0] * leftCellValues[0] );
-  LeftFluxes_V += (.5 * g * edgeNormals[1] ) * ( leftCellValues[0] * leftCellValues[0] );
+  LeftFluxes_U += (.5f * g * edgeNormals[0] ) * ( leftCellValues[0] * leftCellValues[0] );
+  LeftFluxes_V += (.5f * g * edgeNormals[1] ) * ( leftCellValues[0] * leftCellValues[0] );
   //end of inlined
 
   float RightFluxes_H, RightFluxes_U, RightFluxes_V;
@@ -132,8 +134,8 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   RightFluxes_U =   HuDotN * rightCellValues[1];
   RightFluxes_V =   HuDotN * rightCellValues[2];
 
-  RightFluxes_U += (.5 * g * edgeNormals[0] ) * ( rightCellValues[0] * rightCellValues[0] );
-  RightFluxes_V += (.5 * g * edgeNormals[1] ) * ( rightCellValues[0] * rightCellValues[0] );
+  RightFluxes_U += (.5f * g * edgeNormals[0] ) * ( rightCellValues[0] * rightCellValues[0] );
+  RightFluxes_V += (.5f * g * edgeNormals[1] ) * ( rightCellValues[0] * rightCellValues[0] );
   //end of inlined
 
 

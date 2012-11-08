@@ -25,6 +25,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(bathySource, -1, OP_ID, 2, "float", OP_WRITE),
                   op_arg_dat(edgeFluxes, -1, OP_ID, 3, "float", OP_WRITE),
                   op_arg_dat(maxEdgeEigenvalues, -1, OP_ID, 1, "float", OP_WRITE));
+
     }
 #ifdef DEBUG
     printf("maxFacetEigenvalues %g edgeLen %g cellVol %g\n", normcomp(maxEdgeEigenvalues, 0), normcomp(edgeLength, 0), normcomp(cellVolumes, 0));
@@ -35,6 +36,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
                 op_arg_gbl(minTimestep,1,"float", OP_MIN));
+
     //end NumericalFluxes
     op_par_loop(SpaceDiscretization, "SpaceDiscretization", edges,
                 op_arg_dat(data_out, 0, edgesToCells, 4, "float", OP_INC), //again, Zb is not needed
@@ -44,6 +46,5 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(edgeNormals, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(isBoundary, -1, OP_ID, 1, "int", OP_READ),
                 op_arg_dat(cellVolumes, -2, edgesToCells, 1, "float", OP_READ));
-
   } //end SpaceDiscretization
 }
