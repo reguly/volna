@@ -1,13 +1,15 @@
 inline void computeFluxes(float *cellLeft, float *cellRight,
                                 float *edgeLength, float *edgeNormals,
                                 int *isRightBoundary, //OP_READ
-                                float *bathySource, float *out, //OP_WRITE
-                                float *maxEdgeEigenvalues) //OP_WRITE
+                                float *left, float *right, //OP_WRITE
+                                float *maxEdgeEigenvalues, float **cellVolumes) //OP_WRITE
 {
   //begin EdgesValuesFromCellValues
   float leftCellValues[4];
   float rightCellValues[4];
   float InterfaceBathy;
+  float bathySource[2];
+  float edgeFluxes[3];
   leftCellValues[0] = cellLeft[0];
   leftCellValues[1] = cellLeft[1];
   leftCellValues[2] = cellLeft[2];
@@ -139,31 +141,41 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   //end of inlined
 
 
-  out[0] =
+  edgeFluxes[0] =
   ( t1 * LeftFluxes_H ) +
   ( t2 * RightFluxes_H ) +
   ( t3 * ( rightCellValues[0] - leftCellValues[0] ) );
 
-  out[1] =
+  edgeFluxes[1] =
   ( t1 * LeftFluxes_U ) +
   ( t2 * RightFluxes_U ) +
   ( t3 * ( (rightCellValues[0] * rightCellValues[1]) -
           (leftCellValues[0] * leftCellValues[1]) ) );
 
-  out[2] =
+  edgeFluxes[2] =
   ( t1 * LeftFluxes_V ) +
   ( t2 * RightFluxes_V ) +
   ( t3 * ( (rightCellValues[0] * rightCellValues[2]) -
           (leftCellValues[0] * leftCellValues[2]) ) );
 
-  out[0] *= *edgeLength;
-  out[1] *= *edgeLength;
-  out[2] *= *edgeLength;
-//  out[3] = 0.0;
+  edgeFluxes[0] *= *edgeLength;
+  edgeFluxes[1] *= *edgeLength;
+  edgeFluxes[2] *= *edgeLength;
+//  edgeFluxes[3] = 0.0;
 
   float maximum = fabs(uLn + cL);
   maximum = maximum > fabs(uLn - cL) ? maximum : fabs(uLn - cL);
   maximum = maximum > fabs(uRn + cR) ? maximum : fabs(uRn + cR);
   maximum = maximum > fabs(uRn - cR) ? maximum : fabs(uRn - cR);
   *maxEdgeEigenvalues = maximum;
+  
+  left[0] -= (edgeFluxes[0])/cellVolumes[0][0];
+  left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes[0][0];
+  left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes[0][0];
+  
+  if (!*isRightBoundary) {
+    right[0] += edgeFluxes[0]/cellVolumes[1][0];
+    right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes[1][0];
+    right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes[1][0];
+  }
 }
