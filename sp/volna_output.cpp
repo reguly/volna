@@ -63,7 +63,7 @@ inline int swapEndiannesInt(int d) {
  * Write simulation output to binary file
  */
 inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
-  op_printf("Writing binary output file: %s \n",filename);
+  op_printf("Writing OutputSimulation to binary file: %s \n",filename);
   FILE* fp;
   fp = fopen(filename, "w");
   if(fp == NULL) {
@@ -182,6 +182,7 @@ inline void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nn
  * Write simulation output to ASCII file
  */
 inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
+  op_printf("Writing OutputSimulation to ASCII file: %s \n",filename);
   FILE* fp;
   fp = fopen(filename, "w");
   if(fp == NULL) {
@@ -382,7 +383,6 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
 void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
-  op_printf("Write OutputSimulation to file: %s \n", filename);
   int nnode = nodeCoords->set->size;
   int ncell = cellsToNodes->from->size;
   const char* substituteIndexPattern = "%i";

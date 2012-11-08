@@ -120,14 +120,15 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
-        if(n_initBathymetry == 1) {
+        if(n_initBathymetry == 1 ) {
           InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
+//        } else if (n_initBathymetry > 1 && ((*timers)[i].iter <= (*timers)[i].iend || (*timers)[i].iter <= )) {
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], temp_initBathymetry!=NULL, firstTime);
         } else {
-					InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime);
-				}
+					     InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime);
+				    }
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
         InitBore(cells, cellCenters, values, bore_params);
       } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {
