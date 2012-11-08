@@ -255,7 +255,6 @@ inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nno
     if(values_data[i*N_STATEVAR] < 1e-3)
       fprintf(fp, "%g\n", 100.0);
     else
-      tmp = values_data[i*N_STATEVAR] + values_data[i*N_STATEVAR+3];
       fprintf(fp, "%g\n", values_data[i*N_STATEVAR] + values_data[i*N_STATEVAR+3]);
   }
   fprintf(fp, "\n");
