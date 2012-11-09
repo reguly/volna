@@ -15,6 +15,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
       //FacetsValuesFromCellValues
       //spaceDiscretisation_1
       //NumericalFluxes_1
+      //SpaceDiscretization
       op_par_loop(computeFluxes, "computeFluxes", edges,
                   op_arg_dat(data_in, 0, edgesToCells, 4, "float", OP_READ),
                   op_arg_dat(data_in, 1, edgesToCells, 4, "float", OP_READ),

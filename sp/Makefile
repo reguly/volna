@@ -85,12 +85,12 @@ volna_cuda:	volna_op.cpp volna_kernels_cu.o volna_simulation_op.cpp volna_init_o
 volna_kernels_cu.o:	volna_kernels.cu \
 	EvolveValuesRK2_1.h EvolveValuesRK2_2.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h NumericalFluxes.h simulation_1.h SpaceDiscretization.h \
+	initU_formula.h initV_formula.h NumericalFluxes.h simulation_1.h \
 	values_operation2.h applyConst_kernel.cu EvolveValuesRK2_1_kernel.cu \
 	EvolveValuesRK2_2_kernel.cu applyConst_kernel.cu getMaxElevation_kernel.cu getTotalVol_kernel.cu \
 	initBathymetry_formula_kernel.cu initBathymetry_update_kernel.cu initBore_select_kernel.cu initEta_formula_kernel.cu \
 	initGaussianLandslide_kernel.cu initU_formula_kernel.cu initV_formula_kernel.cu NumericalFluxes_kernel.cu \
-	simulation_1_kernel.cu SpaceDiscretization_kernel.cu \
+	simulation_1_kernel.cu \
 	values_operation2_kernel.cu Makefile
 
 	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o volna_kernels_cu.o volna_kernels.cu
