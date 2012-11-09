@@ -73,7 +73,7 @@ float normcomp(op_dat dat, int off);
 void dumpme(op_dat dat, int off);
 
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
-    op_dat maxEdgeEigenvalues,
+    op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
     op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
     op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges, int most);
 

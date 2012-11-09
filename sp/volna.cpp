@@ -224,6 +224,9 @@ int main(int argc, char **argv) {
   op_dat inConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "inConservative"); //temp - cells - dim 4
   op_dat outConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "outConservative"); //temp - cells - dim 4
   op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
+  //SpaceDiscretization
+  op_dat bathySource = op_decl_dat_temp(edges, 2, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
+  op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
 
@@ -243,7 +246,7 @@ int main(int argc, char **argv) {
     { //begin EvolveValuesRK2
       float minTimestep = 0.0;
       spaceDiscretization(values, midPointConservative, &minTimestep,
-          maxEdgeEigenvalues,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, 0);
 #ifdef DEBUG
@@ -262,7 +265,7 @@ int main(int argc, char **argv) {
 
       //call to SpaceDiscretization( midPoint, outConservative, m, params, dummy_time, t );
       spaceDiscretization(midPoint, outConservative, &dummy,
-          maxEdgeEigenvalues,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, 1);
 
@@ -270,7 +273,7 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(outConservative, -1, OP_ID, 4, "float", OP_RW),
           op_arg_dat(inConservative, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_RW),
+          op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
 
       timestep = dT;
@@ -329,6 +332,11 @@ int main(int argc, char **argv) {
           op_printf("Error: temporary op_dat %s cannot be removed\n",outConservative->name);
   if (op_free_dat_temp(midPoint) < 0)
           op_printf("Error: temporary op_dat %s cannot be removed\n",midPoint->name);
+  //SpaceDiscretization
+  if (op_free_dat_temp(bathySource) < 0)
+          op_printf("Error: temporary op_dat %s cannot be removed\n",bathySource->name);
+  if (op_free_dat_temp(edgeFluxes) < 0)
+          op_printf("Error: temporary op_dat %s cannot be removed\n",edgeFluxes->name);
   //NumericalFluxes
   if (op_free_dat_temp(maxEdgeEigenvalues) < 0)
           op_printf("Error: temporary op_dat %s cannot be removed\n",maxEdgeEigenvalues->name);

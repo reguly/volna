@@ -35,7 +35,7 @@ endif
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-	CPPFLAGS = -g -O2 -msse3 -fPIC -DUNIX -Wall
+	CPPFLAGS = -g -O0 -msse3 -fPIC -DUNIX -Wall
 	#CPPFLAGS = -g -fPIC -DUNIX -Wall -O0 -arch x86_64 #-DDEBUG
 	OMPFLAGS = -fopenmp
 	MPICPP = mpic++
