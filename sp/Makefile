@@ -35,7 +35,7 @@ endif
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-	CPPFLAGS = -g -O0 -msse3 -fPIC -DUNIX -Wall
+	CPPFLAGS = -g -O3 -msse3 -fPIC -DUNIX -Wall
 	#CPPFLAGS = -g -fPIC -DUNIX -Wall -O0 -arch x86_64 #-DDEBUG
 	OMPFLAGS = -fopenmp
 	MPICPP = mpic++
@@ -43,7 +43,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
+	CPPFLAGS = -g -O3 -vec-report -xSSE4.2 -parallel
 	#CPPFLAGS = -g -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -openmp -openmp-report2
 	MPICPP = mpiCC
