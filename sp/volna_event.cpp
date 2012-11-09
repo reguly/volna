@@ -120,15 +120,24 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
+        // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
+        if(n_initBathymetry == 0) {
+          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime);
+        }
+        // If initBathymetry is given by 1 file, run InitBathymetry for that particular file
         if(n_initBathymetry == 1 ) {
-          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
+          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime);
+//          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, temp_initBathymetry!=NULL, firstTime);
 //        } else if (n_initBathymetry > 1 && ((*timers)[i].iter <= (*timers)[i].iend || (*timers)[i].iter <= )) {
+        // Else if initBathymetry is given by multiple files, run InitBathymetry for those files
         } else if (n_initBathymetry > 1) {
+//          (*timers)[i].t
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
-          InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], temp_initBathymetry!=NULL, firstTime);
-        } else {
-					     InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime);
-				    }
+          // Handle the case when InitBathymetry files are out for further bathymetry initalization: remove the event
+          if(strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 && k<n_initBathymetry) {
+            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime);
+          }
+        }
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
         InitBore(cells, cellCenters, values, bore_params);
       } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {
