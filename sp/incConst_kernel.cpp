@@ -4,15 +4,15 @@
 
 // user function
 
-#include "initV_formula.h"
+#include "incConst.h"
 
 
 // x86 kernel function
 
-void op_x86_initV_formula(
+void op_x86_incConst(
   float *arg0,
   float *arg1,
-  const float *arg2,
+  const int *arg2,
   int   start,
   int   finish ) {
 
@@ -24,16 +24,16 @@ void op_x86_initV_formula(
     // user-supplied kernel call
 
 
-    initV_formula(  arg0+n*2,
-                    arg1+n*4,
-                    arg2 );
+    incConst(  arg0+n*1,
+               arg1+n*4,
+               arg2 );
   }
 }
 
 
 // host stub function
 
-void op_par_loop_initV_formula(char const *name, op_set set,
+void op_par_loop_incConst(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2 ){
@@ -47,7 +47,7 @@ void op_par_loop_initV_formula(char const *name, op_set set,
   args[2] = arg2;
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  initV_formula\n");
+    printf(" kernel routine w/o indirection:  incConst\n");
   }
 
   op_mpi_halo_exchanges(set, nargs, args);
@@ -55,9 +55,9 @@ void op_par_loop_initV_formula(char const *name, op_set set,
   // initialise timers
 
   double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
-  op_timing_realloc(6);
-  OP_kernels[6].name      = name;
-  OP_kernels[6].count    += 1;
+  op_timing_realloc(3);
+  OP_kernels[3].name      = name;
+  OP_kernels[3].count    += 1;
 
   // set number of threads
 
@@ -77,10 +77,10 @@ void op_par_loop_initV_formula(char const *name, op_set set,
   for (int thr=0; thr<nthreads; thr++) {
     int start  = (set->size* thr   )/nthreads;
     int finish = (set->size*(thr+1))/nthreads;
-    op_x86_initV_formula( (float *) arg0.data,
-                          (float *) arg1.data,
-                          (float *) arg2.data,
-                          start, finish );
+    op_x86_incConst( (float *) arg0.data,
+                     (float *) arg1.data,
+                     (int *) arg2.data,
+                     start, finish );
   }
 
   }
@@ -93,8 +93,8 @@ void op_par_loop_initV_formula(char const *name, op_set set,
   // update kernel record
 
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[6].time     += wall_t2 - wall_t1;
-  OP_kernels[6].transfer += (float)set->size * arg0.size;
-  OP_kernels[6].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[3].time     += wall_t2 - wall_t1;
+  OP_kernels[3].transfer += (float)set->size * arg0.size;
+  OP_kernels[3].transfer += (float)set->size * arg1.size * 2.0f;
 }
 

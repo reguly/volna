@@ -1,5 +1,6 @@
 #include "volna_common.h"
 #include "applyConst.h"
+#include "incConst.h"
 #include "initBathymetry_formula.h"
 #include "initBathymetry_update.h"
 #include "initBore_select.h"
@@ -19,7 +20,7 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
     //overwrite values.H with values stored in initValues
     int variable = 1; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
     //TODO: we are only overwriting H, moving the whole thing
-    op_par_loop(applyConst, "applyConst", cells,
+    op_par_loop(incConst, "incConst", cells,
                 op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
                 op_arg_gbl(&variable, 1, "int", OP_READ));

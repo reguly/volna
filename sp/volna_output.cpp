@@ -270,6 +270,7 @@ void OutputTime(TimerParams *timer) {
 }
 
 void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values) {
+  op_fetch_data(values);
   float totalVol = 0.0;
   op_par_loop(getTotalVol, "getTotalVol", cells,
       op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
@@ -282,6 +283,7 @@ void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values) 
 void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells) {
 // Warning: The function only finds the maximum of every
 // "timer.istep"-th step. Therefore intermediate maximums might be neglected.
+  op_fetch_data(values);
 
   // first time the event is executed
   float *temp = NULL;
@@ -299,6 +301,7 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
   strcpy(filename, event->streamName.c_str());
   op_printf("Write OutputMaxElevation to file: %s \n", filename);
 
+  int nnode = cellsToNodes->to->size;
   int ncell = cellsToNodes->from->size;
   const char* substituteIndexPattern = "%i";
   char* pos;
@@ -316,6 +319,34 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
 
   // Write Mesh points and cells to VTK file
 //  WriteMeshToVTKAscii(fp, nodeCoords, nnode, cellsToNodes, ncell, values);
+  // write header
+  fprintf(fp,"# vtk DataFile Version 2.0\n Output from OP2 Volna.\n");
+  fprintf(fp,"ASCII \nDATASET UNSTRUCTURED_GRID\n\n");
+  // write vertices
+  fprintf(fp,"POINTS %d float\n", nnode);
+  float* nodeCoords_data;
+  nodeCoords_data = (float*)nodeCoords->data;
+  int i = 0;
+  for (i = 0; i < nnode; ++i) {
+    fprintf(fp, "%g %g %g \n",
+        (float)nodeCoords_data[i*MESH_DIM  ],
+        (float)nodeCoords_data[i*MESH_DIM+1],
+        0.0);
+  }
+  fprintf(fp, "\n");
+  fprintf(fp, "CELLS %d %d\n", ncell, 4*ncell);
+  for ( i = 0; i < ncell; ++i ) {
+    fprintf(fp, "3 %d %d %d \n",
+        cellsToNodes->map[i*N_NODESPERCELL  ],
+        cellsToNodes->map[i*N_NODESPERCELL+1],
+        cellsToNodes->map[i*N_NODESPERCELL+2]);
+  }
+  fprintf(fp, "\n");
+  // write cell types (5 for triangles)
+  fprintf(fp, "CELL_TYPES %d\n", ncell);
+  for ( i=0; i<ncell; ++i )
+    fprintf(fp, "5 \n");
+  fprintf(fp, "\n");
 
   float *data;
   data = (float*) currentMaxElevation->data;
@@ -325,7 +356,6 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
       "LOOKUP_TABLE default\n",
       ncell);
 
-  int i=0;
   for ( i=0; i<ncell; ++i )
     fprintf(fp, "%g\n", data[i]);
   fprintf(fp, "\n");
@@ -340,6 +370,8 @@ void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoord
  * Write H + Zb on the given location (x,y) to ASCII file
  */
 void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_map outputLocation_map, op_dat outputLocation_dat) {
+  op_fetch_data(values);
+
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   //op_printf("Write OutputLocation to file: %s \n", filename);
@@ -380,6 +412,8 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
  * Write output simulation either to binary or ASCII file
  */
 void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
+  op_fetch_data(values);
+
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   int nnode = nodeCoords->set->size;

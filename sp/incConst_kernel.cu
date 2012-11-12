@@ -5,18 +5,18 @@
 // user function
 
 __device__
-#include "simulation_1.h"
+#include "incConst.h"
 
 
 // CUDA kernel function
 
-__global__ void op_cuda_simulation_1(
+__global__ void op_cuda_incConst(
   float *arg0,
   float *arg1,
+  const int *arg2,
   int   offset_s,
   int   set_size ) {
 
-  float arg0_l[4];
   float arg1_l[4];
   int   tid = threadIdx.x%OP_WARPSIZE;
 
@@ -44,16 +44,17 @@ __global__ void op_cuda_simulation_1(
     // user-supplied kernel call
 
 
-    simulation_1(  arg0_l,
-                   arg1_l );
+    incConst(  arg0+n,
+               arg1_l,
+               arg2 );
 
     // copy back into shared memory, then to device
 
     for (int m=0; m<4; m++)
-      ((float *)arg_s)[m+tid*4] = arg0_l[m];
+      ((float *)arg_s)[m+tid*4] = arg1_l[m];
 
     for (int m=0; m<4; m++)
-      arg0[tid+m*nelems+offset*4] = ((float *)arg_s)[tid+m*nelems];
+      arg1[tid+m*nelems+offset*4] = ((float *)arg_s)[tid+m*nelems];
 
   }
 }
@@ -61,19 +62,22 @@ __global__ void op_cuda_simulation_1(
 
 // host stub function
 
-void op_par_loop_simulation_1(char const *name, op_set set,
+void op_par_loop_incConst(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1 ){
+  op_arg arg1,
+  op_arg arg2 ){
 
+  int *arg2h = (int *)arg2.data;
 
-  int    nargs   = 2;
-  op_arg args[2];
+  int    nargs   = 3;
+  op_arg args[3];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  simulation_1\n");
+    printf(" kernel routine w/o indirection:  incConst\n");
   }
 
   op_mpi_halo_exchanges(set, nargs, args);
@@ -81,18 +85,33 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   // initialise timers
 
   double cpu_t1, cpu_t2, wall_t1=0, wall_t2=0;
-  op_timing_realloc(2);
-  OP_kernels[2].name      = name;
-  OP_kernels[2].count    += 1;
+  op_timing_realloc(3);
+  OP_kernels[3].name      = name;
+  OP_kernels[3].count    += 1;
 
   if (set->size >0) {
 
     op_timers_core(&cpu_t1, &wall_t1);
 
+    // transfer constants to GPU
+
+    int consts_bytes = 0;
+    consts_bytes += ROUND_UP(1*sizeof(int));
+
+    reallocConstArrays(consts_bytes);
+
+    consts_bytes = 0;
+    arg2.data   = OP_consts_h + consts_bytes;
+    arg2.data_d = OP_consts_d + consts_bytes;
+    for (int d=0; d<1; d++) ((int *)arg2.data)[d] = arg2h[d];
+    consts_bytes += ROUND_UP(1*sizeof(int));
+
+    mvConstArraysToDevice(consts_bytes);
+
     // set CUDA execution parameters
 
-    #ifdef OP_BLOCK_SIZE_2
-      int nthread = OP_BLOCK_SIZE_2;
+    #ifdef OP_BLOCK_SIZE_3
+      int nthread = OP_BLOCK_SIZE_3;
     #else
       // int nthread = OP_block_size;
       int nthread = 128;
@@ -104,7 +123,6 @@ void op_par_loop_simulation_1(char const *name, op_set set,
 
     int nshared = 0;
     nshared = MAX(nshared,sizeof(float)*4);
-    nshared = MAX(nshared,sizeof(float)*4);
 
     // execute plan
 
@@ -112,13 +130,14 @@ void op_par_loop_simulation_1(char const *name, op_set set,
 
     nshared = nshared*nthread;
 
-    op_cuda_simulation_1<<<nblocks,nthread,nshared>>>( (float *) arg0.data_d,
-                                                       (float *) arg1.data_d,
-                                                       offset_s,
-                                                       set->size );
+    op_cuda_incConst<<<nblocks,nthread,nshared>>>( (float *) arg0.data_d,
+                                                   (float *) arg1.data_d,
+                                                   (int *) arg2.data_d,
+                                                   offset_s,
+                                                   set->size );
 
     cutilSafeCall(cudaThreadSynchronize());
-    cutilCheckMsg("op_cuda_simulation_1 execution failed\n");
+    cutilCheckMsg("op_cuda_incConst execution failed\n");
 
   }
 
@@ -128,8 +147,8 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   // update kernel record
 
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[2].time     += wall_t2 - wall_t1;
-  OP_kernels[2].transfer += (float)set->size * arg0.size;
-  OP_kernels[2].transfer += (float)set->size * arg1.size;
+  OP_kernels[3].time     += wall_t2 - wall_t1;
+  OP_kernels[3].transfer += (float)set->size * arg0.size;
+  OP_kernels[3].transfer += (float)set->size * arg1.size * 2.0f;
 }
 
