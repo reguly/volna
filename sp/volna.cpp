@@ -16,12 +16,20 @@ float CFL, g, EPS;
 // Store maximum elevation in global variable, for the sake of max search
 op_dat currentMaxElevation;
 
+void __check_hdf5_error(herr_t err, const char *file, const int line){
+  if (err < 0) {
+    printf("%s(%i) : OP2_HDF5_error() Runtime API error %d.\n", file,
+        line, (int) err);
+    exit(-1);
+  }
+}
+
 int main(int argc, char **argv) {
   if (argc < 2) {
     printf("Wrong parameters! Please specify the OP2 HDF5 data file "
-        "name, that was created by volna2hdf5 tool "
-        "script filename with the *.vln extension, "
-        "e.g. ./volna filename.h5 \n");
+        "name, that was created with volna2hdf5 tool, e.g. volna2hdf5 script_filename.vln "
+        "Use Volna configuration script filename with the *.h5 extension, "
+        "e.g. ./volna script_filename.h5 \n");
     exit(-1);
   }
 

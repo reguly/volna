@@ -69,8 +69,8 @@ all: clean volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cu
 volna: volna.cpp Makefile
 	$(MPICPP) $(CPPFLAGS) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simulation.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_seq -lop2_hdf5 -o volna
 
-volna_openmp: volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulation_op.cpp Makefile
-	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulation_op.cpp volna_event.cpp volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
+volna_openmp: volna_op.cpp volna_init_op.cpp volna_event_op.cpp volna_output_op.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulation_op.cpp volna_event_op.cpp volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
 
 
 #
@@ -78,7 +78,7 @@ volna_openmp: volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulatio
 #
 
 volna_cuda:	volna_op.cpp volna_kernels_cu.o volna_simulation_op.cpp volna_init_op.cpp volna_output_op.cpp Makefile
-	$(MPICPP) $(VAR) $(CPPFLAGS) volna_op.cpp volna_simulation_op.cpp volna_event.cpp volna_init_op.cpp volna_output_op.cpp volna_kernels_cu.o \
+	$(MPICPP) $(VAR) $(CPPFLAGS) volna_op.cpp volna_simulation_op.cpp volna_event_op.cpp volna_init_op.cpp volna_output_op.cpp volna_kernels_cu.o \
 	$(CUDA_INC) $(OP2_INC) $(HDF5_INC) \
 	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o volna_cuda
 
@@ -99,14 +99,14 @@ volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simul
 	$(MPICPP) $(MPIFLAGS) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simulation.cpp $(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
 	$(OP2_LIB) -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi
 
-volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulation_op.cpp Makefile
+volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_event_op.cpp volna_output_op.cpp volna_simulation_op.cpp Makefile
 	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
 	$(PARMETIS_INC) $(PTSCOTCH_INC) \
-	volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_simulation_op.cpp -lm volna_kernels.cpp $(OP2_LIB) -lop2_mpi \
+	volna_op.cpp volna_init_op.cpp volna_event_op.cpp volna_output_op.cpp volna_simulation_op.cpp -lm volna_kernels.cpp $(OP2_LIB) -lop2_mpi \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_openmp
 
-volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_output_op.cpp volna_kernels_mpi_cu.o Makefile
-	$(MPICPP) $(MPIFLAGS) volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_output_op.cpp -lm volna_kernels_mpi_cu.o \
+volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event_op.cpp volna_output_op.cpp volna_kernels_mpi_cu.o Makefile
+	$(MPICPP) $(MPIFLAGS) volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event_op.cpp volna_output_op.cpp -lm volna_kernels_mpi_cu.o \
 	$(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
 	$(OP2_LIB) -lop2_mpi_cuda $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
 	$(HDF5_LIB) $(CUDA_LIB) -lcudart -o volna_mpi_cuda
