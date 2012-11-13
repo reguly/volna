@@ -15,7 +15,7 @@
 *_cuda
 *.txt
 *.dat
-*DS_*
+*DS_Store
 *.dSYM
 *.m~
 *_mpi
