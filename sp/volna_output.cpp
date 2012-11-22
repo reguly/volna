@@ -207,7 +207,7 @@ inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nno
   fprintf(fp, "\n");
   fprintf(fp, "CELLS %d %d\n", ncell, 4*ncell);
   for ( i = 0; i < ncell; ++i ) {
-    fprintf(fp, "3 %d %d %d \n",
+    fprintf(fp, "3 %d %d %d\n",
         cellsToNodes->map[i*N_NODESPERCELL  ],
         cellsToNodes->map[i*N_NODESPERCELL+1],
         cellsToNodes->map[i*N_NODESPERCELL+2]);
@@ -216,7 +216,7 @@ inline void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nno
   // write cell types (5 for triangles)
   fprintf(fp, "CELL_TYPES %d\n", ncell);
   for ( i=0; i<ncell; ++i )
-    fprintf(fp, "5 \n");
+    fprintf(fp, "5\n");
   fprintf(fp, "\n");
 
   float* values_data;
