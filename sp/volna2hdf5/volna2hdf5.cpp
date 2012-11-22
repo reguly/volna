@@ -7,6 +7,7 @@
 #include<string>
 #include<map>
 #include<limits.h>
+#include<algorithm>
 
 #include<hdf5.h>
 #include<hdf5_hl.h>
@@ -103,6 +104,7 @@ void triangleIndex(float *val, const float* x, const float* y, float* nodeCoords
     *val = values[0] + values[3]; // H + Zb
 }
 
+bool isLess(int i,int j) { return (i<j); }
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -309,7 +311,7 @@ int main(int argc, char **argv) {
 //  initBathymetry = (float*) malloc(ncell * sizeof(float));
   initBathymetry = (float**) malloc(sizeof(float*));
   initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
-  x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
+//  x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
   w = (float*) malloc(N_STATEVAR * ncell * sizeof(float));
   float *event_data;
   event_data = (float*) malloc(ncell*sizeof(float));
@@ -321,13 +323,13 @@ int main(int argc, char **argv) {
   //
   int i = 0;
   // Import node coordinates
-  for (i = 0; i < sim.mesh.NPoints; i++) {
-    x[i * MESH_DIM] = sim.mesh.Nodes[i+1].x();
-    x[i * MESH_DIM + 1] = sim.mesh.Nodes[i+1].y();
-    //    std::cout << i << "  x,y,z = " << sim.mesh.Nodes[i].x() << " "
-    //        << sim.mesh.Nodes[i].y() << " " << sim.mesh.Nodes[i].z()
-    //        << endl;
-  }
+//  for (i = 0; i < sim.mesh.NPoints; i++) {
+//    x[i * MESH_DIM] = sim.mesh.Nodes[i+1].x();
+//    x[i * MESH_DIM + 1] = sim.mesh.Nodes[i+1].y();
+//    //    std::cout << i << "  x,y,z = " << sim.mesh.Nodes[i].x() << " "
+//    //        << sim.mesh.Nodes[i].y() << " " << sim.mesh.Nodes[i].z()
+//    //        << endl;
+//  }
 
   // Boost arrays for temporarly storing mesh data
   boost::array<int, N_NODESPERCELL> vertices;
@@ -479,6 +481,64 @@ int main(int argc, char **argv) {
     }
   }
 
+
+  int *tmp = (int*) calloc(nnode,sizeof(int));
+  for(int i=0; i<nnode; i++) {
+    for(int j=0; j<ncell; j++) {
+      for(int k=0; k<3; k++) {
+        if(i == cell[j*3+k]) tmp[i]++;
+      }
+    }
+  }
+  std::vector<int> nodesToRemove;
+  for(int i=0; i<nnode; i++) {
+    if(tmp[i]==0) {
+      nodesToRemove.push_back(i);
+      op_printf("Found node with 0 connections. \n");
+    }
+  }
+  op_printf("Removing the unconnected nodes from node list and renumbering cell-node maps.\n");
+
+  sort(nodesToRemove.begin(), nodesToRemove.end(), isLess);
+
+  int* cellDecrements = (int*) calloc(N_NODESPERCELL * ncell, sizeof(int));
+  for(int i=0; i<nodesToRemove.size(); i++) {
+    for(int j=0; j<ncell; j++) {
+      for(int k=0; k<3; k++) {
+        if(cell[j*3+k] > nodesToRemove[i]) cellDecrements[j*3+k]++;
+      }
+    }
+  }
+  for(int j=0; j<N_NODESPERCELL * ncell; j++) {
+    cell[j] -= cellDecrements[j];
+    op_printf("cell[%d] = %d\n",j,cell[j]);
+  }
+
+  op_printf("Updating list of node coordinates and the number of nodes.\n");
+  nnode -= nodesToRemove.size();
+
+  i = 0;
+  int storeInd = 0;
+  int matchWithRemove = 0;
+  x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
+  while(i < sim.mesh.NPoints) {
+    matchWithRemove = 0;
+    for(int j=0; j<nodesToRemove.size(); j++) {
+      if(nodesToRemove[j] == i) {
+        matchWithRemove = 1;
+        break;
+      }
+    }
+    if(matchWithRemove==0) {
+      x[storeInd * MESH_DIM] = sim.mesh.Nodes[i+1].x();
+      x[storeInd * MESH_DIM + 1] = sim.mesh.Nodes[i+1].y();
+      storeInd++;
+    }
+    i++;
+  }
+
+
+
   //
   // Define OP2 sets
   //
@@ -512,6 +572,7 @@ int main(int argc, char **argv) {
 		outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
 		outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
 	}
+
 
 
   //
