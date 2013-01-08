@@ -67,10 +67,10 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
 #endif
 }
 
-void OutputSimulation(op_set points, op_set cells, op_dat p_x, op_dat values) {
-
-
-}
+//void OutputSimulation(op_set points, op_set cells, op_dat p_x, op_dat values) {
+//
+//
+//}
 
 void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime) {
   if (firstTime) {

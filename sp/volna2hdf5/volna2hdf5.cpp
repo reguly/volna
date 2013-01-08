@@ -12,6 +12,18 @@
 #include<hdf5.h>
 #include<hdf5_hl.h>
 
+#include "../volna_util.h"
+//#include "volna2hdf5_util.h"
+
+
+//#include<../../volna_init/external/eigen2/Eigen/StdVector>
+//#include "../../volna_init/external/eigen2/Eigen/Array"
+//#include "../../volna_init/external/eigen2/Eigen/StdVector"
+//#include "../../volna_init/external/eigen2/Eigen/LU"
+//#include "../../volna_init/external/eigen2/Eigen/Core"
+//
+//#include<../../volna_init/external/boost/graph/adjacency_list.hpp>
+
 //
 // Sequential OP2 function declarations
 //
@@ -107,10 +119,10 @@ void triangleIndex(float *val, const float* x, const float* y, float* nodeCoords
 bool isLess(int i,int j) { return (i<j); }
 
 int main(int argc, char **argv) {
-  if (argc != 2) {
+  if (argc < 2) {
     printf("Wrong parameters! Please specify the VOLNA configuration "
-        "script filename with the *.vln extension, "
-        "e.g. ./volna2hdf5 bump.vln \n");
+        "script filename with the *.vln extension and reorder if needed, "
+        "e.g. ./volna2hdf5 bump.vln GPSreorder\n");
     exit(-1);
   }
 
@@ -209,7 +221,7 @@ int main(int argc, char **argv) {
       }
       FILE* fp;
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
-          fp = fopen("../initBathymetry_formula.h", "w");
+        fp = fopen("../initBathymetry_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fp = fopen("../initU_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -250,8 +262,8 @@ int main(int argc, char **argv) {
     } else {
       event_formula[i] = "";
     }
-        //event_formula[i] = e_p.formula;
-		if (strcmp(e_p.className.c_str(), "OutputLocation") == 0) num_outputLocation++;
+    //event_formula[i] = e_p.formula;
+    if (strcmp(e_p.className.c_str(), "OutputLocation") == 0) num_outputLocation++;
   }
   // Initialize simulation: load mesh, calculate geometry data
   sim.init();
@@ -275,7 +287,7 @@ int main(int argc, char **argv) {
   float *enorm = NULL; // Edge normal vectors. Pointing from left cell to the right???
   float *ecent = NULL; // Edge center vectors
   float *eleng = NULL; // Edge length
-  int   *isBoundary = NULL;
+  int   *isbound = NULL;
   float *initEta = NULL;
   float **initBathymetry = NULL;
   float *x = NULL; // Node coordinates in 2D
@@ -306,7 +318,7 @@ int main(int argc, char **argv) {
   enorm = (float*) malloc(MESH_DIM * nedge * sizeof(float));
   ecent = (float*) malloc(MESH_DIM * nedge * sizeof(float));
   eleng = (float*) malloc(nedge * sizeof(float));
-  isBoundary = (int*) malloc(nedge * sizeof(int));
+  isbound = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
 //  initBathymetry = (float*) malloc(ncell * sizeof(float));
   initBathymetry = (float**) malloc(sizeof(float*));
@@ -404,10 +416,10 @@ int main(int argc, char **argv) {
      */
     if(rightCellId == -1) {
       ecell[i * N_CELLSPEREDGE + 1] = leftCellId;
-      isBoundary[i] = 1;
+      isbound[i] = 1;
     } else {
       ecell[i * N_CELLSPEREDGE + 1] = rightCellId;
-      isBoundary[i] = 0;
+      isbound[i] = 0;
     }
 
 
@@ -519,6 +531,8 @@ int main(int argc, char **argv) {
   x = newx;
   nnode = newnnode;
 
+
+
   //
   // Define OP2 sets
   //
@@ -558,42 +572,86 @@ int main(int argc, char **argv) {
   //
   // Define OP2 set maps
   //
-  op_decl_map(cells, nodes, N_NODESPERCELL, cell,
+  op_map cellsToNodes = op_decl_map(cells, nodes, N_NODESPERCELL, cell,
                       "cellsToNodes");
-  op_decl_map(edges, cells, N_CELLSPEREDGE, ecell,
+  op_map edgesToCells = op_decl_map(edges, cells, N_CELLSPEREDGE, ecell,
               "edgesToCells");
-  op_decl_map(cells, cells, N_NODESPERCELL, ccell,
+  op_map cellsToCells = op_decl_map(cells, cells, N_NODESPERCELL, ccell,
               "cellsToCells");
-  op_decl_map(cells, edges, N_NODESPERCELL, cedge,
+  op_map cellsToEdges = op_decl_map(cells, edges, N_NODESPERCELL, cedge,
               "cellsToEdges");
   
+
+
+
+
   //
   // Define OP2 datasets
   //
-  op_decl_dat(cells, MESH_DIM, "float", ccent,
+  op_dat cellCenters = op_decl_dat(cells, MESH_DIM, "float", ccent,
               "cellCenters");
-  op_decl_dat(cells, 1, "float", carea, "cellVolumes");
-  op_decl_dat(edges, MESH_DIM, "float", enorm,
+  op_dat cellVolumes = op_decl_dat(cells, 1, "float", carea, "cellVolumes");
+  op_dat edgeNormals = op_decl_dat(edges, MESH_DIM, "float", enorm,
               "edgeNormals");
   op_decl_dat(edges, MESH_DIM, "float", ecent,
               "edgeCenters");
-  op_decl_dat(edges, 1, "float", eleng, "edgeLength");
+  op_dat edgeLength = op_decl_dat(edges, 1, "float", eleng, "edgeLength");
   op_decl_dat(nodes, MESH_DIM, "float", x, "nodeCoords");
-  op_decl_dat(cells, N_STATEVAR, "float", w, "values");
-  op_decl_dat(edges, 1, "int", isBoundary, "isBoundary");
+  op_dat values = op_decl_dat(cells, N_STATEVAR, "float", w, "values");
+  op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
   if(n_initBathymetry == 0) {
-    op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+//    op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
   } else if(n_initBathymetry == 1) {
-    op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+//    op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
   } else if (n_initBathymetry > 1){
     for(int k=0; k<n_initBathymetry; k++) {
       char dat_name[255];
       // Store iniBathymetry data with sequential numbering instead of iteration step numbering
       sprintf(dat_name,"initBathymetry%d",k);
-      op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
+      op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
+//      op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
     }
   }
+
+
+
+
+  /*
+   * Reorder OP2 maps to increase data locality, ie. reduce adjacency
+   * matrix bandwidth
+   */
+  if(argc == 3) {
+    if(strcmp(argv[2], "GPSreorder") == 0) {
+      int *edges_perm = NULL;
+      int *edges_iperm = NULL;
+      op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+      op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
+      op_reorder_map(edgesToCells, edges_perm, edges_iperm, edges);
+
+      //  int *cells_perm = NULL;
+      //  int *cells_iperm = NULL;
+      //
+      //  op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
+      //  op_reorder_map(cellsToCells, cells_perm, cells_iperm, cells);
+      //  op_reorder_map(cellsToNodes, cells_perm, cells_iperm, cells);
+      //  op_reorder_map(cellsToEdges, cells_perm, cells_iperm, cells);
+      //  op_reorder_map(edgesToCells, cells_perm, cells_iperm, cells);
+
+      // Reorder dats
+      op_reorder_dat(edgeNormals, edges_perm, edges_iperm, edges);
+      op_reorder_dat(edgeLength, edges_perm, edges_iperm, edges);
+      op_reorder_dat(isBoundary, edges_perm, edges_iperm, edges);
+
+      //      op_reorder_dat(cellCenters, cells_perm, cells_iperm, cells);
+      //      op_reorder_dat(cellVolumes, cells_perm, cells_iperm, cells);
+      //      op_reorder_dat(values, cells_perm, cells_iperm, cells);
+    }
+  }
+
+
 
   //
   // Define HDF5 filename
@@ -738,7 +796,7 @@ int main(int argc, char **argv) {
 //  free(enorm); // Don't free enorm, it result in run-time error. WHY?
   free(ecent);
   free(eleng);
-  free(isBoundary);
+  free(isbound);
   free(initEta);
   free(initBathymetry);
   free(x);

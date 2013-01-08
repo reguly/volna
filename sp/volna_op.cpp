@@ -3,6 +3,7 @@
 //
 
 #include "volna_common.h"
+#include "volna_util.h"
 #include "EvolveValuesRK2_1.h"
 #include "EvolveValuesRK2_2.h"
 #include "simulation_1.h"
@@ -125,6 +126,34 @@ int main(int argc, char **argv) {
   op_map cellsToEdges = op_decl_map_hdf5(cells, edges, N_NODESPERCELL,
                                   filename_h5,
                                   "cellsToEdges");
+  op_map cellsToCells = op_decl_map_hdf5(cells, cells, N_NODESPERCELL,
+                                  filename_h5,
+                                  "cellsToCells");
+
+
+
+  /*
+   * Reorder OP2 maps to increase data locality, ie. reduce adjacency
+   * matrix bandwidth
+   */
+
+//  int *edges_perm = NULL;
+//  int *edges_iperm = NULL;
+//
+//  op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+//  op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
+//  op_reorder_map(edgesToCells, edges_perm, edges_iperm, edges);
+
+
+//  int *cells_perm = NULL;
+//  int *cells_iperm = NULL;
+//
+//  op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
+//  op_reorder_map(cellsToCells, cells_perm, cells_iperm, cells);
+//  op_reorder_map(cellsToNodes, cells_perm, cells_iperm, cells);
+//  op_reorder_map(cellsToEdges, cells_perm, cells_iperm, cells);
+//  op_reorder_map(edgesToCells, cells_perm, cells_iperm, cells);
+
 
   //When using OutputLocation events we have already computed the cell index of the points
   //so we don't have to locate the cell every time
@@ -208,7 +237,8 @@ int main(int argc, char **argv) {
             temp_initBathymetry[0] = op_decl_dat_hdf5(cells, 1, "float",
                           filename_h5,
                           "initBathymetry");
-          // If multiple initBathymetry files are used
+//            op_reorder_dat(temp_initBathymetry[0], cells_perm, cells_iperm, cells);
+          // If more initBathymetry files are used
           } else{
             if(timers[i].iend != INT_MAX) {
               n_initBathymetry = (timers[i].iend - timers[i].istart) / timers[i].istep + 1;
@@ -216,7 +246,7 @@ int main(int argc, char **argv) {
               int tmp_iend = ftime/dtmax;
               n_initBathymetry = (tmp_iend-timers[i].istart)/timers[i].istep + 1;
             }
-            op_printf("Reading %d consecutive InitBathymetry data array... ", n_initBathymetry);
+            op_printf("Reading %d consecutive InitBathymetry data arrays... ", n_initBathymetry);
             temp_initBathymetry = (op_dat*) malloc(n_initBathymetry * sizeof(op_dat));
             for(int k=0; k<n_initBathymetry; k++) {
                 char dat_name[255];
@@ -225,6 +255,7 @@ int main(int argc, char **argv) {
                 temp_initBathymetry[k] = op_decl_dat_hdf5(cells, 1, "float",
                                 filename_h5,
                                 dat_name);
+//                op_reorder_dat(temp_initBathymetry[k], cells_perm, cells_iperm, cells);
             }
             op_printf("done.\n");
           }
@@ -232,9 +263,30 @@ int main(int argc, char **argv) {
       }
   }
 
+
+  // Reorder dats
+//  op_reorder_dat(edgeNormals, edges_perm, edges_iperm, edges);
+//  op_reorder_dat(edgeLength, edges_perm, edges_iperm, edges);
+//  op_reorder_dat(isBoundary, edges_perm, edges_iperm, edges);
+
+//  op_reorder_dat(cellCenters, cells_perm, cells_iperm, cells);
+//  op_reorder_dat(cellVolumes, cells_perm, cells_iperm, cells);
+//  op_reorder_dat(values, cells_perm, cells_iperm, cells);
+
+
+
+
+
   op_diagnostic_output();
 
-  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
+
+
+//  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
+//  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
+//  op_partition("PARMETIS", "KWAY", cells, cellsToEdges, cellCenters);
+//  op_partition("PTSCOTCH", "KWAY", cells, cellsToEdges, cellCenters);
+
+  op_partition("PTSCOTCH", "KWAY", edges, edgesToCells, NULL);
 
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timers(&cpu_t1, &wall_t1);
@@ -289,7 +341,7 @@ int main(int argc, char **argv) {
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
 #endif
       float dT = CFL * minTimestep;
-
+//      op_par_loop_EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
       op_par_loop_EvolveValuesRK2_1("EvolveValuesRK2_2",cells,
                  op_arg_gbl(&dT,1,"float",OP_READ),
                  op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_RW),

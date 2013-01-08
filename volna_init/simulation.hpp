@@ -90,6 +90,7 @@ void Simulation::init() {
         std::abort();
       }
 
+  // mesh.RCMRenumbering();
   mesh.ComputeConnectivity();
 
   // std::ofstream stream3( "bandwith.ppm" );

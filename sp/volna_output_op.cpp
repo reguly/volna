@@ -436,7 +436,6 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
  */
 void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values) {
   op_fetch_data(values);
-
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   int nnode = nodeCoords->set->size;
