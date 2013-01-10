@@ -24,12 +24,6 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
 
 MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
-ifdef PARMETIS_INSTALL_PATH
-PARMETIS_INC 	= -I$(PARMETIS_INSTALL_PATH)/include -DHAVE_PARMETIS
-PARMETIS_LIB 	= -L$(PARMETIS_INSTALL_PATH)/lib -lparmetis \
-	-L$(PARMETIS_INSTALL_PATH)/lib -lmetis
-endif
-
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
@@ -38,15 +32,15 @@ endif
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-	CPPFLAGS = -O3 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
+	CPPFLAGS = -O2 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	MPICPP = mpic++
 	MPIFLAGS = $(CCFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
-	#CPPFLAGS = -O3 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	#CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	CPPFLAGS = -O2 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
 	MPICPP = mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else

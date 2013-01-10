@@ -13,16 +13,6 @@
 #include<hdf5_hl.h>
 
 #include "../volna_util.h"
-//#include "volna2hdf5_util.h"
-
-
-//#include<../../volna_init/external/eigen2/Eigen/StdVector>
-//#include "../../volna_init/external/eigen2/Eigen/Array"
-//#include "../../volna_init/external/eigen2/Eigen/StdVector"
-//#include "../../volna_init/external/eigen2/Eigen/LU"
-//#include "../../volna_init/external/eigen2/Eigen/Core"
-//
-//#include<../../volna_init/external/boost/graph/adjacency_list.hpp>
 
 //
 // Sequential OP2 function declarations
@@ -127,7 +117,7 @@ int main(int argc, char **argv) {
   }
 
   //
-  ////////////// INIT VOLNA TO GAIN DATA IMPORT //////////////
+  ////////////// INIT VOLNA TO GET DATA FOR IMPORT //////////////
   //
 
   op_printf("Importing data from VOLNA Framework ...\n");
@@ -532,7 +522,6 @@ int main(int argc, char **argv) {
   nnode = newnnode;
 
 
-
   //
   // Define OP2 sets
   //
@@ -541,31 +530,34 @@ int main(int argc, char **argv) {
   op_set cells = op_decl_set(ncell, "cells");
 
 
-	op_set outputLocation = NULL;
-	op_map outputLocation_map = NULL;
-	op_dat outputLocation_dat = NULL;
-	if (num_outputLocation) {
-		float def = -1.0f*INFINITY;
-		int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
-		float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
-		outputLocation = op_decl_set(num_outputLocation, "outputLocation");
-		for (int e = 0; e < ncell; e++) {
-			int j = 0;
-			for (int i = 0; i < event_className.size(); i++) {
-				if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
-				triangleIndex(&def, &event_location_x[i], &event_location_y[i], &x[2*cell[3*e]]
-							, &x[2*cell[3*e+1]], &x[2*cell[3*e+2]],	&w[4*e]);
-				if (def != -1.0f*INFINITY) {
-					output_map[j] = e;
-					def = -1.0f*INFINITY;
-					printf("Location %d found in cell %d\n", j, e);
-				}
-				j++;
-			}
-		}
-		outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
-		outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
-	}
+  //
+  // Get OutputLocation: triangles that fall on the specified triangle
+  //
+  op_set outputLocation = NULL;
+  op_map outputLocation_map = NULL;
+  op_dat outputLocation_dat = NULL;
+  if (num_outputLocation) {
+  	float def = -1.0f*INFINITY;
+  	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
+  	float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
+  	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
+  	for (int e = 0; e < ncell; e++) {
+  		int j = 0;
+  		for (int i = 0; i < event_className.size(); i++) {
+  			if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
+  			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
+  										&x[2*cell[3*e]], &x[2*cell[3*e+1]], &x[2*cell[3*e+2]],	&w[4*e]);
+  			if (def != -1.0f*INFINITY) {
+  				output_map[j] = e;
+  				def = -1.0f*INFINITY;
+  				printf("Location %d found in cell %d\n", j, e);
+  			}
+  			j++;
+  		}
+  	}
+  	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
+  	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
+  }
 
 
 
@@ -581,10 +573,6 @@ int main(int argc, char **argv) {
   op_map cellsToEdges = op_decl_map(cells, edges, N_NODESPERCELL, cedge,
               "cellsToEdges");
   
-
-
-
-
   //
   // Define OP2 datasets
   //
@@ -617,20 +605,29 @@ int main(int argc, char **argv) {
   }
 
 
-
-
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
    * matrix bandwidth
    */
   if(argc == 3) {
+#ifdef HAVE_PTSCOTCH
     if(strcmp(argv[2], "GPSreorder") == 0) {
+
+      // Reorder edges
       int *edges_perm = NULL;
       int *edges_iperm = NULL;
+      // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
       op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+      // Reorder maps according to inverse perm.
       op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
       op_reorder_map(edgesToCells, edges_perm, edges_iperm, edges);
+      // Reorder dats according to inverse perm.
+      op_reorder_dat(edgeNormals, edges_perm, edges_iperm, edges);
+      op_reorder_dat(edgeLength, edges_perm, edges_iperm, edges);
+      op_reorder_dat(isBoundary, edges_perm, edges_iperm, edges);
 
+      //  Reorder cells
+      //  #warning "You also have to reorder cell data in initBathymtery datasets!"
       //  int *cells_perm = NULL;
       //  int *cells_iperm = NULL;
       //
@@ -639,18 +636,18 @@ int main(int argc, char **argv) {
       //  op_reorder_map(cellsToNodes, cells_perm, cells_iperm, cells);
       //  op_reorder_map(cellsToEdges, cells_perm, cells_iperm, cells);
       //  op_reorder_map(edgesToCells, cells_perm, cells_iperm, cells);
-
-      // Reorder dats
-      op_reorder_dat(edgeNormals, edges_perm, edges_iperm, edges);
-      op_reorder_dat(edgeLength, edges_perm, edges_iperm, edges);
-      op_reorder_dat(isBoundary, edges_perm, edges_iperm, edges);
-
-      //      op_reorder_dat(cellCenters, cells_perm, cells_iperm, cells);
-      //      op_reorder_dat(cellVolumes, cells_perm, cells_iperm, cells);
-      //      op_reorder_dat(values, cells_perm, cells_iperm, cells);
+      //  op_reorder_dat(cellCenters, cells_perm, cells_iperm, cells);
+      //  op_reorder_dat(cellVolumes, cells_perm, cells_iperm, cells);
+      //  op_reorder_dat(values, cells_perm, cells_iperm, cells);
+    } else {
+      op_printf("Wrong reordering option! Terminating... \n");
+      exit(-1);
     }
+#else
+    op_printf("Can not use GPS reordering, because no PT-SCOTCH library was defined during build. Rebuild volna2hdf5 with PT-SCOTCH! Exiting... \n");
+    exit(-1);
+#endif
   }
-
 
 
   //
@@ -748,7 +745,6 @@ int main(int argc, char **argv) {
       H5LTmake_dataset(h5file, "timer_iend", 1, &num_events_hsize, H5T_NATIVE_INT, &timer_iend[0]));
   check_hdf5_error(
       H5LTmake_dataset(h5file, "timer_istep", 1, &num_events_hsize, H5T_NATIVE_INT, &timer_istep[0]));
-
   check_hdf5_error(
       H5LTmake_dataset(h5file, "event_location_x", 1, &num_events_hsize, H5T_NATIVE_FLOAT, &event_location_x[0]));
   check_hdf5_error(
@@ -788,18 +784,19 @@ int main(int argc, char **argv) {
   op_printf("HDF5 file written and closed successfully.\n");
 
   free(cell);
-  free(ecell);
+  //  free(ecell);
   free(ccell);
   free(cedge);
-//  free(ccent); // Don't free ccent, it result in run-time error. WHY?
+  //  free(ccent); // Don't free ccent, it result in run-time error. WHY?
   free(carea);
-//  free(enorm); // Don't free enorm, it result in run-time error. WHY?
+  //  free(enorm); // Don't free enorm, it result in run-time error. WHY?
   free(ecent);
   free(eleng);
   free(isbound);
   free(initEta);
   free(initBathymetry);
   free(x);
+  free(newx);
   free(w);
   free(event_data);
   free(isRefNode);
