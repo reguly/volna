@@ -1,3 +1,6 @@
+//#ifndef __VOLNA_COMMON_H
+//#define __VOLNA_COMMON_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
@@ -55,7 +58,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry,
 									 int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
-									 op_dat outputLocation_dat);
+									 op_dat outputLocation_dat, int writeOption);
 
 void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile);
 void InitU(op_set cells, op_dat cellCenters, op_dat values);
@@ -67,7 +70,7 @@ void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, Gaus
 void OutputTime(TimerParams *timer);
 void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values);
 void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_map outputLocation_map, op_dat outputLocation_dat);
-void OutputSimulation(int type, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values);
+void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values);
 void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells);
 float normcomp(op_dat dat, int off);
 void dumpme(op_dat dat, int off);
@@ -82,3 +85,5 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
 //
 #define check_hdf5_error(err) __check_hdf5_error(err, __FILE__, __LINE__)
 void __check_hdf5_error(herr_t err, const char *file, const int line);
+
+//#endif

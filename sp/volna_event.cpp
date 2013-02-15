@@ -106,8 +106,8 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry,
 									 int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
-									 op_dat outputLocation_dat) {
-  //op_printf("processEvents()... \n");
+									 op_dat outputLocation_dat, int writeOption) {
+//  op_printf("processEvents()... \n");
   int size = (*timers).size();
   int i = 0;
 	int j = 0;
@@ -146,13 +146,14 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         OutputConservedQuantities(cells, cellVolumes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
         OutputLocation(&(*events)[i], j, &(*timers)[i], cells, nodeCoords, cellsToNodes, values, outputLocation_map, outputLocation_dat);
-				j++;
+				    j++;
       } else if (strcmp((*events)[i].className.c_str(), "OutputSimulation") == 0) {
         // Remove comment if needed:
-        // 0 - ASCII output
+        // 0 - HDF5 output
+        // 1 - VTK ASCII output
         // OutputSimulation(0, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
-        // 1 - binary output
-        OutputSimulation(1, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
+        // 2 - VTK Binary output
+        OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {
         OutputMaxElevation(&(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
       } else {

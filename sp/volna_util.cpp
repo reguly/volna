@@ -1,8 +1,11 @@
 #include "volna_util.h"
+#include "volna_common.h"
 #include <vector>
 #include <list>
 #include <set>
 #include <algorithm>
+#include "op_lib_core.h" // To find inverse map in OP_map_list
+
 
 // PT_SCOTCH header - use sequential functions
 #ifdef HAVE_PTSCOTCH
@@ -10,20 +13,12 @@
 #endif
 // ParMETIS header - use sequential functions
 #ifdef HAVE_PARMETIS
-  #include <metis.h>
+  #include <parmetis.h>
 #endif
 
-//
-// Create self neighboring map (eg. edges-to-edges map)
-//
-void op_create_self_map(op_map setToSet, op_set set, op_map cellsToEdges, op_map edgesToCells) {
-
-}
-
-
-//
-// Prints the max. distance of adjacent cells
-//
+/*
+ * Prints the max. distance of adjacent cells
+ */
 void printBandwidth(op_map map) {
   int ncell = map->from->size;
   int edge_id;
@@ -35,7 +30,7 @@ void printBandwidth(op_map map) {
   double avg_dist = 0;
   for(int i=0; i<ncell; i++) {
     for(int j=0; j<3; j++) {
-      // If the neighbor is a boundary cell
+      // If the neighbour is a boundary cell
       if(map->map[i*3+j] == -1 ) {
         dist = 0;
       } else {
@@ -44,21 +39,24 @@ void printBandwidth(op_map map) {
         n_dist++;
       }
       if(dist > max_dist) {
-//        op_printf("%d : %d\n",i,map->map[i*3+j]);
+        // op_printf("%d : %d\n",i,map->map[i*3+j]);
         max_dist = dist;
       }
     }
   }
   avg_dist = sum_dist / (double)n_dist;
-  op_printf("Max distance in cell-cell map = %d\n", max_dist);
-  op_printf("Avg distance in cell-cell map = %g\n", avg_dist);
+  op_printf("\n--------------------- Map statistics -----------------------\n");
+  op_printf("Map: %s\n", map->name);
+  op_printf("Matrix bandwidth (2*MAX+1)                         = %d\n", 2*max_dist+1);
+  op_printf("Avg. dist. between neighboring cells cell-cell map = %g\n", avg_dist);
+  op_printf("------------------------------------------------------------\n");
   free(ccell);
 }
 
-//
-// Prints the adjacency list to a file
-//
-void printAdjList(const char* filename, op_map map) {
+/*
+ * Prints the adjacency list to a file
+ */
+void printAdjListToFile(const char* filename, op_map map) {
   FILE *fid;
   fid = fopen(filename,"w");
   for(int i=0; i < map->from->size; i++) {
@@ -68,9 +66,27 @@ void printAdjList(const char* filename, op_map map) {
   fclose(fid);
 }
 
-//
-// Sort Q according to deg array (increasing)
-//
+
+/*
+ * Print adjacency list to console
+ */
+void printAdjListToConsole(int *xadj, int n_xadj, int *adjncy, int n_adjncy) {
+  op_printf("xadj: ");
+  for(int i=0; i<n_xadj; i++) {
+    op_printf("%d ",xadj[i]);
+  }
+  op_printf("\n");
+  op_printf("adjcny: ");
+  for(int i=0; i<n_adjncy; i++) {
+    op_printf("%d ",adjncy[i]);
+  }
+  op_printf("\n");
+}
+
+
+/*
+ * Sort Q according to deg array (increasing)
+ */
 void sortDeg(int *Q, int *deg, int degree) {
   int tmp = 0;
   int tmp_ind = 0;
@@ -100,41 +116,41 @@ struct VrtDegree {
 bool isLess(VrtDegree v0, VrtDegree v1) {return v0.vrtdeg < v1.vrtdeg; };
 bool isEq(VrtDegree v0, VrtDegree v1) {return v0.vrtid == v1.vrtid; };
 
-//
-// Get the complement, adjacent, ordered (by degree) vertices
-//
+/*
+ * Get the complement, adjacent, ordered (by degree) vertices
+ */
 void getCompOrdAdj(std::list<VrtDegree> *Q, int *xadj, int *adjncy, int vertex, std::vector<int> *R) {
   int ind = 0;
   VrtDegree tmp;
   std::vector<int>::iterator it_vec;
   std::list<VrtDegree>::iterator it_list;
-//  int vertex;
-//  for(int j=0; j<(*R).size(); j++) {
-//    vertex = (*R)[j];
-    for(int i=xadj[vertex]; i<xadj[vertex+1]; i++) {
-      ind = adjncy[i];
+  //  int vertex;
+  //  for(int j=0; j<(*R).size(); j++) {
+  //    vertex = (*R)[j];
+  for(int i=xadj[vertex]; i<xadj[vertex+1]; i++) {
+    ind = adjncy[i];
 
-      tmp.vrtid = ind;
-      tmp.vrtdeg = xadj[ind+1] - xadj[ind];
+    tmp.vrtid = ind;
+    tmp.vrtdeg = xadj[ind+1] - xadj[ind];
 
-      it_vec = find((*R).begin(), (*R).end(), ind);
-//      op_printf("it_vec = %d     ind = %d     (*R).end() = %d \n", *it_vec, ind, *(*R).end());
-      it_list = find((*Q).begin(), (*Q).end(), tmp);
-//      op_printf("it_list = %d     ind = %d    (*Q).end() = %d\n", (*it_list).vrtid, ind, (*(*Q).end()).vrtid);
-      if(it_vec == (*R).end() && it_list==(*Q).end()) {
-//        tmp.vrtid = ind;
-//        tmp.vrtdeg = xadj[ind+1] - xadj[ind];
-        (*Q).push_back(tmp);
-      }
+    it_vec = find((*R).begin(), (*R).end(), ind);
+    //      op_printf("it_vec = %d     ind = %d     (*R).end() = %d \n", *it_vec, ind, *(*R).end());
+    it_list = find((*Q).begin(), (*Q).end(), tmp);
+    //      op_printf("it_list = %d     ind = %d    (*Q).end() = %d\n", (*it_list).vrtid, ind, (*(*Q).end()).vrtid);
+    if(it_vec == (*R).end() && it_list==(*Q).end()) {
+      //        tmp.vrtid = ind;
+      //        tmp.vrtdeg = xadj[ind+1] - xadj[ind];
+      (*Q).push_back(tmp);
     }
-//  }
-//  std::sort((*Q).begin(), (*Q).end(), isLess);
-    (*Q).sort();
+  }
+  //  }
+  //  std::sort((*Q).begin(), (*Q).end(), isLess);
+  (*Q).sort();
 }
 
-//
-// Append sets: R = R U (Q.vrtid)
-//
+/*
+ * Append sets: R = R U (Q.vrtid)
+ */
 void appSets(std::vector<int> *R, std::vector<VrtDegree> *Q) {
   for(int i=0; i<(*Q).size(); i++) {
     (*R).push_back((*Q)[i].vrtid);
@@ -144,12 +160,62 @@ void appSets(std::vector<int> *R, std::vector<VrtDegree> *Q) {
 
 
 /*
+ * Remove non-referenced elements
+ */
+void op_remove_nonref(int *cnode, int ncell, int *isRefNode, int *nnode, float **x) {
+  //
+  // Make an exclusive scan (all-prefix-sum or cumulative vector sum)
+  //
+  op_printf("Removing non-referenced elements...\n");
+  //  isRefNode[0] = 0;
+  //  int prev = isRefNode[0];
+  int *newNum = (int*) malloc((*nnode)*sizeof(int));
+  int prev = 0;
+  int tmp = 0;
+  int num = 0;
+  //  for(int i=1; i<nnode; i++) {
+  for(int i=0; i<(*nnode); i++) {
+    if(isRefNode[i] == 1) {
+      num++;
+      newNum[i] = num; // if node is referenced give it a unique number (numbering start from 1!)
+    }else{
+      newNum[i] = 0; // if node is not referenced make it 0
+    }
+    //    tmp = isRefNode[i-1] + prev;
+    //    prev = isRefNode[i];
+    //    isRefNode[i] = tmp;
+    //    op_printf(" %d ", newNum[i]);
+  }
+
+  op_printf("  Updating list of node coordinates, number of nodes and cell-node map...\n");
+  //  int newnnode = isRefNode[nnode-1] + 1; // Number of nodes that are referenced by any cell
+  int newnnode = num; // Number of nodes that are referenced by any cell
+  float* newx = (float*) malloc(MESH_DIM * newnnode * sizeof(float)); // Node coordinates that are referenced by any cell
+  int n, nRef;
+
+  for(int i=0; i<N_NODESPERCELL*ncell; i++) {
+    n = cnode[i];
+    //    nRef  = isRefNode[n]; // isRefNode gives the new number of a referenced node
+    nRef = newNum[n] - 1; // The new number of a referenced node has to start from 0
+    cnode[i] = nRef;
+    newx[2*nRef  ] = (*x)[2*n  ];
+    newx[2*nRef+1] = (*x)[2*n+1];
+  }
+  free(newNum);
+  *x = newx;
+  *nnode = newnnode;
+  op_printf("  done.\n");
+  op_printf("done.\n");
+}
+
+
+/*
  * Get adjacency list from two maps, where map1->map2 refers back to
  * the original set.
  */
 void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjncy, op_map map, op_set set) {
   if(map->from != set && map->to != set) {
-    op_printf("Error: At least one set in the map has to refer to the"
+    op_printf("\nError: At least one set in the map has to refer to the"
         "given set. \n");
     exit(-1);
   }
@@ -179,14 +245,14 @@ void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjnc
   // Print map
   //
   for(int i=0; i<set_size; i++) {
-//    op_printf("map->map %d : ", i);
+    //    op_printf("map->map %d : ", i);
     for(int j=0; j<map_dim; j++) {
       cell_id = map->map[i*map_dim+j];
-//        op_printf(" %d ", cell_id);
+      //        op_printf(" %d ", cell_id);
     }
-//    op_printf("\n");
+    //    op_printf("\n");
   }
-//  op_printf("\n");
+  //  op_printf("\n");
 
 
   std::vector<std::set<int> > imap;
@@ -198,31 +264,31 @@ void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjnc
   // Create inverse map, eg. from edges-to-cells the cells-to-edges
 
   //
-  // Get inverse map
+  // Create inverse map
   //
   for(int i=0; i<set_size; i++) {
     for(int j=0; j<map_dim; j++) {
       cell_id = map->map[i*map_dim+j];
       imap[ cell_id ].insert(i);
-//      op_printf("imap %d : %d \n", cell_id, i);
+      //      op_printf("imap %d : %d \n", cell_id, i);
     }
-//    op_printf("\n");
+    //    op_printf("\n");
   }
-//  op_printf("\n");
+  //  op_printf("\n");
 
 
   //
   // Print inverse map
   //
-//  for(int i=0; i<map->to->size; i++) {
-//    op_printf("imap %d : ", i);
-//    std::set<int>::iterator it = imap[i].begin();
-//    for(; it != imap[i].end(); it++) {
-//      op_printf(" %d ", *it);
-//    }
-//    op_printf("\n");
-//  }
-//  op_printf("\n");
+  //  for(int i=0; i<map->to->size; i++) {
+  //    op_printf("imap %d : ", i);
+  //    std::set<int>::iterator it = imap[i].begin();
+  //    for(; it != imap[i].end(); it++) {
+  //      op_printf(" %d ", *it);
+  //    }
+  //    op_printf("\n");
+  //  }
+  //  op_printf("\n");
 
 
 
@@ -232,38 +298,36 @@ void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjnc
   //
   for(int i=0; i<set_size; i++) {
     for(int j=0; j<map_dim; j++) {
-//      if(j==0) op_printf("map_self %d : ", i);
+      //      if(j==0) op_printf("map_self %d : ", i);
 
       std::set<int>::iterator it = imap[map->map[i*map_dim+j]].begin();
       for(; it != imap[map->map[i*map_dim+j]].end(); it++) {
         map_self[i].insert( *it );
-//        op_printf(" %d ",*it);
+        //        op_printf(" %d ",*it);
       }
     }
-//    op_printf("\n");
+    //    op_printf("\n");
   }
-//  op_printf("\n");
+  //  op_printf("\n");
 
 
   //
   // Print map_self
   //
-//  for(int i=0; i<set_size; i++) {
-//    op_printf("map_self %d : ", i);
-//    std::set<int>::iterator it = map_self[i].begin();
-//    for(; it != map_self[i].end(); it++) {
-//      op_printf(" %d ", *it);
-//    }
-//    op_printf("\n");
-//  }
-//  op_printf("\n");
+  //  for(int i=0; i<set_size; i++) {
+  //    op_printf("map_self %d : ", i);
+  //    std::set<int>::iterator it = map_self[i].begin();
+  //    for(; it != map_self[i].end(); it++) {
+  //      op_printf(" %d ", *it);
+  //    }
+  //    op_printf("\n");
+  //  }
+  //  op_printf("\n");
 
 
-
-
-//  printBandwidth(map);
-//  op_printf("Reordering...\n");
-//  //#ifdef HAVE_PARMETIS
+  //  printBandwidth(map);
+  //  op_printf("Reordering...\n");
+  //  //#ifdef HAVE_PARMETIS
   *n_xadj = set_size+1;
 
   *xadj = (int*) calloc(*n_xadj, sizeof(int));
@@ -275,22 +339,22 @@ void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjnc
   *n_adjncy = 0;
   int i = 0;
   (*xadj)[i] = 0;
-   std::set<int>::iterator it = map_self[i].begin();
-   for(; it != map_self[i].end(); it++) {
-      (*xadj)[i+1]++;
-      adjncy_vec.push_back( *it );
-      (*n_adjncy)++;
+  std::set<int>::iterator it = map_self[i].begin();
+  for(; it != map_self[i].end(); it++) {
+    (*xadj)[i+1]++;
+    adjncy_vec.push_back( *it );
+    (*n_adjncy)++;
   }
 
   for(i=1; i<set_size; i++) {
     (*xadj)[i+1] = (*xadj)[i];
     std::set<int>::iterator it = map_self[i].begin();
     for(; it != map_self[i].end(); it++) {
-        (*xadj)[i+1]++;
-        adjncy_vec.push_back( *it );
-        (*n_adjncy)++;
-      }
+      (*xadj)[i+1]++;
+      adjncy_vec.push_back( *it );
+      (*n_adjncy)++;
     }
+  }
 
   // Allocate new array to store exact sized adjacency list
   *adjncy = (int*) malloc((*n_adjncy)*sizeof(int));
@@ -301,8 +365,6 @@ void op_get_adjlist_indirect(int **xadj, int **adjncy, int *n_xadj, int *n_adjnc
 
   return;
 }
-
-
 
 /*
  * Get adjacency list from a map on self refering sets, eg. cell-to-cell
@@ -317,7 +379,7 @@ void op_get_adjlist_direct(int **xadj, int **adjncy, int *n_xadj, int *n_adjncy,
   printBandwidth(map);
   op_printf("Reordering...\n");
   //#ifdef HAVE_PARMETIS
-//  int vtxdist = set_size;
+  //  int vtxdist = set_size;
   *n_xadj = set_size+1;
   int tmp_n_adjncy = set_size*map_dim;
   *xadj = (int*) calloc(*n_xadj, sizeof(int));
@@ -329,28 +391,28 @@ void op_get_adjlist_direct(int **xadj, int **adjncy, int *n_xadj, int *n_adjncy,
   *n_adjncy = 0;
   int i = 0;
   (*xadj)[i] = 0;
-//    op_printf("%d neigh: ",i);
+  //    op_printf("%d neigh: ",i);
   for(int j=0; j<3; j++) {
     if(map->map[i*3+j] != -1) {
-//            op_printf("%d ",map->map[i*3+j]);
+      //            op_printf("%d ",map->map[i*3+j]);
       (*xadj)[i+1]++;
       (*adjncy)[*n_adjncy] = map->map[i*3+j];
       (*n_adjncy)++;
     }
   }
-//    op_printf("\n");
+  //    op_printf("\n");
   for(i=1; i<set_size; i++) {
     (*xadj)[i+1] = (*xadj)[i];
-//        op_printf("%d neigh: ",i);
+    //        op_printf("%d neigh: ",i);
     for(int j=0; j<3; j++) {
       if(map->map[i*3+j] != -1) {
-//                op_printf("%d ",map->map[i*3+j]);
+        //                op_printf("%d ",map->map[i*3+j]);
         (*xadj)[i+1]++;
         (*adjncy)[*n_adjncy] = map->map[i*3+j];
         (*n_adjncy)++;
       }
     }
-//        op_printf("\n");
+    //        op_printf("\n");
   }
 
   tmp = *adjncy;
@@ -364,43 +426,220 @@ void op_get_adjlist_direct(int **xadj, int **adjncy, int *n_xadj, int *n_adjncy,
   return;
 }
 
+void print_map_row(op_map map, int row) {
+  // Cehck if row is in the range of the map
+  if(row < 0 || row > map->from->size) {
+    op_printf("\nERROR: %d row number is not within the range 0...%d of "
+        "map %s.\n", row, map->from->size, map->name);
+    exit(-1);
+  // If OK print the given row of the map
+  } else {
+    op_printf("\n%s maps row %d: ", map->name, row);
+    for(int j=0; j<map->dim; j++) {
+      op_printf(" %d ",map->map[ row*map->dim + j]);
+    }
+    op_printf("\n");
+  }
+}
+
 /*
- * Get permutation list based on specified reordering
+ * Check if permutation vector references every element
  */
+void check_map(op_map map) {
+  if(map->from == NULL || map->to == NULL) {
+    op_printf("\nERROR: map has NULL set on at least one side.\n");
+    exit(-1);
+  }
+  int n_error = 0;
+  // If map is an identity map
+  if(map->from == map->to ) {
+    int set_size = map->from->size;
+    int map_dim = map->dim;
+    int elem = 0;
+    int *ref = (int*) calloc(set_size, sizeof(int));
+    int n_refed = 0; // Number of referenced elements (in one row of the map)
+    for(int i=0; i < set_size; i++) {
+      n_refed = 0;
+      for(int j=0; j < map_dim; j++) {
+        elem = map->map[i*map_dim+j];
+        // Check if element is in the sets range
+        if(elem < 0 || elem > set_size-1) {
+          op_printf("\nERROR: element %d in the identity map"
+              " %s is not in the range 0...%d of the set. ",
+              i, map->name, set_size-1);
+          print_map_row(map, i);
+          n_error++;
+        // If yes increase reference number
+        } else {
+          ref[ elem ] ++; // increase reference number
+          // if an element is not referencing other elements its value
+          // is most probably set to 0 or its own index. Only increase
+          // reference number if the references seem to be valid.
+          if((elem != i && elem != 0)) {
+            n_refed++;
+          }
+        }
+      }
+      if(n_refed == 0) {
+        op_printf("\nERROR: element %d in the identity map"
+            " %s is either referencing itself or 0s. ",
+            i, map->name);
+        print_map_row(map, i);
+        n_error++;
+      }
+    }
+    for(int i=0; i < set_size; i++) {
+      if(ref[i] == 0) {
+        op_printf("\nERROR: element %d in the identity map"
+            " %s is not referenced by any other elements. ",
+            i, map->name);
+        print_map_row(map, i);
+        n_error++;
+      }
+      if(ref[i] > map_dim) {
+        op_printf("\nERROR: element %d in the identity map "
+            " %s is referenced by more than %d "
+            "elements. ",i ,map->name, map->dim);
+        print_map_row(map, i);
+        n_error++;
+      }
+    }
+    free(ref);
+  }
+  // If map is a not an identity map
+  else {
+    // FIRST: check the referenced elements are in range and count the references of the "to" elements
+    int map_dim = map->dim;
+    int from_size = map->from->size;
+    int to_size = map->to->size;
+    int *ref = (int*) calloc(to_size, sizeof(int));
+    int elem = 0;
+    for(int i=0; i < from_size; i++) {
+      for(int j=0; j < map_dim; j++) {
+        elem = map->map[i*map_dim+j];
+        // Check if element is in the sets range
+        if(elem < 0 || elem > to_size-1) {
+          op_printf("\nERROR: element %d in the (non-identity) map"
+              " %s is not in the range 0...%d of the set. ",
+              i, map->name, to_size-1);
+          print_map_row(map, i);
+          n_error++;
+        // If yes increase reference number
+        } else {
+          ref[ elem ]++; // increase reference number
+        }
+      }
+    }
+    // SECOND: Check if the every "to" element is referenced at least once, i.e. theres is no outlier
+    for(int i=0; i < to_size; i++) {
+      if(ref[i] == 0) {
+        op_printf("\nERROR: element %d in the (non-identity) map"
+            " %s is not referenced by any other elements. ",
+            i, map->name);
+        print_map_row(map, i);
+        n_error++;
+      }
+    }
+
+//    //
+//    // Checking inverse set
+//    //
+//    free(ref);
+//    ref = (int*) calloc(from_size, sizeof(int));
+//    op_map imap = NULL;
+//    int imap_dim = 0;
+//    bool found = false;
+//    int i=0;
+//    // Look for inverse setin map list
+//    while(i<OP_map_index && !found) {
+//      if(OP_map_list[i]->from == map->to && OP_map_list[i]->to == map->from) {
+//        found = true;
+//        op_printf("SEEEEEEEEEEEEEETTTTTTTTTTTT FOUND\n");
+//        imap = OP_map_list[i];
+//        int imap_dim = imap->dim;
+//        for(int i=0; i < to_size; i++) {
+//          for(int j=0; j< from_size; j++) {
+//            elem = imap->map[i*imap_dim+j];
+//            // Check if element is in the sets range
+//            if(elem < 0 || elem > from_size-1) {
+//              op_printf("\nERROR: [while checking inverse map] element %d in the (non-identity) map"
+//                  " %s is not in the range 0...%d of the set. ",
+//                  i, imap->name, from_size-1);
+//              print_map_row(imap, i);
+//              n_error++;
+//            // If yes increase reference number
+//            } else {
+//              ref[ elem ]++; // increase reference number
+//            }
+//          }
+//        }
+//      }
+//      i++;
+//    }
+//    free(ref);
+  }
+
+  if(n_error != 0) {
+    op_printf("\n %d ERRORs occured during the check of map references."
+        " Exiting... \n", n_error);
+    exit(-1);
+  }
+}
+
+/*
+ * Check if permutation vector references every element
+ */
+void is_all_referenced_once(int set_size, int* iperm) {
+  int *check = (int*) calloc(set_size, sizeof(int));
+  int sum =0;
+  for(int i=0; i<set_size; i++) check[iperm[i]]++;
+  for(int i=0; i<set_size; i++) sum += check[i];
+  if(sum != set_size) {
+    op_printf("\nVector sum not eq. to ncell\n");
+    exit(-1);
+  }
+  for(int i=0; i<set_size; i++) {
+
+    if(check[i] != 1) {
+      op_printf("\ncheck[%d] = %d \n", i, check[i]);
+      op_printf("\nVector element != 1\n");
+      exit(-1);
+    }
+  }
+  free(check);
+}
+
+
+/*
+ * Get permutation list based on the GPS reordering alg. or based on the
+ * given map. If (map->from == set) a self set-to-set map is created and
+ * this is used by the GPS alg. In case the map->to==set, this map is
+ * used to reorder the set by visiting the elements of map->from and
+ * assigning new numbers to the set elements according to this visiting
+ * sequence.
+ */
+#ifdef HAVE_PTSCOTCH
 void op_get_permutation(int **perm, int **iperm, op_map map, op_set set) {
   if(map->from != set && map->to != set) {
-    op_printf("Error: At least one set in the map has to refer to the"
+    op_printf("\nError: At least one set in the map has to refer to the"
         "given set. \n");
     exit(-1);
   }
   int set_size = set->size;
-  int n_xadj;
-  int n_adjncy;
-  int *xadj = NULL;
-  int *adjncy = NULL;
-  *perm = (int*) malloc(set_size * sizeof(int));
-  *iperm = (int*) malloc(set_size * sizeof(int));
+  if(map->from == set) {
+//    op_printf("Reordering %s set with GPS...", set->name);
+    int n_xadj;
+    int n_adjncy;
+    int *xadj = NULL;
+    int *adjncy = NULL;
+    //  *perm = (int*) malloc(set_size * sizeof(int));
+    //  *iperm = (int*) malloc(set_size * sizeof(int));
 
-  if(map->from == map->to) {
-    op_get_adjlist_direct(&xadj, &adjncy, &n_xadj, &n_adjncy, map);
-  } else {
-    op_get_adjlist_indirect(&xadj, &adjncy, &n_xadj, &n_adjncy, map, set);
-  }
-
-  //
-  // Print adjacency list
-  //
-//  op_printf("xadj: ");
-//  for(int i=0; i<n_xadj; i++) {
-//    op_printf("%d ",xadj[i]);
-//  }
-//  op_printf("\n");
-//  op_printf("adjcny: ");
-//  for(int i=0; i<n_adjncy; i++) {
-//    op_printf("%d ",adjncy[i]);
-//  }
-//  op_printf("\n");
-
+    if(map->from == map->to) {
+      op_get_adjlist_direct(&xadj, &adjncy, &n_xadj, &n_adjncy, map);
+    } else {
+      op_get_adjlist_indirect(&xadj, &adjncy, &n_xadj, &n_adjncy, map, set);
+    }
 
     //
     // METIS reordering - for fill-in reduction
@@ -463,35 +702,28 @@ void op_get_permutation(int **perm, int **iperm, op_map map, op_set set) {
     SCOTCH_Num *treetab = NULL;//(SCOTCH_Num*) malloc(ncell*sizeof(SCOTCH_Num));
 
     int mesg = 0;
-    op_printf("Running SCOTCH_graphBuild() \n");
     mesg = SCOTCH_graphBuild(graphptr, baseval, vertnbr, verttab, vendtab, velotab, vlbltab, edgenbr, edgetab, edlotab);
     if(mesg != 0){
       op_printf("Error during SCOTCH_graphBuild() \n");
       exit(-1);
     }
-    op_printf("Done SCOTCH_graphBuild() \n");
-
 
     SCOTCH_Strat *straptr = SCOTCH_stratAlloc();
     SCOTCH_stratInit(straptr);
 
     char * strategyString = "g";
-//    char * strategyString = "(g{pass=100})";
-    op_printf("Running SCOTCH_stratGraphOrder() \n");
+    //    char * strategyString = "(g{pass=100})";
     mesg = SCOTCH_stratGraphOrder(straptr, strategyString);
     if(mesg != 0){
       op_printf("Error during setting strategy string. \n");
       exit(-1);
     }
-    op_printf("Done SCOTCH_stratGraphOrder() \n");
 
-    op_printf("Running SCOTCH_graphOrder() \n");
     mesg = SCOTCH_graphOrder(graphptr, straptr, permtab, peritab, cblkptr, rangtab, treetab);
     if(mesg != 0){
       op_printf("Error during SCOTCH_graphOrder() \n");
       exit(-1);
     }
-    op_printf("Done SCOTCH_graphOrder() \n");
 
     //  // Reorder cell-cell map according to the SCOTCH permutation vector
 
@@ -500,12 +732,7 @@ void op_get_permutation(int **perm, int **iperm, op_map map, op_set set) {
     SCOTCH_stratExit(straptr);
 
 
-//    printAdjList("orig_mat.txt",map);
-
-
-
-
-
+    //    printAdjList("orig_mat.txt",map);
 
     //  std::vector<int> R;
     //  std::list<VrtDegree> Q;
@@ -562,59 +789,87 @@ void op_get_permutation(int **perm, int **iperm, op_map map, op_set set) {
     //  }
     //
 
-
     // Fill up the inverse permutation and permutation arrays
     for(int i=0; i<set_size; i++) {
       (*iperm)[i] = peritab[i];
       (*perm)[peritab[i]] = i;
     }
-//    op_printf("iperm: ");
-//    for(int i=0; i<set_size; i++) {
-//      op_printf(" %d ", (*iperm)[i]);
-//    }
-//    op_printf("\n");
+    //    op_printf("iperm: ");
+    //    for(int i=0; i<set_size; i++) {
+    //      op_printf(" %d ", (*iperm)[i]);
+    //    }
+    //    op_printf("\n");
 
-
-
-
-
+    // If the map points to the given set, order the set incrementally
+    // according to the map->from sets ordering
+//    op_printf("done.\n");
+  }
+  else if(map->to == set) {
     //
-    // Check if permutation map reference every element
+    // Obtain new ordering of nodes based on reordered cells
     //
-    int *check = (int*) calloc(set_size, sizeof(int));
-    int sum =0;
-    for(int i=0; i<set_size; i++) check[(*iperm)[i]]++;
-    for(int i=0; i<set_size; i++) sum += check[i];
-    if(sum != set_size) {
-      op_printf("vector sum not eq. to ncell\n");
-      exit(-1);
-    }
-    for(int i=0; i<set_size; i++) {
-      if(check[i] != 1) {
-        op_printf("vector element not eq, 1\n");
-        exit(-1);
+    // Create permutation vector for nodes
+//    op_printf("Reordering %s based on %s map...\n", set->name, map->name);
+    int *nodes_perm  = (int*) calloc( set->size, sizeof(int));
+    int *nodes_iperm = (int*) calloc( set->size, sizeof(int));
+    int counter = 0;
+    for(int i=0; i<map->from->size; i++) {
+      for(int j=0; j<map->dim; j++) {
+        // If node didn't get a new numbering so far
+        if(nodes_perm[map->map[i*3+j]] == 0) {
+          // label it with a the next unique number that is larger than 0
+          counter++;
+          nodes_perm[map->map[i*3+j]] = counter;
+        }
       }
     }
-    free(check);
+    for(int i=0; i<counter; i++) nodes_perm[i]--;
+    //    op_printf("Number of nodes in set                = %d \n", nnode);
+    op_printf("Number of nodes in set                = %d \n", set->size);
+    op_printf("Number of nodes in permutation vector = %d \n", counter);
+
+    // Check
+    if(counter != set_size) {
+      op_printf("The number of nodes in the set and number of "
+          "reordered nodes doesn't correspond!\n");
+      exit(-1);
+    }
+
+    // Create inverse permutation vector
+    for(int i=0; i<counter; i++) {
+      nodes_iperm[nodes_perm[i]] = i;
+    }
+
+    // Fill up the inverse permutation and permutation arrays
+    for(int i=0; i<set_size; i++) {
+      (*iperm)[i] = nodes_iperm[i];
+      (*perm)[i] = nodes_perm[i];
+    }
   }
 
+  // Check if every set element is referenced exactly once
+  is_all_referenced_once(set_size, *iperm);
+//  op_printf("done.\n");
+}
+#endif
 
-//void op_reorder_map_from(op_map map, ) {
-//
-//}
-
+/*
+ * Reorder "from" and "to" sets of a map according to the permutation
+ * and inverse permutation vectors
+ */
 void op_reorder_map(op_map map, int *perm, int *iperm, op_set set) {
   if(map->from != set && map->to != set) {
-    op_printf("Error: The map has to have at least one set on which it "
+    op_printf("\nError: The map has to have at least one set on which it "
         "is referring.\n");
     exit(-1);
   }
+//  op_printf("Reordering %s map elements based on new ordering of %s set.", map->name, set->name);
   int from_size = map->from->size;
   int set_size = set->size;
   int map_dim = map->dim;
   if(map->to == set) {
     // Reorder cell-cell map according to the SCOTCH permutation vector
-    // Frist: set the neighbor cell indices according to the map
+    // First: set the neighbour cell indices according to the map
     for(int i=0; i < from_size * map_dim; i++) {
       if(map->map[i] > -1) {
         map->map[i] = perm[map->map[i]];
@@ -632,46 +887,28 @@ void op_reorder_map(op_map map, int *perm, int *iperm, op_set set) {
     map->map = new_map;
     free(tmp_map);
   }
-
-//    printAdjList("reordered_mat.txt",map);
-  if(map->from == map->to)
+//  op_printf("done.\n");
+  //    printAdjList("reordered_mat.txt",map);
+  if(map->from == map->to) {
     printBandwidth(map);
-
-
-//    // Reuse tmp_map for reordering cellsToNodes
-//    for(int i=0; i < cellsToNodes->from->size; i++) {
-//      for(int j=0; j < 3; j++) new_map[3*i+j] = cellsToNodes->map[3*iperm[i]+j];
-//    }
-//    tmp_map = cellsToNodes->map;
-//    cellsToNodes->map = new_map;
-//    new_map = tmp_map;
-//
-//    // Reuse tmp_map for reordering cellsToEdges
-//    for(int i=0; i < cellsToEdges->from->size; i++) {
-//      for(int j=0; j < 3; j++) new_map[3*i+j] = cellsToEdges->map[3*iperm[i]+j];
-//    }
-//    tmp_map = cellsToEdges->map;
-//    cellsToEdges->map = new_map;
-//    new_map = tmp_map;
-//
-//    // Reorder edgesToCells
-//    for(int i=0; i < edgesToCells->from->size*2; i++) {
-//      if(edgesToCells->map[i] != -1) {
-//        edgesToCells->map[i] = perm[edgesToCells->map[i]];
-//      }
-//    }
+  }
 }
 
-void op_reorder_dat(op_dat dat, int *perm, int *iperm, op_set set) {
+/*
+ * Reorder set associated data according to the inverse permutation
+ * vector
+ */
+void op_reorder_dat(op_dat dat, int *iperm, op_set set) {
   if(dat->set != set) {
-    op_printf("Error: The dataset is not associated with the given set. \n");
+    op_printf("\nError: The dataset is not associated with the given set. \n");
     exit(-1);
   }
+//  op_printf("Reordering %s dat based on new ordering of %s set.", dat->name, set->name);
   int set_size = set->size;
   int dat_dim = dat->dim;
-    //
-    // Reorder op_dats according to the reordered cells
-    //
+  //
+  // Reorder op_dats according to the reordered cells
+  //
   float *tmp_dat = (float*) malloc(dat_dim * set_size *sizeof(float));
   float *data_ptr = NULL;
   // Reuse tmp_map for reordering cellCenters
@@ -686,7 +923,8 @@ void op_reorder_dat(op_dat dat, int *perm, int *iperm, op_set set) {
       data_ptr[dat_dim*i+j] = tmp_dat[dat_dim*i+j];
     }
   }
-  free(tmp_dat);
+//  free(tmp_dat);
+//  op_printf("done.\n");
 }
 
 //

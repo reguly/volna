@@ -35,7 +35,7 @@
 #define N_CELLSPEREDGE 2
 
 //
-//helper functions
+// Checks if error occured during hdf5 process and prints error message
 //
 #define check_hdf5_error(err) __check_hdf5_error(err, __FILE__, __LINE__)
 void __check_hdf5_error(herr_t err, const char *file, const int line) {
@@ -108,13 +108,43 @@ void triangleIndex(float *val, const float* x, const float* y, float* nodeCoords
 
 bool isLess(int i,int j) { return (i<j); }
 
+void print_info() {
+  op_printf("\nPlease specify the VOLNA configuration "
+    "script filename with the *.vln extension and the no-reorder "
+    "switch if needed, "
+    "e.g. ./volna2hdf5 bump.vln no-reorder\n");
+}
+
 int main(int argc, char **argv) {
-  if (argc < 2) {
-    printf("Wrong parameters! Please specify the VOLNA configuration "
-        "script filename with the *.vln extension and reorder if needed, "
-        "e.g. ./volna2hdf5 bump.vln GPSreorder\n");
+  bool reorder = true;
+  switch(argc) {
+  case 0:
+  case 1:
+    print_info();
+    exit(-1);
+    break;
+  case 2:
+    op_printf("\nImporting Volna data to HDF5 file by reordering "
+        "the numbering of cells, edges and nodes... (default)\n");
+    break;
+  case 3:
+    op_printf("\nImporting Volna data to HDF5 file by leaving the "
+        "original ordering untouched... (no-reorder)\n");
+    if(strcmp(argv[2], "no-reorder")==0) {
+      op_printf("no-reorder set: No reordering will be done during data import. \n");
+      reorder = false;
+    }else{
+      op_printf("Unrecognized reordering option! Exiting.\n");
+      exit(-1);
+    }
+    break;
+  default:
+    op_printf("Wrong parameters! \n");
+    print_info();
     exit(-1);
   }
+
+
 
   //
   ////////////// INIT VOLNA TO GET DATA FOR IMPORT //////////////
@@ -268,7 +298,7 @@ int main(int argc, char **argv) {
 
   op_printf("Importing data to OP2...\n");
 
-  int *cell = NULL; // Node IDs of cells
+  int *cnode = NULL; // Node IDs of cells
   int *ecell = NULL; // Cell IDs of edge
   int *ccell = NULL; // Cell IDs of neighbouring cells
   int *cedge = NULL; // Edge IDs of cells
@@ -299,7 +329,7 @@ int main(int argc, char **argv) {
   printf("  No. of edges = %d\n", nedge);
 
   // Arrays for mapping data
-  cell = (int*) malloc(N_NODESPERCELL * ncell * sizeof(int));
+  cnode = (int*) malloc(N_NODESPERCELL * ncell * sizeof(int));
   ecell = (int*) malloc(N_CELLSPEREDGE * nedge * sizeof(int));
   ccell = (int*) malloc(N_NODESPERCELL * ncell * sizeof(int));
   cedge = (int*) malloc(N_NODESPERCELL * ncell * sizeof(int));
@@ -341,7 +371,7 @@ int main(int argc, char **argv) {
   if (sim.CellValues.H.size() < sim.mesh.NVolumes) printf("SMALLER %d %d\n", sim.CellValues.H.size(), sim.mesh.NVolumes);
   for (i = 0; i < sim.mesh.NVolumes; i++) {
 
-    vertices = sim.mesh.Cells[i].vertices();
+    vertices  = sim.mesh.Cells[i].vertices();
     neighbors = sim.mesh.Cells[i].neighbors();
     facet_ids = sim.mesh.Cells[i].facets();
 
@@ -350,29 +380,30 @@ int main(int argc, char **argv) {
     int v1 = vertices[1] - 1;
     int v2 = vertices[2] - 1;
 
-    cell[i * N_NODESPERCELL] = v0;
-    cell[i * N_NODESPERCELL + 1] = v1;
-    cell[i * N_NODESPERCELL + 2] = v2;
+    cnode[i * N_NODESPERCELL]     = v0;
+    cnode[i * N_NODESPERCELL + 1] = v1;
+    cnode[i * N_NODESPERCELL + 2] = v2;
 
     // Set the bool values for vertices that are referenced by a cell
     isRefNode[v0] = 1;
     isRefNode[v1] = 1;
     isRefNode[v2] = 1;
 
-    ccell[i * N_NODESPERCELL] = neighbors[0];
-    ccell[i * N_NODESPERCELL + 1] = neighbors[1];
-    ccell[i * N_NODESPERCELL + 2] = neighbors[2];
 
-    cedge[i * N_NODESPERCELL] = facet_ids[0];
+    ccell[i * N_NODESPERCELL]     = (neighbors[0] == -1) ? i : neighbors[0];
+    ccell[i * N_NODESPERCELL + 1] = (neighbors[1] == -1) ? i : neighbors[1];
+    ccell[i * N_NODESPERCELL + 2] = (neighbors[2] == -1) ? i : neighbors[2];
+
+    cedge[i * N_NODESPERCELL]     = facet_ids[0];
     cedge[i * N_NODESPERCELL + 1] = facet_ids[1];
     cedge[i * N_NODESPERCELL + 2] = facet_ids[2];
 
-    ccent[i * MESH_DIM] = sim.mesh.CellCenters.x(i);
+    ccent[i * MESH_DIM]     = sim.mesh.CellCenters.x(i);
     ccent[i * MESH_DIM + 1] = sim.mesh.CellCenters.y(i);
 
     carea[i] = sim.mesh.CellVolumes(i);
 
-    w[i * N_STATEVAR] = sim.CellValues.H(i);
+    w[i * N_STATEVAR]     = sim.CellValues.H(i);
     w[i * N_STATEVAR + 1] = sim.CellValues.U(i);
     w[i * N_STATEVAR + 2] = sim.CellValues.V(i);
     w[i * N_STATEVAR + 3] = sim.CellValues.Zb(i);
@@ -494,33 +525,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  //
-  // Make an exclusive scan (all-prefix-sum or cummulative vector sum)
-  //
-  op_printf("Creating map for renumbering nodes by excluding removed node...\n");
-  isRefNode[0] = 0;
-  int prev = isRefNode[0];
-  int tmp = 0;
-  for(int i=1; i<nnode; i++) {
-    tmp = isRefNode[i-1] + prev;
-    prev = isRefNode[i];
-    isRefNode[i] = tmp;
-  }
-  op_printf("Updating list of node coordinates, number of nodes and cell-node map...\n");
-  int newnnode = isRefNode[nnode-1] + 1; // Number of node that are referenced by any cell
-  float* newx = (float*) malloc(MESH_DIM * newnnode * sizeof(float)); // Node coordinates that are referenced by any cell
-  int n, nRef;
-  for(int i=0; i<N_NODESPERCELL*ncell; i++) {
-    n = cell[i];
-    nRef  = isRefNode[n];
-    cell[i] = nRef;
-    newx[2*nRef  ] = x[2*n  ];
-    newx[2*nRef+1] = x[2*n+1];
-  }
-  free(x);
-  x = newx;
-  nnode = newnnode;
-
+  // Remove non-referenced nodes
+  op_remove_nonref(cnode, ncell, isRefNode, &nnode, &x);
 
   //
   // Define OP2 sets
@@ -528,7 +534,6 @@ int main(int argc, char **argv) {
   op_set nodes = op_decl_set(nnode, "nodes");
   op_set edges = op_decl_set(nedge, "edges");
   op_set cells = op_decl_set(ncell, "cells");
-
 
   //
   // Get OutputLocation: triangles that fall on the specified triangle
@@ -546,7 +551,7 @@ int main(int argc, char **argv) {
   		for (int i = 0; i < event_className.size(); i++) {
   			if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
   			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
-  										&x[2*cell[3*e]], &x[2*cell[3*e+1]], &x[2*cell[3*e+2]],	&w[4*e]);
+  										&x[2*cnode[3*e]], &x[2*cnode[3*e+1]], &x[2*cnode[3*e+2]],	&w[4*e]);
   			if (def != -1.0f*INFINITY) {
   				output_map[j] = e;
   				def = -1.0f*INFINITY;
@@ -559,12 +564,10 @@ int main(int argc, char **argv) {
   	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
   }
 
-
-
   //
   // Define OP2 set maps
   //
-  op_map cellsToNodes = op_decl_map(cells, nodes, N_NODESPERCELL, cell,
+  op_map cellsToNodes = op_decl_map(cells, nodes, N_NODESPERCELL, cnode,
                       "cellsToNodes");
   op_map edgesToCells = op_decl_map(edges, cells, N_CELLSPEREDGE, ecell,
               "edgesToCells");
@@ -584,71 +587,105 @@ int main(int argc, char **argv) {
   op_decl_dat(edges, MESH_DIM, "float", ecent,
               "edgeCenters");
   op_dat edgeLength = op_decl_dat(edges, 1, "float", eleng, "edgeLength");
-  op_decl_dat(nodes, MESH_DIM, "float", x, "nodeCoords");
-  op_dat values = op_decl_dat(cells, N_STATEVAR, "float", w, "values");
+  op_dat nodeCoords = op_decl_dat(nodes, MESH_DIM, "float", x, "nodeCoords");
+  op_dat values =     op_decl_dat(cells, N_STATEVAR, "float", w, "values");
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
-  if(n_initBathymetry == 0) {
-    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
-//    op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
-  } else if(n_initBathymetry == 1) {
-    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
-//    op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
-  } else if (n_initBathymetry > 1){
-    for(int k=0; k<n_initBathymetry; k++) {
-      char dat_name[255];
-      // Store iniBathymetry data with sequential numbering instead of iteration step numbering
-      sprintf(dat_name,"initBathymetry%d",k);
-      op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
-//      op_reorder_dat(temp_initBathymetry, cells_perm, cells_iperm, cells);
-    }
-  }
 
 
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
    * matrix bandwidth
    */
-  if(argc == 3) {
-#ifdef HAVE_PTSCOTCH
-    if(strcmp(argv[2], "GPSreorder") == 0) {
+  // arrays for permutation and inverse permutation maps
+  int *edges_perm, *edges_iperm;
+  int *nodes_perm, *nodes_iperm;
+  int *cells_perm, *cells_iperm;
 
+  edges_perm = (int*) malloc(edges->size * sizeof(int));
+  edges_iperm = (int*) malloc(edges->size * sizeof(int));
+  nodes_perm = (int*) malloc(nodes->size * sizeof(int));
+  nodes_iperm = (int*) malloc(nodes->size * sizeof(int));
+  cells_perm = (int*) malloc(cells->size * sizeof(int));
+  cells_iperm = (int*) malloc(cells->size * sizeof(int));
+
+#ifdef HAVE_PTSCOTCH
+    if(reorder) {
+      //  Reorder cells
+#warning "You also have to reorder cell data in initBathymtery datasets!"
+      op_printf("Reordering cells... \n");
+      op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
+      op_reorder_map(cellsToCells, cells_perm, cells_iperm, cells);
+      op_reorder_map(cellsToNodes, cells_perm, cells_iperm, cells);
+      op_reorder_map(cellsToEdges, cells_perm, cells_iperm, cells);
+      op_reorder_map(edgesToCells, cells_perm, cells_iperm, cells);
+      op_reorder_dat(cellCenters,  cells_iperm, cells);
+      op_reorder_dat(cellVolumes,  cells_iperm, cells);
+      op_reorder_dat(values,  cells_iperm, cells);
+
+      op_printf("Reordering edges... \n");
       // Reorder edges
-      int *edges_perm = NULL;
-      int *edges_iperm = NULL;
       // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
-      op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+//      op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+      op_get_permutation(&edges_perm, &edges_iperm, cellsToEdges, edges);
       // Reorder maps according to inverse perm.
       op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
       op_reorder_map(edgesToCells, edges_perm, edges_iperm, edges);
       // Reorder dats according to inverse perm.
-      op_reorder_dat(edgeNormals, edges_perm, edges_iperm, edges);
-      op_reorder_dat(edgeLength, edges_perm, edges_iperm, edges);
-      op_reorder_dat(isBoundary, edges_perm, edges_iperm, edges);
+      op_reorder_dat(edgeNormals, edges_iperm, edges);
+      op_reorder_dat(edgeLength, edges_iperm, edges);
+      op_reorder_dat(isBoundary, edges_iperm, edges);
 
-      //  Reorder cells
-      //  #warning "You also have to reorder cell data in initBathymtery datasets!"
-      //  int *cells_perm = NULL;
-      //  int *cells_iperm = NULL;
-      //
-      //  op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
-      //  op_reorder_map(cellsToCells, cells_perm, cells_iperm, cells);
-      //  op_reorder_map(cellsToNodes, cells_perm, cells_iperm, cells);
-      //  op_reorder_map(cellsToEdges, cells_perm, cells_iperm, cells);
-      //  op_reorder_map(edgesToCells, cells_perm, cells_iperm, cells);
-      //  op_reorder_dat(cellCenters, cells_perm, cells_iperm, cells);
-      //  op_reorder_dat(cellVolumes, cells_perm, cells_iperm, cells);
-      //  op_reorder_dat(values, cells_perm, cells_iperm, cells);
-    } else {
-      op_printf("Wrong reordering option! Terminating... \n");
-      exit(-1);
+      // Reorder nodes
+      op_printf("Reordering nodes... \n");
+      op_get_permutation(&nodes_perm, &nodes_iperm, cellsToNodes, nodes);
+      op_reorder_map(cellsToNodes, nodes_perm, nodes_iperm, nodes);
+      op_reorder_dat(nodeCoords, nodes_iperm, nodes);
     }
 #else
-    op_printf("Can not use GPS reordering, because no PT-SCOTCH library was defined during build. Rebuild volna2hdf5 with PT-SCOTCH! Exiting... \n");
+    op_printf("\nCan not use GPS reordering, because no PT-SCOTCH library was specified during build. Rebuild volna2hdf5 with PT-SCOTCH! Exiting... \n");
     exit(-1);
 #endif
+
+
+  if(n_initBathymetry == 0) {
+    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+#ifdef HAVE_PTSCOTCH
+    if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
+#endif
+  } else if(n_initBathymetry == 1) {
+    op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
+#ifdef HAVE_PTSCOTCH
+    if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
+#endif
+  } else if (n_initBathymetry > 1){
+    for(int k=0; k<n_initBathymetry; k++) {
+      char dat_name[255];
+      // Store iniBathymetry data with sequential numbering instead of iteration step numbering
+      sprintf(dat_name,"initBathymetry%d",k);
+      op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[k], dat_name);
+#ifdef HAVE_PTSCOTCH
+      if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
+#endif
+    }
   }
 
+  //
+  // Check maps for inconsistent references
+  //
+  check_map(cellsToCells);
+  check_map(cellsToEdges);
+  check_map(cellsToNodes);
+  check_map(edgesToCells);
+
+  //
+  // Check if references are correct
+  //
+//  for(int i=0; i < cellsToNodes->from->size; i++) {
+//    for(int j=0; j < cellsToNodes->dim; j++) {
+//      if(cellsToNodes->map[i*cellsToNodes->dim+j] == 10) cellsToNodes->map[i*cellsToNodes->dim+j]=0;
+//    }
+//    }
 
   //
   // Define HDF5 filename
@@ -783,11 +820,11 @@ int main(int argc, char **argv) {
   check_hdf5_error(H5Fclose(h5file));
   op_printf("HDF5 file written and closed successfully.\n");
 
-  free(cell);
-  //  free(ecell);
+  free(cnode);
+    free(ecell);
   free(ccell);
   free(cedge);
-  //  free(ccent); // Don't free ccent, it result in run-time error. WHY?
+    free(ccent); // Don't free ccent, it result in run-time error. WHY?
   free(carea);
   //  free(enorm); // Don't free enorm, it result in run-time error. WHY?
   free(ecent);
@@ -796,10 +833,15 @@ int main(int argc, char **argv) {
   free(initEta);
   free(initBathymetry);
   free(x);
-  free(newx);
   free(w);
   free(event_data);
   free(isRefNode);
+  free(cells_perm);
+  free(cells_iperm);
+  free(edges_perm);
+  free(edges_iperm);
+  free(nodes_perm);
+  free(nodes_iperm);
 
   op_exit();
 }
