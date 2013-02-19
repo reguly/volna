@@ -1,4 +1,5 @@
 HDF52VTK - tool to convert results to VTK
+=====
 
 Syntax: hdf52vtk geometry_filename.h5 sim_filename.h5 [0,1] [output.vtk]
 
