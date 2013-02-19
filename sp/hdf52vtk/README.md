@@ -11,7 +11,7 @@ the geometry data is the same.
 geometry_filename.h5 - Contains the geometric data that is used by the simulation.
                        Created by: ./volna2hdf5 script_filename.vln
 sim_result.h5        - Contains the simulation results.
-                         Created by: ./volna geometry_filename.h5
+                       Created by: ./volna geometry_filename.h5
 0,1                  - [optional] 0(default) - write data to ASCII VTK; 1 - write data to Binary VTK.
 output.vtk           - [optional] The name of the output VTK file. By default output.vtk
 
