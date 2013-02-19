@@ -108,6 +108,9 @@ void triangleIndex(float *val, const float* x, const float* y, float* nodeCoords
 
 bool isLess(int i,int j) { return (i<j); }
 
+/*
+ * Print essential infromation on the use of the program
+ */
 void print_info() {
   op_printf("\nPlease specify the VOLNA configuration "
     "script filename with the *.vln extension and the no-reorder "
@@ -144,15 +147,11 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
-
-
   //
   ////////////// INIT VOLNA TO GET DATA FOR IMPORT //////////////
   //
 
   op_printf("Importing data from VOLNA Framework ...\n");
-  //  op_mesh_io_import(filename_msh, 2, 3, &x, &cell, &edge, &ecell,
-  //      &bedge, &becell, &bound, &nnode, &ncell, &nedge, &nbedge);
 
   char const * const file = argv[1];
   spirit::file_iterator<> file_it(file);
@@ -340,7 +339,6 @@ int main(int argc, char **argv) {
   eleng = (float*) malloc(nedge * sizeof(float));
   isbound = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
-//  initBathymetry = (float*) malloc(ncell * sizeof(float));
   initBathymetry = (float**) malloc(sizeof(float*));
   initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
@@ -389,7 +387,6 @@ int main(int argc, char **argv) {
     isRefNode[v1] = 1;
     isRefNode[v2] = 1;
 
-
     ccell[i * N_NODESPERCELL]     = (neighbors[0] == -1) ? i : neighbors[0];
     ccell[i * N_NODESPERCELL + 1] = (neighbors[1] == -1) ? i : neighbors[1];
     ccell[i * N_NODESPERCELL + 2] = (neighbors[2] == -1) ? i : neighbors[2];
@@ -407,21 +404,6 @@ int main(int argc, char **argv) {
     w[i * N_STATEVAR + 1] = sim.CellValues.U(i);
     w[i * N_STATEVAR + 2] = sim.CellValues.V(i);
     w[i * N_STATEVAR + 3] = sim.CellValues.Zb(i);
-
-    //    std::cout << "Cell " << i << " nodes = " << vertices[0] << " "
-    //        << vertices[1] << " " << vertices[2] << std::endl;
-    //    std::cout << "Cell " << i << " neighbours = " << neighbors[0]
-    //        << " " << neighbors[1] << " " << neighbors[2] << std::endl;
-    //    std::cout << "Cell " << i << " facets  = " << facet_ids[0] << " "
-    //        << facet_ids[1] << " " << facet_ids[2] << std::endl;
-    //    std::cout << "Cell " << i << " center  = [ "
-    //        << ccent[i * N_NODESPERCELL] << " , "
-    //        << ccent[i * N_NODESPERCELL + 1] << " ]" << std::endl;
-    //    std::cout << "Cell " << i << " area  = " << carea[i] << std::endl;
-    //    std::cout << "Cell " << i << " w = [H u v Zb] = [ "
-    //        << w[i * N_STATEVAR] << " " << w[i * N_STATEVAR + 1] << " "
-    //        << w[i * N_STATEVAR + 2] << " " << w[i * N_STATEVAR + 3]
-    //        << " ] " << std::endl;
   }
 
   // Store edge data: edge-cell map, edge normal vectors
@@ -443,7 +425,6 @@ int main(int argc, char **argv) {
       isbound[i] = 0;
     }
 
-
     enorm[i * N_CELLSPEREDGE] = sim.mesh.FacetNormals.x(i);
     enorm[i * N_CELLSPEREDGE + 1] = sim.mesh.FacetNormals.y(i);
 
@@ -451,18 +432,6 @@ int main(int argc, char **argv) {
     ecent[i * N_CELLSPEREDGE + 1] = sim.mesh.FacetCenters.y(i);
 
     eleng[i] = sim.mesh.FacetVolumes(i);
-
-    //    std::cout << "Edge " << i << "   left cell = "
-    //        << sim.mesh.Facets[i].LeftCell() << "   right cell = "
-    //        << sim.mesh.Facets[i].RightCell() << std::endl;
-    //    std::cout << "Edge " << i << "   normal vector = [ "
-    //        << enorm[i * N_CELLSPEREDGE] << " , "
-    //        << enorm[i * N_CELLSPEREDGE + 1] << " ]" << std::endl;
-    //    std::cout << "Edge " << i << "   center vector = [ "
-    //        << ecent[i * N_CELLSPEREDGE] << " , "
-    //        << ecent[i * N_CELLSPEREDGE + 1] << " ]" << std::endl;
-    //    std::cout << "Edge " << i << "   length =  " << eleng[i]
-    //        << std::endl;
   }
 
   /*
@@ -525,7 +494,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  // Remove non-referenced nodes
+  // Remove nodes that are not referenced by any cell - this avoids
+  // problems occuring in partitioning.
+  //
   op_remove_nonref(cnode, ncell, isRefNode, &nnode, &x);
 
   //
@@ -592,7 +563,6 @@ int main(int argc, char **argv) {
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
 
-
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
    * matrix bandwidth
@@ -612,7 +582,6 @@ int main(int argc, char **argv) {
 #ifdef HAVE_PTSCOTCH
     if(reorder) {
       //  Reorder cells
-#warning "You also have to reorder cell data in initBathymtery datasets!"
       op_printf("Reordering cells... \n");
       op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
       op_reorder_map(cellsToCells, cells_perm, cells_iperm, cells);
@@ -626,7 +595,7 @@ int main(int argc, char **argv) {
       op_printf("Reordering edges... \n");
       // Reorder edges
       // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
-//      op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
+      // op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
       op_get_permutation(&edges_perm, &edges_iperm, cellsToEdges, edges);
       // Reorder maps according to inverse perm.
       op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
@@ -677,15 +646,6 @@ int main(int argc, char **argv) {
   check_map(cellsToEdges);
   check_map(cellsToNodes);
   check_map(edgesToCells);
-
-  //
-  // Check if references are correct
-  //
-//  for(int i=0; i < cellsToNodes->from->size; i++) {
-//    for(int j=0; j < cellsToNodes->dim; j++) {
-//      if(cellsToNodes->map[i*cellsToNodes->dim+j] == 10) cellsToNodes->map[i*cellsToNodes->dim+j]=0;
-//    }
-//    }
 
   //
   // Define HDF5 filename
@@ -821,12 +781,12 @@ int main(int argc, char **argv) {
   op_printf("HDF5 file written and closed successfully.\n");
 
   free(cnode);
-    free(ecell);
+  free(ecell);
   free(ccell);
   free(cedge);
-    free(ccent); // Don't free ccent, it result in run-time error. WHY?
+  free(ccent);
   free(carea);
-  //  free(enorm); // Don't free enorm, it result in run-time error. WHY?
+  //free(enorm); // Don't free enorm, it result in run-time error. WHY?
   free(ecent);
   free(eleng);
   free(isbound);

@@ -491,7 +491,7 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
     strcpy(pos, substituteIndex);
 // //MPI_Barrier(MPI_COMM_WORLD);
     op_printf("Writing OutputSimulation to HDF5 file: %s \n",filename);
-    op_fetch_data_hdf52(values, filename);
+    op_fetch_data_hdf5_file(values, filename);
 //   op_fetch_data_hdf52(values, "sim_result.h5");
   }
   else if(writeOption > 0) {

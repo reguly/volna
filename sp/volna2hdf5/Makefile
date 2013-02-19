@@ -25,8 +25,8 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
 MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
 ifdef PTSCOTCH_INSTALL_PATH
-PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+	PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
+	PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 endif
 
@@ -34,14 +34,14 @@ ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
 	CPPFLAGS = -O2 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
-	MPICPP = mpic++
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpic++
 	MPIFLAGS = $(CCFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
-	#CPPFLAGS = -O2 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
-	MPICPP = mpiCC
+	CPPFLAGS = -O2 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	#CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
@@ -50,24 +50,24 @@ endif
 endif
 
 
-#
-# master to make all versions
-#
-
-
 VOLNA_SOURCES = \
 	$(VOLNA_SRC)/values.cpp\
 	$(VOLNA_SRC)/event.cpp
-#  $(VOLNA_SRC)/geom.cpp\
 
 VOLNA_OBJECTS = $(VOLNA_SOURCES:.cpp=.o)
 
 all: clean volna2hdf5
 
 volna2hdf5: volna2hdf5.cpp ../volna_util.cpp $(VOLNA_OBJECTS) Makefile
-	$(MPICPP) $(CPPFLAGS) volna2hdf5.cpp ../volna_util.cpp $(VOLNA_OBJECTS) $(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(PARMETIS_INC) -I$(VOLNA_INSTALL_PATH) \
+ifdef MPI_INSTALL_PATH
+	$(MPICPP) $(CPPFLAGS) volna2hdf5.cpp ../volna_util.cpp $(VOLNA_OBJECTS) $(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch -I$(VOLNA_INSTALL_PATH) \
             -I$(VOLNA_INSTALL_PATH)/external $(VOLNA_INC) $(HDF5_INC) $(OP2_INC) \
             $(OP2_LIB) $(HDF5_LIB) -lop2_seq -lop2_hdf5 -o volna2hdf5
+else
+	$(CPP) $(CPPFLAGS) volna2hdf5.cpp ../volna_util.cpp $(VOLNA_OBJECTS) $(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch -I$(VOLNA_INSTALL_PATH) \
+            -I$(VOLNA_INSTALL_PATH)/external $(VOLNA_INC) $(HDF5_INC) $(OP2_INC) \
+            $(OP2_LIB) $(HDF5_LIB) -lop2_seq -lop2_hdf5 -o volna2hdf5
+endif
 
 #
 # cleanup

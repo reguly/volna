@@ -113,7 +113,6 @@ int main(int argc, char **argv) {
 	if(argc == 5) {
 	  sprintf(filename, "%s", argv[4]);
 	} else {
-	  char filename[255];
 	  sprintf(filename, "%s", filename_sim_h5);
 	  const char* substituteIndexPattern = ".h5";
 	  char* pos;

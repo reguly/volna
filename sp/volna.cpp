@@ -222,42 +222,21 @@ int main(int argc, char **argv) {
 
   op_diagnostic_output();
 
-//  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
+  /*
+   * The following 3 partitioners can be used
+   */
+  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
 
-
+  /*
+   * The following partitioners are not supported yet
+   */
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PTSCOTCH", "KWAY", NULL, cellsToEdges, NULL);
 //  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
-
-
-
-//  int *edges_perm, *edges_iperm;
-//
-//  edges_perm = (int*) malloc(edges->size * sizeof(int));
-//  edges_iperm = (int*) malloc(edges->size * sizeof(int));
-//
-//  op_printf("Reordering edges... \n");
-//  // Reorder edges
-//  // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
-////      op_get_permutation(&edges_perm, &edges_iperm, edgesToCells, edges);
-//  op_get_permutation(&edges_perm, &edges_iperm, cellsToEdges, edges);
-//  // Reorder maps according to inverse perm.
-//  op_reorder_map(cellsToEdges, edges_perm, edges_iperm, edges);
-//  op_reorder_map(edgesToCells, edges_perm, edges_iperm, edges);
-//  // Reorder dats according to inverse perm.
-//  op_reorder_dat(edgeNormals, edges_iperm, edges);
-//  op_reorder_dat(edgeLength, edges_iperm, edges);
-//  op_reorder_dat(isBoundary, edges_iperm, edges);
-
-
-
-
-
-
 
   // Timer variables
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -277,7 +256,6 @@ int main(int argc, char **argv) {
 	 */
   op_dat values_new = op_decl_dat_temp(cells, 4, "float",tmp_elem,"values_new"); //tmp - cells - dim 4
 
-  //temporary dats
   //EvolveValuesRK2
   op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
   op_dat inConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "inConservative"); //temp - cells - dim 4
@@ -292,7 +270,6 @@ int main(int argc, char **argv) {
   double timestep;
 
   while (timestamp < ftime) {
-//  while (itercount < 10) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
@@ -379,14 +356,10 @@ int main(int argc, char **argv) {
   }
 
 
-//    float* val_ptr;
-//    val_ptr = (float*) values->data;
-//    for(int i=0; i<N_STATEVAR*cellsToNodes->from->size; i++) {
-//     val_ptr[i] = i;
-//    }
-
-//  MPI_Barrier(MPI_COMM_WORLD);
-//  op_fetch_data_hdf52(values, "sim_result.h5");
+  /*
+   * Print last step results for validation
+   */
+  op_fetch_data_hdf5_file(values, "sim_result.h5");
   //output the result dat array to files
   op_print_dat_to_txtfile(values, "out_sim.dat"); //ASCI
   op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
@@ -418,8 +391,6 @@ int main(int argc, char **argv) {
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);
-
-  op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
 
   op_exit();
 

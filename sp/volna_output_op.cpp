@@ -464,42 +464,42 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
 
 //  printf("OutputSimulation running on instance %d \n ; %d \n", my_rank, cellsToNodes->from->size);
 
-//  // 0 - write to ASCII file
-//  if(writeOption == 0) {
-//    char filename[255];
-//    strcpy(filename, event->streamName.c_str());
-//    int nnode = nodeCoords->set->size;
-//    int ncell = cellsToNodes->from->size;
-//    const char* substituteIndexPattern = "%i";
-//    char* pos;
-//    pos = strstr(filename, substituteIndexPattern);
-//    char substituteIndex[255];
-//    sprintf(substituteIndex, "%04d.h5", timer->iter);
-//    strcpy(pos, substituteIndex);
-// //MPI_Barrier(MPI_COMM_WORLD);
-//    op_fetch_data_hdf52(values, filename);
-// //  op_fetch_data_hdf52(values, "sim_result.h5");
-//  }
-//  else if(writeOption > 0) {
-//    char filename[255];
-//    strcpy(filename, event->streamName.c_str());
-//    int nnode = nodeCoords->set->size;
-//    int ncell = cellsToNodes->from->size;
-//    const char* substituteIndexPattern = "%i";
-//    char* pos;
-//    pos = strstr(filename, substituteIndexPattern);
-//    char substituteIndex[255];
-//    sprintf(substituteIndex, "%04d.vtk", timer->iter);
-//    strcpy(pos, substituteIndex);
-//    switch(writeOption) {
-//    case 1:
-//      WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
-//      break;
-//    case 2:
-//      WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
-//      break;
-//    }
-//  }
+  // 0 - write to ASCII file
+  if(writeOption == 0) {
+    char filename[255];
+    strcpy(filename, event->streamName.c_str());
+    int nnode = nodeCoords->set->size;
+    int ncell = cellsToNodes->from->size;
+    const char* substituteIndexPattern = "%i";
+    char* pos;
+    pos = strstr(filename, substituteIndexPattern);
+    char substituteIndex[255];
+    sprintf(substituteIndex, "%04d.h5", timer->iter);
+    strcpy(pos, substituteIndex);
+ //MPI_Barrier(MPI_COMM_WORLD);
+    op_fetch_data_hdf5_file(values, filename);
+ //  op_fetch_data_hdf52(values, "sim_result.h5");
+  }
+  else if(writeOption > 0) {
+    char filename[255];
+    strcpy(filename, event->streamName.c_str());
+    int nnode = nodeCoords->set->size;
+    int ncell = cellsToNodes->from->size;
+    const char* substituteIndexPattern = "%i";
+    char* pos;
+    pos = strstr(filename, substituteIndexPattern);
+    char substituteIndex[255];
+    sprintf(substituteIndex, "%04d.vtk", timer->iter);
+    strcpy(pos, substituteIndex);
+    switch(writeOption) {
+    case 1:
+      WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
+      break;
+    case 2:
+      WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
+      break;
+    }
+  }
 }
 
 float normcomp(op_dat dat, int off) {

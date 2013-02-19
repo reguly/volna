@@ -13,7 +13,6 @@
 OP2_INC = -I$(OP2_INSTALL_PATH)/c/include
 OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib
 
-
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib 
 
@@ -21,14 +20,14 @@ ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
 	CPPFLAGS = -O2 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
-	MPICPP = mpic++
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpic++
 	MPIFLAGS = $(CCFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
+	CPPFLAGS = -O2 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
 	#CPPFLAGS = -O2 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
-	MPICPP = mpiCC
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
@@ -40,7 +39,6 @@ endif
 #
 # master to make all versions
 #
-
 all: clean hdf52vtk
 
 hdf52vtk: hdf52vtk.cpp ../volna_writeVTK.cpp Makefile
@@ -50,8 +48,6 @@ ifdef MPI_INSTALL_PATH
 else
 	$(CPP) $(CPPFLAGS) $(HDF5_LIB) $(OP2_LIB) ../volna_writeVTK.cpp hdf52vtk.cpp -lop2_hdf5 -lop2_seq $(HDF5_INC) $(OP2_INC) \
             -o hdf52vtk 
-#	$(CPPFLAGS) hdf52vtk.cpp ../volna_output.cpp $(HDF5_INC) $(OP2_INC) \
-#            $(OP2_LIB) $(HDF5_LIB) -lop2_seq -lop2_hdf5 -o hdf52vtk
 endif
 
 #

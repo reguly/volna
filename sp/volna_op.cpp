@@ -403,14 +403,14 @@ int main(int argc, char **argv) {
   }
 
 
-//    float* val_ptr;
-//    val_ptr = (float*) values->data;
-//    for(int i=0; i<N_STATEVAR*cellsToNodes->from->size; i++) {
-//     val_ptr[i] = i;
-//    }
 
-//  MPI_Barrier(MPI_COMM_WORLD);
-  op_fetch_data_hdf52(values, "sim_result.h5");
+  /*
+   * Print last step results for validation
+   */
+  op_fetch_data_hdf5_file(values, "sim_result.h5");
+  //output the result dat array to files
+  op_print_dat_to_txtfile(values, "out_sim.dat"); //ASCI
+  op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
 
 
   /*
