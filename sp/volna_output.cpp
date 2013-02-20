@@ -403,7 +403,7 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
   op_par_loop(gatherLocations, "gatherLocations", outputLocation_map->from,
         op_arg_dat(values, 0, outputLocation_map, 4, "float", OP_READ),
         op_arg_dat(outputLocation_dat, -1, OP_ID, 1, "float", OP_WRITE));
-//  op_fetch_data(outputLocation_dat);
+  //op_fetch_data(outputLocation_dat);
   outputLocation_lastupdate = timer->iter;
  }
 // float val = ((float*)(outputLocation_dat->data))[eventid];
@@ -412,12 +412,18 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
    float *tmp = (float*) malloc(N_STATEVAR*op_get_size(outputLocation_dat->set)*sizeof(float));
 //    op_fetch_data_hdf5(outputLocation_dat, tmp, 0, op_get_size(outputLocation_dat->set)-1);
 //    op_printf("OutputLocation:   %lf %10.20g        %d \n", timer->t, tmp[eventid], eventid);
-//    fprintf(fp, "%lf %10.20g\n", timer->t, tmp[eventid]);
-   free(tmp);
+
+    op_fetch_data_hdf5(values, tmp, 0, op_get_size(outputLocation_dat->set)-1);
+
+//  fprintf(fp, "OutputLocation: time = %lf  cell = %d   H = %10.20g\n", timer->t, outputLocation_map->map[0], tmp[eventid]);
+    op_printf("OutputLocation: time = %f  cell = %d  eventid = %d   H = %10.20f\n", timer->t, outputLocation_map->map[0], eventid, tmp[0]);
+//   free(tmp);
   if(fclose(fp)) {
     op_printf("can't close file %s\n",filename);
     exit(-1);
   }
+
+//  op_print_dat_to_txtfile(outputLocation_dat, "outputLocation.dat"); //ASCI
 
 
 //  char filename[255];
