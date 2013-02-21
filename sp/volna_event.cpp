@@ -2,12 +2,6 @@
 #include "op_lib_cpp.h"
 
 void __check_hdf5_error(herr_t err, const char *file, const int line);
-//  if (err < 0) {
-//    printf("%s(%i) : OP2_HDF5_error() Runtime API error %d.\n", file,
-//        line, (int) err);
-//    exit(-1);
-//  }
-//}
 
 int timer_happens(TimerParams *p) {
   int result;

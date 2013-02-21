@@ -79,7 +79,7 @@ endif
 
 volna_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 ifdef MPI_INSTALL_PATH
-	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
+	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
 else	
 	$(CPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
 endif
@@ -121,7 +121,7 @@ volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_write
 volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
 	$(PARMETIS_INC) $(PTSCOTCH_INC) \
-	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm volna_kernels.cpp $(OP2_LIB) -lop2_mpi \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_openmp
 
 volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_kernels_mpi_cu.o Makefile

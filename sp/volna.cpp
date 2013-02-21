@@ -224,16 +224,13 @@ int main(int argc, char **argv) {
   op_diagnostic_output();
 
   /*
-   * The following 3 partitioners can be used
+   * Partitioning
    */
-  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
+//  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-//  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
-  /*
-   * The following partitioners are not supported yet
-   */
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
