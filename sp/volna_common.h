@@ -17,6 +17,16 @@
 #define N_NODESPERCELL 3
 #define N_CELLSPEREDGE 2
 
+struct LocationData{
+  char filename[255];
+  int n_points; // Number of point of interest
+  float *tmp;
+  std::vector<float> time;
+  std::vector<float> value;
+};
+
+extern LocationData locationData;
+
 struct RectangleDomainParams {
   int nx, ny;
   float xmin, xmax, ymin, ymax;
@@ -71,7 +81,7 @@ void OutputTime(TimerParams *timer);
 void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values);
 void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_map outputLocation_map, op_dat outputLocation_dat);
 void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values);
-void OutputMaxElevation(EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells);
+void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells);
 float normcomp(op_dat dat, int off);
 void dumpme(op_dat dat, int off);
 

@@ -31,9 +31,6 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
   std::vector<float> event_location_x(num_events);
   std::vector<float> event_location_y(num_events);
   std::vector<int> event_post_update(num_events);
-//  std::vector<std::string> event_className(num_events);
-//  std::vector<std::string> event_formula(num_events);
-//  std::vector<std::string> event_streamName(num_events);
 
   //const hsize_t num_events_hsize = num_events;
   check_hdf5_error(H5LTread_dataset(h5file, "timer_start", H5T_NATIVE_FLOAT, &timer_start[0]));
@@ -51,7 +48,6 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
    * Convert Arrays to AoS
    */
   char buffer[22];
-//  char* eventBuffer;
   std::vector<char> eventBuffer;
   int length = 0;
   for (int i = 0; i < num_events; i++) {
@@ -72,34 +68,27 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
     memset(buffer,0,22);
     sprintf(buffer, "event_className%d",i);
     check_hdf5_error(H5LTget_attribute_int(h5file, buffer, "length", &length));
-//    eventBuffer = (char*) malloc(length);
     eventBuffer.resize(length);
     check_hdf5_error(H5LTread_dataset_string(h5file, buffer, &eventBuffer[0]));
     (*events)[i].className.assign(&eventBuffer[0], length);
 
-		if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0)
-			(*num_outputLocation)++;
-//    free(eventBuffer);
+    if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0)
+      (*num_outputLocation)++;
 
     memset(buffer,0,22);
     sprintf(buffer, "event_formula%d",i);
     check_hdf5_error(H5LTget_attribute_int(h5file, buffer, "length", &length));
-//    eventBuffer = (char*)malloc(length);
     eventBuffer.resize(length);
     check_hdf5_error(H5LTread_dataset_string(h5file, buffer, &eventBuffer[0]));
     (*events)[i].formula.assign(&eventBuffer[0], length);
-//    free(eventBuffer);
 
     memset(buffer,0,22);
     sprintf(buffer, "event_streamName%d",i);
     check_hdf5_error(H5LTget_attribute_int(h5file, buffer, "length", &length));
-//    eventBuffer = (char*)malloc(length);
     eventBuffer.resize(length);
     check_hdf5_error(H5LTread_dataset_string(h5file, buffer, &eventBuffer[0]));
     (*events)[i].streamName.assign(&eventBuffer[0], length);
-//    free(eventBuffer);
   }
-
 }
 
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
@@ -107,10 +96,10 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry,
 									 int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
-//  op_printf("processEvents()... \n");
+  //  op_printf("processEvents()... \n");
   int size = (*timers).size();
   int i = 0;
-	int j = 0;
+  int j = 0;
   while (i < size){
     if (timer_happens(&(*timers)[i]) && (initPrePost==2 || (*events)[i].post_update==initPrePost)) {
       if (strcmp((*events)[i].className.c_str(), "InitEta") == 0) {
@@ -151,14 +140,16 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         // Remove comment if needed:
         // 0 - HDF5 output
         // 1 - VTK ASCII output
-        // OutputSimulation(0, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
         // 2 - VTK Binary output
         OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {
-        OutputMaxElevation(&(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
+        // 0 - HDF5 output
+        // 1 - VTK ASCII output
+        // 2 - VTK Binary output
+        OutputMaxElevation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
       } else {
         op_printf("Unrecognized event %s\n", (*events)[i].className.c_str());
-//        exit(-1);
+        exit(-1);
       }
       //timer.LocalReset();
       (*timers)[i].localIter = 0;

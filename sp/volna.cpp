@@ -11,6 +11,7 @@
 #include "op_seq.h"
 
 //these are not const, we just don't want to pass them around
+LocationData locationData;
 float timestamp = 0.0;
 int itercount = 0;
 
@@ -228,7 +229,8 @@ int main(int argc, char **argv) {
   op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-
+//  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
   /*
    * The following partitioners are not supported yet
    */
@@ -237,6 +239,7 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PTSCOTCH", "KWAY", NULL, cellsToEdges, NULL);
 //  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+//  op_partition("PTSCOTCH", "KWAY", NULL, cellsToEdges, NULL);
 
   // Timer variables
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -363,6 +366,28 @@ int main(int argc, char **argv) {
   //output the result dat array to files
   op_print_dat_to_txtfile(values, "out_sim.dat"); //ASCI
   op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
+
+  /*
+   * Write outputLocation data into file
+   */
+  if(op_is_root()) {
+    FILE* fp;
+    fp = fopen(locationData.filename, "w");
+    if(fp == NULL) {
+      op_printf("can't open file for write %s\n",locationData.filename);
+      exit(-1);
+    }
+    for(int i=0; i<locationData.time.size() ; i++) {
+      fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i], locationData.value[i]);
+    }
+    if(fclose(fp)) {
+      op_printf("can't close file %s\n",locationData.filename);
+      exit(-1);
+    }
+    locationData.time.clear();
+    locationData.value.clear();
+  }
+
 
   /*
    *	 Free temporary dats
