@@ -82,24 +82,21 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
     op_par_loop(gatherLocations, "gatherLocations", outputLocation_map->from,
         op_arg_dat(values, 0, outputLocation_map, 4, "float", OP_READ),
         op_arg_dat(outputLocation_dat, -1, OP_ID, 1, "float", OP_WRITE));
-    //op_fetch_data(outputLocation_dat);
+    // Fetch data on every node
+    op_fetch_data_hdf5(outputLocation_dat, locationData.tmp, 0, locationData.n_points-1);
     outputLocation_lastupdate = timer->iter;
   }
 
-  // Create data structure in first OutputLocation() call
-  if (timer->iter == timer->istart) {
-    strcpy(locationData.filename, event->streamName.c_str());
-    locationData.n_points = op_get_size(outputLocation_dat->set);
-    locationData.tmp = (float*) malloc(locationData.n_points*sizeof(float));
-  }
-  // Fetch data on every node
-  op_fetch_data_hdf5(outputLocation_dat, locationData.tmp, 0, locationData.n_points-1);
   //op_printf("OutputLocation: time = %f  eventid = %d   H = %10.20f\n", timer->t, eventid, locationData.tmp[0]);
   // Write location data to std vectors
   if(op_is_root()) {
-    locationData.time.push_back(timer->t);
-    for(int i=0; i<locationData.n_points; i++)
-      locationData.value.push_back(locationData.tmp[i]);
+    for (int j = 0; j < locationData.n_points; j++) {
+      if (locationData.filename[j] == event->streamName) {
+        locationData.time[j].push_back(timer->t);
+        locationData.value[j].push_back(locationData.tmp[j]);
+        break;
+      }
+    }
   }
 }
 

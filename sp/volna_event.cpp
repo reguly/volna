@@ -94,6 +94,19 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
   int size = (*timers).size();
   int i = 0;
   int j = 0;
+  if (firstTime) {
+    while (i < size) {
+      if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
+        locationData.filename.push_back((*events)[i].streamName);
+      }
+      i++;
+    }
+    locationData.n_points = locationData.filename.size();
+    locationData.time.resize(locationData.n_points);
+    locationData.value.resize(locationData.n_points);
+    locationData.tmp = (float*) malloc(locationData.n_points*sizeof(float));
+    i = 0;
+  }
   while (i < size){
     if (timer_happens(&(*timers)[i]) && (initPrePost==2 || (*events)[i].post_update==initPrePost)) {
       if (strcmp((*events)[i].className.c_str(), "InitEta") == 0) {

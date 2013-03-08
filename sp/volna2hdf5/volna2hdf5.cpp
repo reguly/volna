@@ -507,35 +507,6 @@ int main(int argc, char **argv) {
   op_set cells = op_decl_set(ncell, "cells");
 
   //
-  // Get OutputLocation: triangles that fall on the specified triangle
-  //
-  op_set outputLocation = NULL;
-  op_map outputLocation_map = NULL;
-  op_dat outputLocation_dat = NULL;
-  if (num_outputLocation) {
-  	float def = -1.0f*INFINITY;
-  	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
-  	float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
-  	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
-  	for (int e = 0; e < ncell; e++) {
-  		int j = 0;
-  		for (int i = 0; i < event_className.size(); i++) {
-  			if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
-  			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
-  										&x[2*cnode[3*e]], &x[2*cnode[3*e+1]], &x[2*cnode[3*e+2]],	&w[4*e]);
-  			if (def != -1.0f*INFINITY) {
-  				output_map[j] = e;
-  				def = -1.0f*INFINITY;
-  				printf("Location %d found in cell %d\n", j, e);
-  			}
-  			j++;
-  		}
-  	}
-  	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
-  	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
-  }
-
-  //
   // Define OP2 set maps
   //
   op_map cellsToNodes = op_decl_map(cells, nodes, N_NODESPERCELL, cnode,
@@ -637,6 +608,38 @@ int main(int argc, char **argv) {
       if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
 #endif
     }
+  }
+  
+  //
+  // Get OutputLocation: triangles that fall on the specified triangle
+  //
+  op_set outputLocation = NULL;
+  op_map outputLocation_map = NULL;
+  op_dat outputLocation_dat = NULL;
+  if (num_outputLocation) {
+  	float def = -1.0f*INFINITY;
+  	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
+    float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
+    float *x = (float*)nodeCoords->data;
+    float *w = (float*)values->data;
+    int *cnode = (int*)cellsToNodes->map;
+  	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
+  	for (int e = 0; e < ncell; e++) {
+  		int j = 0;
+  		for (int i = 0; i < event_className.size(); i++) {
+  			if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
+  			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
+  										&x[2*cnode[3*e]], &x[2*cnode[3*e+1]], &x[2*cnode[3*e+2]],	&w[4*e]);
+  			if (def != -1.0f*INFINITY) {
+  				output_map[j] = e;
+  				def = -1.0f*INFINITY;
+  				printf("Location %d found in cell %d\n", j, e);
+  			}
+  			j++;
+  		}
+  	}
+  	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
+  	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
   }
 
   //

@@ -359,28 +359,31 @@ int main(int argc, char **argv) {
   /*
    * Print last step results for validation
    */
-  op_fetch_data_hdf5_file(values, "sim_result.h5");
+  //op_fetch_data_hdf5_file(values, "sim_result.h5");
   //output the result dat array to files
-  op_print_dat_to_txtfile(values, "out_sim.dat"); //ASCI
-  op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
+  //op_print_dat_to_txtfile(values, "out_sim.dat"); //ASCI
+  //op_print_dat_to_binfile(values, "out_sim.bin"); //Binary
 
   /*
    * Write outputLocation data into file
    */
   if(op_is_root()) {
-    FILE* fp;
-    fp = fopen(locationData.filename, "w");
-    if(fp == NULL) {
-      op_printf("can't open file for write %s\n",locationData.filename);
-      exit(-1);
+    for (int i = 0; i < locationData.n_points; i++) {
+      FILE* fp;
+      fp = fopen(locationData.filename[i].c_str(), "w");
+      if(fp == NULL) {
+        op_printf("can't open file for write %s\n",locationData.filename[i].c_str());
+        exit(-1);
+      }
+      for(unsigned int j=0; j<locationData.time[i].size() ; j++) {
+        fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i][j], locationData.value[i][j]);
+      }
+      if(fclose(fp)) {
+        op_printf("can't close file %s\n",locationData.filename[i].c_str());
+        exit(-1);
+      }
     }
-    for(int i=0; i<locationData.time.size() ; i++) {
-      fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i], locationData.value[i]);
-    }
-    if(fclose(fp)) {
-      op_printf("can't close file %s\n",locationData.filename);
-      exit(-1);
-    }
+    locationData.filename.clear();
     locationData.time.clear();
     locationData.value.clear();
   }

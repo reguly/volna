@@ -18,11 +18,11 @@
 #define N_CELLSPEREDGE 2
 
 struct LocationData{
-  char filename[255];
+  std::vector<std::string> filename;
   int n_points; // Number of point of interest
   float *tmp;
-  std::vector<float> time;
-  std::vector<float> value;
+  std::vector<std::vector<float> > time;
+  std::vector<std::vector<float> > value;
 };
 
 extern LocationData locationData;
