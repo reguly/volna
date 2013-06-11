@@ -666,7 +666,7 @@ int main(int argc, char **argv) {
   //
   // Write mesh and geometry data to HDF5
   //
-  op_write_hdf5(filename_h5);
+  op_dump_to_hdf5(filename_h5);
 
   //
   // Read constants and write to HDF5
