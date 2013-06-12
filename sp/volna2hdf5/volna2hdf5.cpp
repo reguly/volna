@@ -613,6 +613,8 @@ int main(int argc, char **argv) {
   //
   // Get OutputLocation: triangles that fall on the specified triangle
   //
+  double t1,t2,c1,c2;
+  op_timers(&c1,&t1);
   op_set outputLocation = NULL;
   op_map outputLocation_map = NULL;
   op_dat outputLocation_dat = NULL;
@@ -620,28 +622,35 @@ int main(int argc, char **argv) {
   	float def = -1.0f*INFINITY;
   	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
     float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
+    vector<int> done(event_className.size(), 0);
+    for (int i = 0; i < event_className.size(); i++) {
+      if (strcmp(event_className[i].c_str(), "OutputLocation")) done[i] = -1;
+		}
     float *x = (float*)nodeCoords->data;
     float *w = (float*)values->data;
     int *cnode = (int*)cellsToNodes->map;
   	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
   	for (int e = 0; e < ncell; e++) {
-  		int j = 0;
+      int j = 0;
   		for (int i = 0; i < event_className.size(); i++) {
-  			if (strcmp(event_className[i].c_str(), "OutputLocation")) continue;
+        if (done[i]==1) {j++; continue;}
+        if (done[i]==-1) continue;
   			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
   										&x[2*cnode[3*e]], &x[2*cnode[3*e+1]], &x[2*cnode[3*e+2]],	&w[4*e]);
   			if (def != -1.0f*INFINITY) {
   				output_map[j] = e;
   				def = -1.0f*INFINITY;
+          done[i] = 1;
   				printf("Location %d found in cell %d\n", j, e);
   			}
-  			j++;
+				j++;
   		}
   	}
   	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
   	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
   }
-
+  op_timers(&c2,&t2);
+  printf("OutputLocation time %g\n", t2-t1);
   //
   // Check maps for inconsistent references
   //
@@ -653,7 +662,7 @@ int main(int argc, char **argv) {
   //
   // Define HDF5 filename
   //
-  char *filename_h5 = (char*)malloc(strlen(file)); // gaussian_landslide.vln -->  gaussian_landslide.h5
+  char *filename_h5 = (char*)malloc(strlen(file)+1); // gaussian_landslide.vln -->  gaussian_landslide.h5
   strcpy(filename_h5, file);
   const char* substituteIndexPattern = ".vln";
   char* pos;
@@ -782,11 +791,11 @@ int main(int argc, char **argv) {
 
   check_hdf5_error(H5Fclose(h5file));
   op_printf("HDF5 file written and closed successfully.\n");
-
-  free(cnode);
-  free(ecell);
-  free(ccell);
-  free(cedge);
+  
+  free(cellsToCells->map);
+  free(cellsToNodes->map);
+  free(cellsToEdges->map);
+  free(edgesToCells->map);
   free(ccent);
   free(carea);
   //free(enorm); // Don't free enorm, it result in run-time error. WHY?
