@@ -5,6 +5,7 @@
 
 #include "op_seq.h"
 
+
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
                          op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
@@ -32,8 +33,12 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     printf("maxFacetEigenvalues %g edgeLen %g cellVol %g\n", normcomp(maxEdgeEigenvalues, 0), normcomp(edgeLength, 0), normcomp(cellVolumes, 0));
 #endif
     op_par_loop(NumericalFluxes, "NumericalFluxes", cells,
-                op_arg_dat(maxEdgeEigenvalues, -3, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(edgeLength, -3, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(maxEdgeEigenvalues, 0, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(maxEdgeEigenvalues, 1, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(maxEdgeEigenvalues, 2, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(edgeLength, 0, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(edgeLength, 1, cellsToEdges, 1, "float", OP_READ),
+                op_arg_dat(edgeLength, 2, cellsToEdges, 1, "float", OP_READ),
                 op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
                 op_arg_gbl(minTimestep,1,"float", OP_MIN));
@@ -46,6 +51,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(bathySource, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(edgeNormals, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(isBoundary, -1, OP_ID, 1, "int", OP_READ),
-                op_arg_dat(cellVolumes, -2, edgesToCells, 1, "float", OP_READ));
-  } //end SpaceDiscretization
+                op_arg_dat(cellVolumes, 0, edgesToCells, 1, "float", OP_READ),
+                op_arg_dat(cellVolumes, 1, edgesToCells, 1, "float", OP_READ));
+    }
 }

@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
       }
   }
 
-  op_diagnostic_output();
+  if (op_is_root()) op_diagnostic_output();
 
   /*
    * Partitioning
@@ -229,8 +229,8 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
-//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+//  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
@@ -291,7 +291,6 @@ int main(int argc, char **argv) {
 #endif
       float dT = CFL * minTimestep;
 
-//      op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_2", cells,
       op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_RW),
