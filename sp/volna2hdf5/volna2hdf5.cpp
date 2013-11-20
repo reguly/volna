@@ -1,7 +1,5 @@
-#include<hdf5.h>
-#include<hdf5_hl.h>
-#include<stdio.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include<math.h>
 #include<string.h>
 #include<fstream>
@@ -11,6 +9,8 @@
 #include<limits.h>
 #include<algorithm>
 
+#include<hdf5.h>
+#include<hdf5_hl.h>
 
 #include "../volna_util.h"
 

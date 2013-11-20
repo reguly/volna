@@ -65,23 +65,23 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
 //    printf("%g %g %g %g\n", rightCellValues[0], rightCellValues[1], rightCellValues[2], rightCellValues[3]);
   }
 
-  InterfaceBathy = max(leftCellValues[3], rightCellValues[3]);
+  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   //SpaceDiscretization_1
   bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
   bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
   leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  leftCellValues[0] = max(leftCellValues[0], 0.0f);
+  leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  rightCellValues[0] = max(rightCellValues[0], 0.0f);
+  rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
   //NumericalFluxes_1
   bathySource[0] -= .5f * g * (leftCellValues[0]*leftCellValues[0]);
   bathySource[1] -= .5f * g * (rightCellValues[0]*rightCellValues[0]);
   bathySource[0] *= *edgeLength;
   bathySource[1] *= *edgeLength;
   float cL = sqrt(g * leftCellValues[0]);
-  cL = max(cL, 0.0f);
+  cL = cL > 0.0f ? cL : 0.0f;
   float cR = sqrt(g * rightCellValues[0]);
-  cR = max(cR, 0.0f);
+  cR = cR > 0.0f ? cR : 0.0f;
 
   float uLn = leftCellValues[1] * edgeNormals[0] + leftCellValues[2] * edgeNormals[1];
   float uRn = rightCellValues[1] * edgeNormals[0] + rightCellValues[2] * edgeNormals[1];
@@ -89,20 +89,20 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
   float unStar = 0.5f * (uLn + uRn) - 0.25f* (cL+cR);
   float cStar = 0.5f * (cL + cR) - 0.25f* (uLn-uRn);
 
-  float sL = min((uLn - cL), (unStar - cStar));
-  float sLMinus = min(sL, 0.0f);
+  float sL = (uLn - cL) < (unStar - cStar) ? (uLn - cL) : (unStar - cStar);
+  float sLMinus = sL < 0.0f ? sL : 0.0f;
 
-  float sR = max((uRn + cR), (unStar + cStar));
-  float sRPlus = max(sR, 0.0f);
+  float sR = (uRn + cR) > (unStar + cStar) ? (uRn + cR) : (unStar + cStar);
+  float sRPlus = sR > 0.0f ? sR : 0.0f;
 
-  sL = select_lt(leftCellValues[0], EPS, uRn - 2.0f*cR, sL); // is this 2.0 or 2? (i.e. float/int)
-  sR = select_lt(leftCellValues[0], EPS, uRn + cR, sR);
+  sL = leftCellValues[0] < EPS ? uRn - 2.0f*cR : sL; // is this 2.0 or 2? (i.e. float/int)
+  sR = leftCellValues[0] < EPS ? uRn + cR : sR;
 
-  sR = select_lt(rightCellValues[0], EPS, uLn + 2.0f*cL, sR); // is this 2.0 or 2? (i.e. float/int)
-  sL = select_lt(rightCellValues[0], EPS, uLn - cL, sL);
+  sR = rightCellValues[0] < EPS ? uLn + 2.0f*cL : sR; // is this 2.0 or 2? (i.e. float/int)
+  sL = rightCellValues[0] < EPS ? uLn - cL : sL;
 
   float sRMinussL = sRPlus - sLMinus;
-  sRMinussL = max(sRMinussL, EPS);
+  sRMinussL = sRMinussL < EPS ? EPS : sRMinussL;
 
   float t1 = sRPlus / sRMinussL;
   //assert( ( 0 <= t1 ) && ( t1 <= 1 ) );
@@ -162,8 +162,8 @@ inline void computeFluxes(float *cellLeft, float *cellRight,
 //  out[3] = 0.0;
 
   float maximum = fabs(uLn + cL);
-  maximum = max(maximum, fabs(uLn - cL));
-  maximum = max(maximum, fabs(uRn + cR));
-  maximum = max(maximum, fabs(uRn - cR));
+  maximum = maximum > fabs(uLn - cL) ? maximum : fabs(uLn - cL);
+  maximum = maximum > fabs(uRn + cR) ? maximum : fabs(uRn + cR);
+  maximum = maximum > fabs(uRn - cR) ? maximum : fabs(uRn - cR);
   *maxEdgeEigenvalues = maximum;
 }
