@@ -291,7 +291,6 @@ int main(int argc, char **argv) {
 #endif
       float dT = CFL * minTimestep;
 
-//      op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_2", cells,
       op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_RW),
@@ -368,19 +367,42 @@ int main(int argc, char **argv) {
    * Write outputLocation data into file
    */
   if(op_is_root()) {
-    for (int i = 0; i < locationData.n_points; i++) {
-      FILE* fp;
-      fp = fopen(locationData.filename[i].c_str(), "w");
-      if(fp == NULL) {
-        op_printf("can't open file for write %s\n",locationData.filename[i].c_str());
-        exit(-1);
+    int compressed = 0;
+    if (locationData.n_points>0) {
+      int len = locationData.time[0].size();
+      int same = 1;
+      for (int i = 1; i < locationData.n_points; i++) {
+        if (locationData.time[0].size() != locationData.time[i].size()) same = 0;
       }
-      for(unsigned int j=0; j<locationData.time[i].size() ; j++) {
-        fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i][j], locationData.value[i][j]);
+      if (same) compressed = 1;
+    }
+    if (compressed) {
+      int len = locationData.time[0].size();
+      int pts = locationData.n_points;
+      int pts1 = locationData.n_points+1;
+      float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float)); 
+      for (int i = 0; i < len; i++) {
+        loc_data[i*pts1] = locationData.time[0][i];
+        for (int j = 0; j < pts; j++) {
+          loc_data[i*pts1+1+j] = locationData.value[j][i];
+        }
       }
-      if(fclose(fp)) {
-        op_printf("can't close file %s\n",locationData.filename[i].c_str());
-        exit(-1);
+      write_locations_hdf5(loc_data, pts1,len, "gauges.h5");
+    } else {
+      for (int i = 0; i < locationData.n_points; i++) {
+        FILE* fp;
+        fp = fopen(locationData.filename[i].c_str(), "w");
+        if(fp == NULL) {
+          op_printf("can't open file for write %s\n",locationData.filename[i].c_str());
+          exit(-1);
+        }
+        for(unsigned int j=0; j<locationData.time[i].size() ; j++) {
+          fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i][j], locationData.value[i][j]);
+        }
+        if(fclose(fp)) {
+          op_printf("can't close file %s\n",locationData.filename[i].c_str());
+          exit(-1);
+        }
       }
     }
     locationData.filename.clear();
