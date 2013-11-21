@@ -630,6 +630,7 @@ int main(int argc, char **argv) {
     float *w = (float*)values->data;
     int *cnode = (int*)cellsToNodes->map;
   	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
+//  	#pragma omp parallel for shared(done,output_map)
   	for (int e = 0; e < ncell; e++) {
       int j = 0;
   		for (int i = 0; i < event_className.size(); i++) {

@@ -37,7 +37,17 @@ void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char 
   /* Create a file.  */
   file_id = H5Fcreate (filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
-
+  /* Write dimensions */
+  dims[0] = 2;
+  int dimensions[2] = {dim_cont, dim_stride};
+  dataspace_id = H5Screate_simple(1, dims, NULL);
+  dataset_id = H5Dcreate(file_id, "dims", H5T_NATIVE_INT, dataspace_id,
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  //write data
+  H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, dataspace_id, H5P_DEFAULT, (char*)dimensions);
+  H5Dclose(dataset_id);
+  H5Sclose(dataspace_id);
+  
   /* Create dataset "Compressed Data" in the group using absolute name.  */
   dims[0] = dim_cont*dim_stride;
   dataspace_id = H5Screate_simple (1, dims, NULL);

@@ -221,7 +221,7 @@ int main(int argc, char **argv) {
       }
   }
 
-  op_diagnostic_output();
+  if (op_is_root()) op_diagnostic_output();
 
   /*
    * Partitioning
@@ -354,7 +354,9 @@ int main(int argc, char **argv) {
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 
-
+  op_timers(&cpu_t2, &wall_t2);
+  op_timing_output();
+  op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
   /*
    * Print last step results for validation
    */

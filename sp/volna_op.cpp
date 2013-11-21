@@ -248,7 +248,7 @@ int main(int argc, char **argv) {
       }
   }
 
-  op_diagnostic_output();
+  if (op_is_root()) op_diagnostic_output();
 
   /*
    * Partitioning
@@ -256,8 +256,8 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
-//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+//  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
@@ -382,7 +382,10 @@ int main(int argc, char **argv) {
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 
-
+  op_timers(&cpu_t2, &wall_t2);
+  op_timing_output();
+  op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
+  
   /*
    * Print last step results for validation
    */
@@ -394,26 +397,49 @@ int main(int argc, char **argv) {
   /*
    * Write outputLocation data into file
    */
-  if(op_is_root()) {
-    for (int i = 0; i < locationData.n_points; i++) {
-      FILE* fp;
-      fp = fopen(locationData.filename[i].c_str(), "w");
-      if(fp == NULL) {
-        op_printf("can't open file for write %s\n",locationData.filename[i].c_str());
-        exit(-1);
-      }
-      for(unsigned int j=0; j<locationData.time[i].size() ; j++) {
-        fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i][j], locationData.value[i][j]);
-      }
-      if(fclose(fp)) {
-        op_printf("can't close file %s\n",locationData.filename[i].c_str());
-        exit(-1);
-      }
-    }
-    locationData.filename.clear();
-    locationData.time.clear();
-    locationData.value.clear();
-  }
+   if(op_is_root()) {
+     int compressed = 0;
+     if (locationData.n_points>0) {
+       int len = locationData.time[0].size();
+       int same = 1;
+       for (int i = 1; i < locationData.n_points; i++) {
+         if (locationData.time[0].size() != locationData.time[i].size()) same = 0;
+       }
+       if (same) compressed = 1;
+     }
+     if (compressed) {
+       int len = locationData.time[0].size();
+       int pts = locationData.n_points;
+       int pts1 = locationData.n_points+1;
+       float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float)); 
+       for (int i = 0; i < len; i++) {
+         loc_data[i*pts1] = locationData.time[0][i];
+         for (int j = 0; j < pts; j++) {
+           loc_data[i*pts1+1+j] = locationData.value[j][i];
+         }
+       }
+       write_locations_hdf5(loc_data, pts1,len, "gauges.h5");
+     } else {
+       for (int i = 0; i < locationData.n_points; i++) {
+         FILE* fp;
+         fp = fopen(locationData.filename[i].c_str(), "w");
+         if(fp == NULL) {
+           op_printf("can't open file for write %s\n",locationData.filename[i].c_str());
+           exit(-1);
+         }
+         for(unsigned int j=0; j<locationData.time[i].size() ; j++) {
+           fprintf(fp, "%1.10f  %10.20g\n", locationData.time[i][j], locationData.value[i][j]);
+         }
+         if(fclose(fp)) {
+           op_printf("can't close file %s\n",locationData.filename[i].c_str());
+           exit(-1);
+         }
+       }
+     }
+     locationData.filename.clear();
+     locationData.time.clear();
+     locationData.value.clear();
+   }
 
 
   /*
