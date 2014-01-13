@@ -38,7 +38,7 @@ struct BoreParams {
 };
 
 //these are not const, we just don't want to pass them around
-extern float timestamp;
+extern double timestamp;
 extern int itercount;
 
 //constants
@@ -50,7 +50,7 @@ struct GaussianLandslideParams {
 };
 
 struct TimerParams {
-  float start, end, step, localTime, t;
+  double start, end, step, localTime, t;
   unsigned int istart, iend, istep, localIter, iter;
 };
 
@@ -60,6 +60,7 @@ struct EventParams {
   std::string className;
   std::string formula;
   std::string streamName;
+  int loc_index;
 };
 
 int timer_happens(TimerParams *p);

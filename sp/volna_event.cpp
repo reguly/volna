@@ -162,9 +162,11 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
   int i = 0;
   int j = 0;
   if (firstTime) {
+    int k = 0;
     while (i < size) {
       if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
         locationData.filename.push_back((*events)[i].streamName);
+	(*events)[i].loc_index = k++;
       }
       i++;
     }

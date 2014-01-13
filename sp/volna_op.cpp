@@ -39,7 +39,7 @@ void op_par_loop_simulation_1(char const *, op_set,
 
 //these are not const, we just don't want to pass them around
 LocationData locationData;
-float timestamp = 0.0;
+double timestamp = 0.0;
 int itercount = 0;
 
 // Constants
@@ -191,12 +191,14 @@ int main(int argc, char **argv) {
   /*
    * Read constants from HDF5
    */
-  float ftime, dtmax;
   op_get_const_hdf5("CFL", 1, "float", (char *) &CFL, filename_h5);
 
   // Final time: as defined by Volna the end of real-time simulation
-  op_get_const_hdf5("ftime", 1, "float", (char *) &ftime, filename_h5);
-  op_get_const_hdf5("dtmax", 1, "float", (char *) &dtmax, filename_h5);
+  float ftime_tmp, dtmax_tmp;
+  op_get_const_hdf5("ftime", 1, "float", (char *) &ftime_tmp, filename_h5);
+  op_get_const_hdf5("dtmax", 1, "float", (char *) &dtmax_tmp, filename_h5);
+  double ftime = ftime_tmp;
+  double dtmax = dtmax_tmp;
   op_get_const_hdf5("g", 1, "float", (char *) &g, filename_h5);
 
   op_decl_const2("CFL",1, "float", &CFL);

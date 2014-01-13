@@ -108,13 +108,15 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
   //op_printf("OutputLocation: time = %f  eventid = %d   H = %10.20f\n", timer->t, eventid, locationData.tmp[0]);
   // Write location data to std vectors
   if(op_is_root()) {
-    for (int j = 0; j < locationData.n_points; j++) {
+    locationData.time[event->loc_index].push_back(timer->t);
+    locationData.value[event->loc_index].push_back(locationData.tmp[event->loc_index]);
+    /*for (int j = 0; j < locationData.n_points; j++) {
       if (locationData.filename[j] == event->streamName) {
         locationData.time[j].push_back(timer->t);
         locationData.value[j].push_back(locationData.tmp[j]);
         break;
       }
-    }
+    }*/
   }
 }
 
