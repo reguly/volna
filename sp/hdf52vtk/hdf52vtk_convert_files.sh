@@ -1,4 +1,4 @@
-#! bin/bash
+#! /bin/bash
 
 #This tool takes all the files in the directory and converts
 

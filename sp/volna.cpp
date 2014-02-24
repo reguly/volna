@@ -19,7 +19,7 @@ int itercount = 0;
 float CFL, g, EPS;
 
 // Store maximum elevation in global variable, for the sake of max search
-op_dat currentMaxElevation;
+op_dat currentMaxElevation = NULL;
 
 //
 // Checks if error occured during hdf5 process and prints error message
@@ -414,7 +414,13 @@ int main(int argc, char **argv) {
     locationData.value.clear();
   }
 
-
+  for (int i = 0; i < timers.size(); i++) {
+    if (timers[i].step == -1 && strcmp(events[i].className.c_str(), "OutputMaxElevation") == 0) {
+      strcpy((char*)currentMaxElevation->name, "values");
+      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxElevation);
+      strcpy((char*)currentMaxElevation->name, "maxElevation");
+    }
+  }
   /*
    *	 Free temporary dats
    */

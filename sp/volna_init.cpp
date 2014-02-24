@@ -30,7 +30,7 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
     op_par_loop(initEta_formula, "initEta_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
-                op_arg_gbl(&timestamp, 1, "float", OP_READ));
+                op_arg_gbl(&timestamp, 1, "double", OP_READ));
   }
 #ifdef DEBUG
   op_printf("done\n");
@@ -46,7 +46,7 @@ void InitU(op_set cells, op_dat cellCenters, op_dat values) {
   op_par_loop(initU_formula, "initU_formula", cells,
               op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
-              op_arg_gbl(&timestamp, 1, "float", OP_READ));
+              op_arg_gbl(&timestamp, 1, "double", OP_READ));
 #ifdef DEBUG
   op_printf("done\n");
 #endif
@@ -61,7 +61,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
   op_par_loop(initV_formula, "initV_formula", cells,
               op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
-              op_arg_gbl(&timestamp, 1, "float", OP_READ));
+              op_arg_gbl(&timestamp, 1, "double", OP_READ));
 #ifdef DEBUG
   op_printf("done\n");
 #endif
@@ -99,7 +99,7 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
     op_par_loop(initBathymetry_formula, "initBathymetry_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
-                op_arg_gbl(&timestamp, 1, "float", OP_READ));
+                op_arg_gbl(&timestamp, 1, "double", OP_READ));
   }
   op_par_loop(initBathymetry_update, "initBathymetry_update", cells,
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
@@ -146,7 +146,7 @@ void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, Gaus
               op_arg_dat(values, -1, OP_ID, 4, "float",OP_RW),
               op_arg_gbl(&params.mesh_xmin, 1, "float", OP_READ),
               op_arg_gbl(&params.A, 1, "float", OP_READ),
-              op_arg_gbl(&timestamp, 1, "float", OP_READ),
+              op_arg_gbl(&timestamp, 1, "double", OP_READ),
               op_arg_gbl(&params.lx, 1, "float", OP_READ),
               op_arg_gbl(&params.ly, 1, "float", OP_READ),
               op_arg_gbl(&params.v, 1, "float", OP_READ));

@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
       } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
         fprintf(fp, "Eta");
       }
-      fprintf(fp, "_formula(float *coords, float *values, const float *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
+      fprintf(fp, "_formula(float *coords, float *values, const double *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
       fprintf(fp,"%s;\n", event_formula[i].c_str());
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fprintf(fp, "  values[3] = val;\n}");

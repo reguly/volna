@@ -10,7 +10,7 @@ int timer_happens(TimerParams *p) {
   result =  result &&
       ( ( p->iter == 0) ||
           ( p->localIter == p->istep ) ||
-          ( p->localTime >= p->step ) );
+          ( p->localTime >= p->step ) || (p->step == -1) );
   return result;
 }
 

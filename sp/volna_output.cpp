@@ -3,6 +3,7 @@
 #include "getTotalVol.h"
 #include "getMaxElevation.h"
 #include "gatherLocations.h"
+#include "simulation_1.h"
 #include "op_lib_cpp.h"
 
 //
@@ -30,47 +31,33 @@ void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values) 
 void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells) {
 // Warning: The function only finds the maximum of every
 // "timer.istep"-th step. Therefore intermediate maximums might be neglected.
-//  op_fetch_data(values);
 
   // first time the event is executed
   float *temp = NULL;
-  if (timer->iter == timer->istart)
-    currentMaxElevation = op_decl_dat_temp(cells, 1, "float",
+  if (timer->iter == timer->istart) {
+    currentMaxElevation = op_decl_dat_temp(cells, 4, "float",
         temp,
         "maxElevation");
+
+    op_par_loop(simulation_1, "simulation_1", cells,
+        op_arg_dat(currentMaxElevation, -1, OP_ID, 4, "float", OP_WRITE),
+        op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ));
+
+    if (timer->step == -1) {
+      strcpy((char*)currentMaxElevation->name,"values");
+      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation);
+      strcpy((char*)currentMaxElevation->name,"maxElevation");
+    }
+  }
   // Get the max elevation
   op_par_loop(getMaxElevation, "getMaxElevation", cells,
       op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-      op_arg_dat(currentMaxElevation, -1, OP_ID, 1, "float", OP_RW));
+      op_arg_dat(currentMaxElevation, -1, OP_ID, 4, "float", OP_RW));
 
-  int nnode = cellsToNodes->to->size;
-  int ncell = cellsToNodes->from->size;
-  char filename[255];
-  strcpy(filename, event->streamName.c_str());
-  const char* substituteIndexPattern = "%i";
-  char* pos;
-  pos = strstr(filename, substituteIndexPattern);
-  char substituteIndex[255];
-  // 0 - write to HDF5 file
-  if(writeOption == 0) {
-    sprintf(substituteIndex, "%04d.h5", timer->iter);
-    strcpy(pos, substituteIndex);
-    op_printf("Writing OutputMaxElevation to HDF5 file: %s \n",filename);
-    op_fetch_data_hdf5_file(values, filename);
-  }
-  else if(writeOption > 0) {
-    sprintf(substituteIndex, "%04d.vtk", timer->iter);
-    strcpy(pos, substituteIndex);
-    switch(writeOption) {
-    // 1 - write to ASCII VTK file
-    case 1:
-      WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, currentMaxElevation);
-      break;
-      // 1 - write to Binary VTK file
-    case 2:
-      WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, currentMaxElevation);
-      break;
-    }
+  if (timer->step != -1) {
+    strcpy((char*)currentMaxElevation->name, "values");
+    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation);
+    strcpy((char*)currentMaxElevation->name,"maxElevation");
   }
 }
 
@@ -87,18 +74,10 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
     outputLocation_lastupdate = timer->iter;
   }
 
-  //op_printf("OutputLocation: time = %f  eventid = %d   H = %10.20f\n", timer->t, eventid, locationData.tmp[0]);
   // Write location data to std vectors
   if(op_is_root()) {
     locationData.time[event->loc_index].push_back(timer->t);
     locationData.value[event->loc_index].push_back(locationData.tmp[event->loc_index]);
-    /*for (int j = 0; j < locationData.n_points; j++) {
-      if (locationData.filename[j] == event->streamName) {
-        locationData.time[j].push_back(timer->t);
-        locationData.value[j].push_back(locationData.tmp[j]);
-        break;
-      }
-    }*/
   }
 }
 
@@ -119,7 +98,7 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
   if(writeOption == 0) {
     sprintf(substituteIndex, "%04d.h5", timer->iter);
     strcpy(pos, substituteIndex);
-    op_printf("Writing OutputSimulation to HDF5 file: %s \n",filename);
+    op_printf("Writing %s to HDF5 file: %s \n",values->name, filename);
     op_fetch_data_hdf5_file(values, filename);
   }
   else if(writeOption > 0) {
