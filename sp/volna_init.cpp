@@ -73,7 +73,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
 //
 //}
 
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy) {
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy, op_dat initial_zb) {
   if (firstTime) {
     int result = 0;
     int leftOperand = 0;
@@ -87,8 +87,13 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                 op_arg_gbl(&operation, 1, "int", OP_READ));
   }
   if (fromFile) {
-    //overwrite values.H with values stored in initValues
+    //overwrite values.Zb with values stored in initValues
     if (new_format) {
+      int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
+      op_par_loop(applyConst, "applyConst", cells,
+                  op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
+                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                  op_arg_gbl(&variable, 1, "int", OP_READ));
       op_par_loop(initBathymetry_large, "initBathymetry_large", cells,
                   op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
                   op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),

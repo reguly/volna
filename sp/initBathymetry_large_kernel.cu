@@ -4,17 +4,16 @@
 
 //user function
 __device__
-#include "NumericalFluxes.h"
+#include "initBathymetry_large.h"
 
 // CUDA kernel function
-__global__ void op_cuda_NumericalFluxes(
+__global__ void op_cuda_initBathymetry_large(
   float *ind_arg0,
   float *ind_arg1,
   int   *ind_map,
   short *arg_map,
-  float  *arg6,
-  float  *arg7,
-  float *arg8,
+  float  *arg0,
+  float  *arg1,
   int   *ind_arg_sizes,
   int   *ind_arg_offs, 
   int    block_offset, 
@@ -25,10 +24,6 @@ __global__ void op_cuda_NumericalFluxes(
   int   *colors,       
   int   nblocks,       
   int   set_size) {    
-  float arg8_l[1];
-  for ( int d=0; d<1; d++ ){
-    arg8_l[d]=arg8[d+blockIdx.x*1];
-  }
   
   __shared__  int  *ind_arg0_map, ind_arg0_size;
   __shared__  int  *ind_arg1_map, ind_arg1_size;
@@ -59,15 +54,15 @@ __global__ void op_cuda_NumericalFluxes(
     //set shared memory pointers
     int nbytes = 0;
     ind_arg0_s = (float *) &shared[nbytes];
-    nbytes    += ROUND_UP(ind_arg0_size*sizeof(float)*1);
+    nbytes    += ROUND_UP(ind_arg0_size*sizeof(float)*2);
     ind_arg1_s = (float *) &shared[nbytes];
   }
   __syncthreads(); // make sure all of above completed
   
   //copy indirect datasets into shared memory or zero increment
   
-  for ( int n=threadIdx.x; n<ind_arg0_size*1; n = n+=blockDim.x ){
-    ind_arg0_s[n] = ind_arg0[n%1+ind_arg0_map[n/1]*1];
+  for ( int n=threadIdx.x; n<ind_arg0_size*2; n = n+=blockDim.x ){
+    ind_arg0_s[n] = ind_arg0[n%2+ind_arg0_map[n/2]*2];
     
   }
   for ( int n=threadIdx.x; n<ind_arg1_size*1; n = n+=blockDim.x ){
@@ -83,27 +78,20 @@ __global__ void op_cuda_NumericalFluxes(
     
     
     //user-supplied kernel call
-    NumericalFluxes(ind_arg0_s+arg_map[0*set_size+n+offset_b]*1,
-                    ind_arg0_s+arg_map[1*set_size+n+offset_b]*1,
-                    ind_arg0_s+arg_map[2*set_size+n+offset_b]*1,
-                    ind_arg1_s+arg_map[3*set_size+n+offset_b]*1,
-                    ind_arg1_s+arg_map[4*set_size+n+offset_b]*1,
-                    ind_arg1_s+arg_map[5*set_size+n+offset_b]*1,
-                    arg6+(n+offset_b)*1,
-                    arg7+(n+offset_b)*4,
-                    arg8_l);
-  }
-  
-  //global reductions
-  
-  for ( int d=0; d<1; d++ ){
-    op_reduction<OP_MIN>(&arg8[d+blockIdx.x*1],arg8_l[d]);
+    initBathymetry_large(arg0+(n+offset_b)*4,
+                         arg1+(n+offset_b)*2,
+                         ind_arg0_s+arg_map[0*set_size+n+offset_b]*2,
+                         ind_arg0_s+arg_map[1*set_size+n+offset_b]*2,
+                         ind_arg0_s+arg_map[2*set_size+n+offset_b]*2,
+                         ind_arg1_s+arg_map[3*set_size+n+offset_b]*1,
+                         ind_arg1_s+arg_map[4*set_size+n+offset_b]*1,
+                         ind_arg1_s+arg_map[5*set_size+n+offset_b]*1);
   }
 }
 
 
 //host stub function
-void op_par_loop_NumericalFluxes(char const *name, op_set set,
+void op_par_loop_initBathymetry_large(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -111,12 +99,10 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7,
-  op_arg arg8){
+  op_arg arg7){
   
-  float*arg8h = (float *)arg8.data;
-  int nargs = 9;
-  op_arg args[9];
+  int nargs = 8;
+  op_arg args[8];
   
   args[0] = arg0;
   args[1] = arg1;
@@ -126,18 +112,17 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
-  args[8] = arg8;
   
   int    ninds   = 2;
-    int    inds[9] = {0,0,0,1,1,1,-1,-1,-1};
+    int    inds[8] = {-1,-1,0,0,0,1,1,1};
   
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: NumericalFluxes\n");
+    printf(" kernel routine with indirection: initBathymetry_large\n");
   }
   
   //get plan
-  #ifdef OP_PART_SIZE_4
-    int part_size = OP_PART_SIZE_4;
+  #ifdef OP_PART_SIZE_12
+    int part_size = OP_PART_SIZE_12;
   #else
     int part_size = OP_part_size;
   #endif
@@ -150,32 +135,11 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   
   if (set->size > 0) {
     
-    op_timing_realloc(4);
-    OP_kernels[4].name      = name;
-    OP_kernels[4].count    += 1;
+    op_timing_realloc(12);
+    OP_kernels[12].name      = name;
+    OP_kernels[12].count    += 1;
     
     op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
-    
-    //transfer global reduction data to GPU
-    int maxblocks = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      maxblocks = MAX(maxblocks,Plan->ncolblk[col]);
-    }
-    int reduct_bytes = 0;
-    int reduct_size  = 0;
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    reduct_size   = MAX(reduct_size,sizeof(float));
-    reallocReductArrays(reduct_bytes);
-    reduct_bytes = 0;
-    arg8.data   = OP_reduct_h + reduct_bytes;
-    arg8.data_d = OP_reduct_d + reduct_bytes;
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        ((float *)arg8.data)[d+b*1] = arg8h[d];
-      }
-    }
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    mvReductArraysToDevice(reduct_bytes);
     
     //execute plan
     
@@ -184,8 +148,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_4
-      int nthread = OP_BLOCK_SIZE_4;
+      #ifdef OP_BLOCK_SIZE_12
+      int nthread = OP_BLOCK_SIZE_12;
       #else
       int nthread = OP_block_size;
       #endif
@@ -193,15 +157,14 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
       Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
       if (Plan->ncolblk[col] > 0) {
-        int nshared = MAX(Plan->nshared,reduct_size*nthread);
-        op_cuda_NumericalFluxes<<<nblocks,nthread,nshared>>>(
-        (float *)arg0.data_d,
-        (float *)arg3.data_d,
+        int nshared = Plan->nsharedCol[col];
+        op_cuda_initBathymetry_large<<<nblocks,nthread,nshared>>>(
+        (float *)arg2.data_d,
+        (float *)arg5.data_d,
         Plan->ind_map,
         Plan->loc_map,
-        (float*)arg6.data_d,
-        (float*)arg7.data_d,
-        (float*)arg8.data_d,
+        (float*)arg0.data_d,
+        (float*)arg1.data_d,
         Plan->ind_sizes,
         Plan->ind_offs,
         block_offset,
@@ -213,25 +176,14 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
         Plan->ncolblk[col],
         set_size);
         
-        //transfer global reduction data back to CPU
-        if (col == Plan->ncolors_owned-1) {
-          mvReductArraysToHost(reduct_bytes);
-        }
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[4].transfer  += Plan->transfer;
-    OP_kernels[4].transfer2 += Plan->transfer2;
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        arg8h[d] = MIN(arg8h[d],((float *)arg8.data)[d+b*1]);
-      }
-    }
-    arg8.data = (char *)arg8h;
-    op_mpi_reduce(&arg8,arg8h);
+    OP_kernels[12].transfer  += Plan->transfer;
+    OP_kernels[12].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[4].time     += wall_t2 - wall_t1;
+  OP_kernels[12].time     += wall_t2 - wall_t1;
 }

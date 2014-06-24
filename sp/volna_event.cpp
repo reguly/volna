@@ -154,7 +154,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
-									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy,
+									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy, op_dat initial_zb, 
                    op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
   //  op_printf("processEvents()... \n");
@@ -187,17 +187,17 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
       } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
-          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy);
+          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
         }
         // If initBathymetry is given by 1 file, run InitBathymetry for that particular file
         if(n_initBathymetry == 1 ) {
-          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy);
+          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
         // Else if initBathymetry is given by multiple files, run InitBathymetry for those files
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           // Handle the case when InitBathymetry files are out for further bathymetry initalization: remove the event
           if(strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 && k<n_initBathymetry) {
-            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy);
+            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
           }
         }
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {

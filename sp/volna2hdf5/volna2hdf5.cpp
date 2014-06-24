@@ -493,6 +493,7 @@ int main(int argc, char **argv) {
    int n_b_cells, n_b_nodes;
    int *b_cells_nodes;
    float *b_points;
+   float* initial_zb = NULL;
    for (unsigned int i = 0; i < event_className.size(); i++) {
     // If the file exists, read its data
     if (event_streamName[i] == "" || event_post_update[i] == 1) {
@@ -548,6 +549,16 @@ int main(int argc, char **argv) {
             }
           }
           else {
+            char file_init[255];
+            if (pos == NULL)
+              strcpy(file_init,filename);
+            else {
+              const char *append = "_init.txt";
+              strcpy(pos, append);
+            }
+            initial_zb = (float *)malloc(ncell*sizeof(float));
+            read_event_data(filename, initial_zb, ncell);
+
             if (pos == NULL) {
               strcpy(filename, event_streamName[i].c_str());
             } else {
@@ -636,6 +647,10 @@ int main(int argc, char **argv) {
   op_dat edgeLength = op_decl_dat(edges, 1, "float", eleng, "edgeLength");
   op_dat nodeCoords = op_decl_dat(nodes, MESH_DIM, "float", x, "nodeCoords");
   op_dat values =     op_decl_dat(cells, N_STATEVAR, "float", w, "values");
+  op_dat initial_z;
+  if (initial_zb) {
+    initial_z = op_decl_dat(cells, 1, "float", initial_zb, "initial_zb");
+  }
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_decl_dat(cells, 1, "float", initEta, "initEta");
 
@@ -667,6 +682,7 @@ int main(int argc, char **argv) {
       op_reorder_dat(cellCenters,  cells_iperm, cells);
       op_reorder_dat(cellVolumes,  cells_iperm, cells);
       op_reorder_dat(values,  cells_iperm, cells);
+      op_reorder_dat(initial_z,  cells_iperm, cells);
 
       op_printf("Reordering edges... \n");
       // Reorder edges

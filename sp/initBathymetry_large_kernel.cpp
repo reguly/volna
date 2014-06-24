@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "computeFluxes.h"
+#include "initBathymetry_large.h"
 
 // host stub function
-void op_par_loop_computeFluxes(char const *name, op_set set,
+void op_par_loop_initBathymetry_large(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -30,19 +30,19 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(3);
+  op_timing_realloc(12);
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 1;
-  int  inds[8] = {0,0,-1,-1,-1,-1,-1,-1};
+  int  ninds   = 2;
+  int  inds[8] = {-1,-1,0,0,0,1,1,1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: computeFluxes\n");
+    printf(" kernel routine with indirection: initBathymetry_large\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_3
-    int part_size = OP_PART_SIZE_3;
+  #ifdef OP_PART_SIZE_12
+    int part_size = OP_PART_SIZE_12;
   #else
     int part_size = OP_part_size;
   #endif
@@ -67,25 +67,26 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
         int nelem    = Plan->nelems[blockId];
         int offset_b = Plan->offset[blockId];
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map0idx = arg0.map_data[n * arg0.map->dim + 0];
-          int map1idx = arg0.map_data[n * arg0.map->dim + 1];
+          int map2idx = arg2.map_data[n * arg2.map->dim + 0];
+          int map3idx = arg2.map_data[n * arg2.map->dim + 1];
+          int map4idx = arg2.map_data[n * arg2.map->dim + 2];
 
-          computeFluxes(
-            &((float*)arg0.data)[4 * map0idx],
-            &((float*)arg0.data)[4 * map1idx],
-            &((float*)arg2.data)[1 * n],
-            &((float*)arg3.data)[2 * n],
-            &((int*)arg4.data)[1 * n],
-            &((float*)arg5.data)[2 * n],
-            &((float*)arg6.data)[3 * n],
-            &((float*)arg7.data)[1 * n]);
+          initBathymetry_large(
+            &((float*)arg0.data)[4 * n],
+            &((float*)arg1.data)[2 * n],
+            &((float*)arg2.data)[2 * map2idx],
+            &((float*)arg2.data)[2 * map3idx],
+            &((float*)arg2.data)[2 * map4idx],
+            &((float*)arg5.data)[1 * map2idx],
+            &((float*)arg5.data)[1 * map3idx],
+            &((float*)arg5.data)[1 * map4idx]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[3].transfer  += Plan->transfer;
-    OP_kernels[3].transfer2 += Plan->transfer2;
+    OP_kernels[12].transfer  += Plan->transfer;
+    OP_kernels[12].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -96,7 +97,7 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[3].name      = name;
-  OP_kernels[3].count    += 1;
-  OP_kernels[3].time     += wall_t2 - wall_t1;
+  OP_kernels[12].name      = name;
+  OP_kernels[12].count    += 1;
+  OP_kernels[12].time     += wall_t2 - wall_t1;
 }

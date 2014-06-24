@@ -168,6 +168,7 @@ int main(int argc, char **argv) {
 	op_set bathy_nodes;
   op_map cellsToBathyNodes;
   op_dat bathy_xy;
+  op_dat initial_zb;
 
 
 
@@ -206,6 +207,9 @@ int main(int argc, char **argv) {
             bathy_xy = op_decl_dat_hdf5(bathy_nodes, MESH_DIM, "float",
                                         filename_h5,
                                         "bathy_xy");
+            initial_zb = op_decl_dat_hdf5(cells, 1, "float",
+                                        filename_h5,
+                                        "initial_zb");
             bathy_set = bathy_nodes;
           }
 
@@ -265,7 +269,7 @@ int main(int argc, char **argv) {
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
                      cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, 
-                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params, 
+                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, 
                      gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
@@ -295,7 +299,7 @@ int main(int argc, char **argv) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
- 									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params,
+ 									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
 #ifdef DEBUG
@@ -372,7 +376,7 @@ int main(int argc, char **argv) {
 		//process post_update==true events (usually Output events)
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params,
+									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 
