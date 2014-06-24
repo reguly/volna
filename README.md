@@ -25,6 +25,10 @@ Afterwards, call volna-op2 with the above input file, e.g.:
  * ./volna_openmp gaussian_landslide.h5
  * when using the CUDA version we suggest adding "OP_PART_SIZE=128 OP_BLOCK_SIZE=128" to the execution line
 
+## Output
+The files written by volna-OP2 may be different from the original VOLNA code, due to performance optimisations.
+ * OutputLocation events are bundled together, if they all use the same timings, into a gauges.h5 file, which is compressed to save space. To read the file, you can use any hdf5 tool, there are two datasets written: /dims which has 2 integer fields, the first indicating the size in the contiguous direction (number of OutputLocation events + 1 for timestaps) and the second in the strided dimension (number of timestamps). Data is stored under /gauges, a 1D float array of size dims[0]*dims[1]. To get the timestamp at iteration T and the value for gauge N (indexed 1...dims[0]-1), access gauges[T*dims[0]] for the timestamp and gauges[T*dims[0]+N] - T has to be less than dims[1]. A python script is attached (read_gauges.py) that shows an example of this.
+
 ## Recommendations, restrictions
 Some restriction, constantly updated as they are fixed:
  * Currently Volna does not work well with MPI, and there is no support for distributed file output (e.g. OutputSimulation or OutputLocation into files).

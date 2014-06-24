@@ -10,8 +10,75 @@ int timer_happens(TimerParams *p) {
   result =  result &&
       ( ( p->iter == 0) ||
           ( p->localIter == p->istep ) ||
-          ( p->localTime >= p->step ) );
+          ( p->localTime >= p->step ) || (p->step == -1) );
   return result;
+}
+
+void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char *filename) {
+  hid_t    file_id, dataset_id, dataspace_id; /* identifiers */
+  hid_t    plist_id; 
+
+  size_t   nelmts;
+  unsigned flags, filter_info;
+  H5Z_filter_t filter_type;
+
+  herr_t   status;
+  hsize_t  dims[1];
+  hsize_t  cdims[1];
+
+  int      idx;
+  int      i,j, numfilt;
+
+  /* Uncomment these variables to use SZIP compression 
+  unsigned szip_options_mask;
+  unsigned szip_pixels_per_block;
+  */
+
+  /* Create a file.  */
+  file_id = H5Fcreate (filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+
+  /* Write dimensions */
+  dims[0] = 2;
+  int dimensions[2] = {dim_cont, dim_stride};
+  dataspace_id = H5Screate_simple(1, dims, NULL);
+  dataset_id = H5Dcreate(file_id, "dims", H5T_NATIVE_INT, dataspace_id,
+        H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+  //write data
+  H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, dataspace_id, H5P_DEFAULT, (char*)dimensions);
+  H5Dclose(dataset_id);
+  H5Sclose(dataspace_id);
+  
+  /* Create dataset "Compressed Data" in the group using absolute name.  */
+  dims[0] = dim_cont*dim_stride;
+  dataspace_id = H5Screate_simple (1, dims, NULL);
+
+  plist_id  = H5Pcreate (H5P_DATASET_CREATE);
+
+  /* Dataset must be chunked for compression */
+  cdims[0] = dim_cont;
+  status = H5Pset_chunk (plist_id, 1, cdims);
+
+  /* Set ZLIB / DEFLATE Compression using compression level 6.
+   * To use SZIP Compression comment out these lines. 
+  */ 
+  status = H5Pset_deflate (plist_id, 6); 
+
+  /* Uncomment these lines to set SZIP Compression 
+  szip_options_mask = H5_SZIP_NN_OPTION_MASK;
+  szip_pixels_per_block = 16;
+  status = H5Pset_szip (plist_id, szip_options_mask, szip_pixels_per_block);
+  */
+  
+  dataset_id = H5Dcreate2 (file_id, "gauges", H5T_IEEE_F32BE, 
+                          dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT); 
+
+
+  status = H5Dwrite (dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
+
+  status = H5Sclose (dataspace_id);
+  status = H5Dclose (dataset_id);
+  status = H5Pclose (plist_id);
+  status = H5Fclose (file_id);
 }
 
 void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation) {
@@ -95,9 +162,11 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
   int i = 0;
   int j = 0;
   if (firstTime) {
+    int k = 0;
     while (i < size) {
       if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
         locationData.filename.push_back((*events)[i].streamName);
+	(*events)[i].loc_index = k++;
       }
       i++;
     }

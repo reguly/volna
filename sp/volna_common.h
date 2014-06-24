@@ -38,7 +38,7 @@ struct BoreParams {
 };
 
 //these are not const, we just don't want to pass them around
-extern float timestamp;
+extern double timestamp;
 extern int itercount;
 
 //constants
@@ -51,7 +51,7 @@ struct GaussianLandslideParams {
 };
 
 struct TimerParams {
-  float start, end, step, localTime, t;
+  double start, end, step, localTime, t;
   unsigned int istart, iend, istep, localIter, iter;
 };
 
@@ -61,10 +61,12 @@ struct EventParams {
   std::string className;
   std::string formula;
   std::string streamName;
+  int loc_index;
 };
 
 int timer_happens(TimerParams *p);
 void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation);
+void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char *filename);
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy,

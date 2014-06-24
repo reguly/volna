@@ -18,7 +18,7 @@ HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-	CPPFLAGS = -O2 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
+	CPPFLAGS = -O2 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -fopenmp
 	#CPPFLAGS = -g -O0 -msse4.2 -fPIC -DUNIX -Wall -DOP2 -arch x86_64 -fopenmp
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpic++
 	MPIFLAGS = $(CCFLAGS)

@@ -3,6 +3,7 @@
 #include<hdf5_hl.h>
 #include<stdio.h>
 #include<stdlib.h>
+#include<stdio.h>
 #include<math.h>
 #include<string.h>
 #include<fstream>
@@ -12,6 +13,8 @@
 #include<limits.h>
 #include<algorithm>
 
+#include<hdf5.h>
+#include<hdf5_hl.h>
 
 #include "../volna_util.h"
 
@@ -311,7 +314,7 @@ int main(int argc, char **argv) {
       } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
         fprintf(fp, "Eta");
       }
-      fprintf(fp, "_formula(float *coords, float *values, const float *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
+      fprintf(fp, "_formula(float *coords, float *values, const double *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
       fprintf(fp,"%s;\n", event_formula[i].c_str());
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fprintf(fp, "  values[3] = val;\n}");
@@ -770,6 +773,7 @@ int main(int argc, char **argv) {
     float *w = (float*)values->data;
     int *cnode = (int*)cellsToNodes->map;
   	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
+//  	#pragma omp parallel for shared(done,output_map)
   	for (int e = 0; e < ncell; e++) {
       int j = 0;
   		for (int i = 0; i < event_className.size(); i++) {
