@@ -17,6 +17,7 @@ int itercount = 0;
 
 // Constants
 float CFL, g, EPS;
+bool new_format = true;
 
 // Store maximum elevation in global variable, for the sake of max search
 op_dat currentMaxElevation;
@@ -160,6 +161,15 @@ int main(int argc, char **argv) {
                                     filename_h5,
                                     "isBoundary");
 
+  //op_dats storing InitBathymetry and InitEta event files
+  op_dat temp_initEta         = NULL;
+  op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
+  int n_initBathymetry = 0; // Number of initBathymetry files
+	op_set bathy_nodes;
+  op_map cellsToBathyNodes;
+  op_dat bathy_xy;
+
+
 
   /*
    * Read constants from HDF5
@@ -175,12 +185,7 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &CFL);
   op_decl_const(1, "float", &EPS);
   op_decl_const(1, "float", &g);
-
-  //op_dats storing InitBathymetry and InitEta event files
-  op_dat temp_initEta         = NULL;
-  op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
-  int n_initBathymetry = 0; // Number of initBathymetry files
-	
+  
   //Read InitBathymetry and InitEta event data when they come from files
   for (unsigned int i = 0; i < events.size(); i++) {
       if (!strcmp(events[i].className.c_str(), "InitEta")) {
@@ -190,11 +195,23 @@ int main(int argc, char **argv) {
               "initEta");
       } else if (!strcmp(events[i].className.c_str(), "InitBathymetry")) {
         if (strcmp(events[i].streamName.c_str(), "")){
+          op_set bathy_set = cells;
+          if (new_format) {
+            bathy_nodes = op_decl_set_hdf5(filename_h5, "bathy_nodes");
+            cellsToBathyNodes = op_decl_map_hdf5(cells, bathy_nodes, N_NODESPERCELL,
+                                                 filename_h5,
+                                                 "cellsToBathynodes");
+            bathy_xy = op_decl_dat_hdf5(bathy_nodes, MESH_DIM, "float",
+                                        filename_h5,
+                                        "bathy_xy");
+            bathy_set = bathy_nodes;
+          }
+
           // If one initBathymetry file is used
           if (strstr(events[i].streamName.c_str(), "%i") == NULL){
             n_initBathymetry = 1;
             temp_initBathymetry = (op_dat*) malloc(sizeof(op_dat));
-            temp_initBathymetry[0] = op_decl_dat_hdf5(cells, 1, "float",
+            temp_initBathymetry[0] = op_decl_dat_hdf5(bathy_set, 1, "float",
                           filename_h5,
                           "initBathymetry");
           // If more initBathymetry files are used
@@ -211,7 +228,7 @@ int main(int argc, char **argv) {
                 char dat_name[255];
                 // iniBathymetry data is stored with sequential numbering instead of iteration step numbering!
                 sprintf(dat_name,"initBathymetry%d",k);
-                temp_initBathymetry[k] = op_decl_dat_hdf5(cells, 1, "float",
+                temp_initBathymetry[k] = op_decl_dat_hdf5(bathy_set, 1, "float",
                                 filename_h5,
                                 dat_name);
             }
@@ -220,6 +237,7 @@ int main(int argc, char **argv) {
         }
       }
   }
+
 
   if (op_is_root()) op_diagnostic_output();
 
@@ -244,7 +262,9 @@ int main(int argc, char **argv) {
 
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
-                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, 
+                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params, 
+                     gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
   //and in and out in EvolveValuesRK2() (timeStepper.hpp)
@@ -273,7 +293,7 @@ int main(int argc, char **argv) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
- 									temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params,
+ 									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
 #ifdef DEBUG
@@ -350,7 +370,7 @@ int main(int argc, char **argv) {
 		//process post_update==true events (usually Output events)
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-									temp_initEta, temp_initBathymetry, n_initBathymetry, bore_params,
+									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 

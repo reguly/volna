@@ -44,6 +44,7 @@ extern int itercount;
 //constants
 extern float EPS, CFL, g;
 extern op_dat currentMaxElevation;
+extern bool new_format;
 
 struct GaussianLandslideParams {
   float A, v, lx, ly, mesh_xmin;//TODO: mesh_xmin compute
@@ -66,14 +67,14 @@ int timer_happens(TimerParams *p);
 void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation);
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
-									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat* temp_initBathymetry,
-									 int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
+									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy,
+                   op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption);
 
 void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile);
 void InitU(op_set cells, op_dat cellCenters, op_dat values);
 void InitV(op_set cells, op_dat cellCenters, op_dat values);
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime);
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy);
 void InitBore(op_set cells, op_dat cellCenters, op_dat values, BoreParams params);
 void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, GaussianLandslideParams params, int firstTime);
 

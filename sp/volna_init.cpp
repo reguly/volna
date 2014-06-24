@@ -2,6 +2,7 @@
 #include "applyConst.h"
 #include "incConst.h"
 #include "initBathymetry_formula.h"
+#include "initBathymetry_large.h"
 #include "initBathymetry_update.h"
 #include "initBore_select.h"
 #include "initEta_formula.h"
@@ -72,7 +73,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
 //
 //}
 
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime) {
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy) {
   if (firstTime) {
     int result = 0;
     int leftOperand = 0;
@@ -87,12 +88,24 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
   }
   if (fromFile) {
     //overwrite values.H with values stored in initValues
-    int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
-    //TODO: we are only overwriting H, moving the whole thing
-    op_par_loop(applyConst, "applyConst", cells,
-                op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
-                op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                op_arg_gbl(&variable, 1, "int", OP_READ));
+    if (new_format) {
+      op_par_loop(initBathymetry_large, "initBathymetry_large", cells,
+                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                  op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 0, cellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 1, cellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 2, cellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(initValues, 0, cellsToBathyNodes, 1, "float", OP_READ),
+                  op_arg_dat(initValues, 1, cellsToBathyNodes, 1, "float", OP_READ),
+                  op_arg_dat(initValues, 2, cellsToBathyNodes, 1, "float", OP_READ));
+    } else {
+      int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
+      //TODO: we are only overwriting H, moving the whole thing
+      op_par_loop(applyConst, "applyConst", cells,
+                  op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
+                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                  op_arg_gbl(&variable, 1, "int", OP_READ));
+    }
   } else {
     //TODO: document the fact that this actually sets to the value of Zb
     // i.e. user should only access values[3]

@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include<hdf5.h>
 #include<hdf5_hl.h>
 #include<stdio.h>
@@ -64,7 +65,52 @@ void read_event_data(const char *streamname, float* event_data, int ncell) {
     op_printf("can't close file %s\n",streamname);
     exit(-1);
   }
+}
 
+void read_large_bathymetry_geom(const char *streamname, int *n_points, int *n_cells, int **c_p_map, float **points) {
+  FILE* fp;
+  fp = fopen(streamname, "r");
+  if(fp == NULL) {
+    op_printf("can't open file %s. Check if the file exists.\n",streamname);
+    exit(-1);
+  }
+  fscanf(fp,"%d %d\n",n_cells, n_points);
+  *c_p_map = (int *)malloc(*n_cells * 3 * sizeof(int));
+  *points = (float*)malloc(*n_points * 2 * sizeof(float));
+  for (int i = 0; i < *n_cells; i++) {
+    fscanf(fp, "%d %d %d\n",*c_p_map+3*i+0,*c_p_map+3*i+1,*c_p_map+3*i+2);
+    (*c_p_map)[3*i]--;
+    (*c_p_map)[3*i+1]--;
+    (*c_p_map)[3*i+2]--;
+  }
+  float dummy;
+  for (int i = 0; i < *n_points; i++) {
+    fscanf(fp, "%f  %f  %f\n",(*points)+2*i+0,(*points)+2*i+1,&dummy);
+  }
+    if(fclose(fp) != 0) {
+    op_printf("can't close file %s\n",streamname);
+    exit(-1);
+  }
+}
+
+void read_large_bathymetry_data(const char *streamname, float* event_data, int n_points, int n_cells) {
+  FILE* fp;
+  fp = fopen(streamname, "r");
+  if(fp == NULL) {
+    op_printf("can't open file %s. Check if the file exists.\n",streamname);
+    exit(-1);
+  }
+  for (int i = 0; i < n_cells+1; i++) {
+    fscanf(fp, "%*[^\n]\n", NULL);
+  }
+  float x,y;
+  for(int i=0; i<n_points; i++) {
+    fscanf(fp, "%g %g %g\n", &x,&y,&event_data[i]);
+  }
+  if(fclose(fp) != 0) {
+    op_printf("can't close file %s\n",streamname);
+    exit(-1);
+  }
 }
 
 void triangleIndex(float *val, const float* x, const float* y, float* nodeCoordsA, float* nodeCoordsB, float* nodeCoordsC, float* values) {
@@ -99,7 +145,7 @@ void triangleIndex(float *val, const float* x, const float* y, float* nodeCoords
       insider *= ORIENT2D( nodeCoordsA, nodeCoordsC, p);
       insider *= ORIENT2D( nodeCoordsC, nodeCoordsB, p);
     }
-    isInside = insider > 0.0f;
+    isInside = insider >= 0.0f;
   }
 
   if ( isInside )
@@ -120,6 +166,7 @@ void print_info() {
 
 int main(int argc, char **argv) {
   bool reorder = true;
+  bool new_format = true;
   switch(argc) {
   case 0:
   case 1:
@@ -136,7 +183,10 @@ int main(int argc, char **argv) {
     if(strcmp(argv[2], "no-reorder")==0) {
       op_printf("no-reorder set: No reordering will be done during data import. \n");
       reorder = false;
-    }else{
+    } else if(strcmp(argv[2], "old-format")==0) {
+      op_printf("Old format bathymetry files\n");
+      new_format = false;
+    } else{
       op_printf("Unrecognized reordering option! Exiting.\n");
       exit(-1);
     }
@@ -437,10 +487,13 @@ int main(int argc, char **argv) {
   /*
    * If event data is stored in a file, import it and put in HDF5
    */
-  for (unsigned int i = 0; i < event_className.size(); i++) {
+   int n_b_cells, n_b_nodes;
+   int *b_cells_nodes;
+   float *b_points;
+   for (unsigned int i = 0; i < event_className.size(); i++) {
     // If the file exists, read its data
     if (event_streamName[i] == "" || event_post_update[i] == 1) {
-      op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
+      //op_printf("Event has no stream file defined to read (although it might have one to write!).\n");
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
         read_event_data(event_streamName[i].c_str(), initEta, ncell);
@@ -454,39 +507,88 @@ int main(int argc, char **argv) {
           const char* substituteIndexPattern = "%i";
           char* pos;
           pos = strstr(filename, substituteIndexPattern);
-          if(pos == NULL) {
-            n_initBathymetry = 1;
-            initBathymetry = (float**) malloc(sizeof(float*));
-            initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
-            op_printf("Reading InitBathymetry from file: %s \n", filename);
-            read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
+          if (new_format == false) {
+            if(pos == NULL) {
+              n_initBathymetry = 1;
+              initBathymetry = (float**) malloc(sizeof(float*));
+              initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
+              op_printf("Reading InitBathymetry from file: %s \n", filename);
+              read_event_data(event_streamName[i].c_str(), initBathymetry[0], ncell);
+            }
+            else {
+
+              if(timer_iend[i] != MAXINT) {
+                n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+                op_printf("timer_iend[i] = %d \n",timer_iend[i]);
+                op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+              } else {
+                int tmp_iend = sim.FinalTime/sim.Dtmax;
+                n_initBathymetry = (tmp_iend-timer_istart[i])/timer_istep[i] + 1;
+                op_printf("tmp_iend = %d \n",tmp_iend);
+                op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+              }
+              op_printf("Reading InitBathymetry from %d files: \n", n_initBathymetry);
+
+
+              initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
+              for(int k=0; k < n_initBathymetry; k++) {
+                initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
+                char substituteIndex[255];
+                char tmp_filename[255];
+                //          strcpy(tmp_filename, event->streamName[i].c_str());
+                sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
+                //          pos = strstr(tmp_filename, substituteIndexPattern);
+                strcpy(pos, substituteIndex);
+                op_printf("  %s\n", filename);
+                read_event_data(filename, initBathymetry[k], ncell);
+              }
+            }
           }
           else {
-
-            if(timer_iend[i] != MAXINT) {
-              n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
-              op_printf("timer_iend[i] = %d \n",timer_iend[i]);
-              op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+            if (pos == NULL) {
+              strcpy(filename, event_streamName[i].c_str());
             } else {
-              int tmp_iend = sim.FinalTime/sim.Dtmax;
-              n_initBathymetry = (tmp_iend-timer_istart[i])/timer_istep[i] + 1;
-              op_printf("tmp_iend = %d \n",tmp_iend);
-              op_printf("timer_istart[i] = %d \n",timer_istart[i]);
-            }
-            op_printf("Reading InitBathymetry from %d files: \n", n_initBathymetry);
-
-
-            initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
-            for(int k=0; k < n_initBathymetry; k++) {
-              initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
               char substituteIndex[255];
               char tmp_filename[255];
-              //          strcpy(tmp_filename, event->streamName[i].c_str());
-              sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
-              //          pos = strstr(tmp_filename, substituteIndexPattern);
+              sprintf(substituteIndex, "%04d.txt", timer_istart[i]+0*timer_istep[i]);
               strcpy(pos, substituteIndex);
-              op_printf("  %s\n", filename);
-              read_event_data(filename, initBathymetry[k], ncell);
+            }
+            read_large_bathymetry_geom(filename, &n_b_nodes,&n_b_cells,&b_cells_nodes,&b_points);
+            op_printf("bathy cells: %d nodes %d\n", n_b_cells, n_b_nodes);
+            for (int i = 0; i < n_b_cells; i++) op_printf("cell %d: %d %d %d\n",i,b_cells_nodes[3*i+0],b_cells_nodes[3*i+1],b_cells_nodes[3*i+2]);
+            for (int i = 0; i < n_b_nodes; i++) op_printf("point %d: %1.4f %1.4f\n",i,b_points[2*i+0],b_points[2*i+1]);
+            if(pos == NULL) {
+              n_initBathymetry = 1;
+              initBathymetry = (float**) malloc(sizeof(float*));
+              initBathymetry[0] = (float*) malloc(n_b_nodes*sizeof(float));
+              op_printf("Reading InitBathymetry from file: %s \n", filename);
+              read_large_bathymetry_data(event_streamName[i].c_str(), initBathymetry[0], n_b_nodes, n_b_cells);
+            } else{
+              if(timer_iend[i] != MAXINT) {
+                n_initBathymetry = (timer_iend[i]-timer_istart[i])/timer_istep[i] + 1;
+                op_printf("timer_iend[i] = %d \n",timer_iend[i]);
+                op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+              } else {
+                int tmp_iend = sim.FinalTime/sim.Dtmax;
+                n_initBathymetry = (tmp_iend-timer_istart[i])/timer_istep[i] + 1;
+                op_printf("tmp_iend = %d \n",tmp_iend);
+                op_printf("timer_istart[i] = %d \n",timer_istart[i]);
+              }
+              op_printf("Reading InitBathymetry from %d files: \n", n_initBathymetry);
+
+
+              initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
+              for(int k=0; k < n_initBathymetry; k++) {
+                initBathymetry[k] = (float*) malloc( n_b_nodes * sizeof(float));
+                char substituteIndex[255];
+                char tmp_filename[255];
+                //          strcpy(tmp_filename, event->streamName[i].c_str());
+                sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
+                //          pos = strstr(tmp_filename, substituteIndexPattern);
+                strcpy(pos, substituteIndex);
+                op_printf("  %s\n", filename);
+                read_large_bathymetry_data(filename, initBathymetry[k], n_b_nodes, n_b_cells);
+              }
             }
           }
         }
@@ -588,17 +690,17 @@ int main(int argc, char **argv) {
 #endif
 
 
-  if(n_initBathymetry == 0) {
+  if(!new_format && n_initBathymetry == 0) {
     op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
 #ifdef HAVE_PTSCOTCH
     if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
 #endif
-  } else if(n_initBathymetry == 1) {
+  } else if(!new_format && n_initBathymetry == 1) {
     op_dat temp_initBathymetry = op_decl_dat(cells, 1, "float", initBathymetry[0], "initBathymetry");
 #ifdef HAVE_PTSCOTCH
     if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
 #endif
-  } else if (n_initBathymetry > 1){
+  } else if (!new_format && n_initBathymetry > 1){
     for(int k=0; k<n_initBathymetry; k++) {
       char dat_name[255];
       // Store iniBathymetry data with sequential numbering instead of iteration step numbering
@@ -607,6 +709,44 @@ int main(int argc, char **argv) {
 #ifdef HAVE_PTSCOTCH
       if(reorder) op_reorder_dat(temp_initBathymetry, cells_iperm, cells);
 #endif
+    }
+  }
+  
+// !Bathymetry large cells
+  op_set bathy_nodes;
+  op_map cellsToBathynodes;
+  op_dat bathy_xy;
+  if (new_format && n_initBathymetry>0) {
+    bathy_nodes = op_decl_set(n_b_nodes, "bathy_nodes");
+    bathy_xy = op_decl_dat(bathy_nodes, MESH_DIM, "float", b_points, "bathy_xy");
+    int *c2bathy = (int *)malloc(ncell*3*sizeof(int));
+    memset(c2bathy,0,ncell*3*sizeof(int));
+    float *w = (float*)values->data;
+    op_printf("ncells %d n_b_cells %d \n",ncell, n_b_cells);
+    for (int c = 0; c < ncell; c++) {
+      float x = ((float*)cellCenters->data)[2*c];
+      float y = ((float*)cellCenters->data)[2*c+1];
+      for (int bc = 0; bc < n_b_cells; bc++) {
+        float def = -1.0f*INFINITY;
+        triangleIndex(&def, &x, &y,
+                      &b_points[2*b_cells_nodes[3*bc]], &b_points[2*b_cells_nodes[3*bc+1]], &b_points[2*b_cells_nodes[3*bc+2]], &w[4*c]);
+        if (def != -1.0f*INFINITY) {
+          op_printf("Found cell %d in large cell %d\n",c,bc);
+          c2bathy[c*3] = b_cells_nodes[3*bc];
+          c2bathy[c*3+1] = b_cells_nodes[3*bc+1];
+          c2bathy[c*3+2] = b_cells_nodes[3*bc+2];
+        }
+      }
+    }
+    cellsToBathynodes = op_decl_map(cells, bathy_nodes, N_NODESPERCELL, c2bathy, "cellsToBathynodes");
+    if (n_initBathymetry == 1) op_dat temp_initBathymetry = op_decl_dat(bathy_nodes, 1, "float", initBathymetry[0], "initBathymetry");
+    else {
+      for(int k=0; k<n_initBathymetry; k++) {
+        char dat_name[255];
+        // Store iniBathymetry data with sequential numbering instead of iteration step numbering
+        sprintf(dat_name,"initBathymetry%d",k);
+        op_dat temp_initBathymetry = op_decl_dat(bathy_nodes, 1, "float", initBathymetry[k], dat_name);
+      }
     }
   }
   

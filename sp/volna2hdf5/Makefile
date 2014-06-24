@@ -39,7 +39,7 @@ ifeq ($(OP2_COMPILER),gnu)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
-	CPPFLAGS = -O2 -vec-report -xAVX -parallel -openmp -openmp-report2
+	CPPFLAGS = -O2 -g -vec-report -xAVX -parallel -openmp -openmp-report2 -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 	#CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel -openmp -openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
 	MPIFLAGS = $(CPPFLAGS)
