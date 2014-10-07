@@ -1,6 +1,6 @@
-inline void initBathymetry_large(float *values, float *cellCenter,
-	float *node0, float *node1, float *node2,
-	float *bathy0, float *bathy1, float *bathy2) {
+inline void initBathymetry_large(float *values, const float *cellCenter,
+	const float *node0, const float *node1, const float *node2,
+	const float *bathy0, const float *bathy1, const float *bathy2) {
 
 	//First, check whether the cell is in the large triangle
 	bool isInside = false;
@@ -43,6 +43,6 @@ inline void initBathymetry_large(float *values, float *cellCenter,
     float b = -(node1[0]-node0[0])*(*bathy2-*bathy0)+(node2[0]-node0[0])*(*bathy1-*bathy0);
     float c =  (node1[0]-node0[0])*(node2[1]-node0[1])-(node2[0]-node0[0])*(node1[1]-node0[1]);
     //get z so that the vector is orthogonal to the normal
-    values[3] = *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
+    values[3] += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
   }
 }

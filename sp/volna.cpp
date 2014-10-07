@@ -50,13 +50,21 @@ int main(int argc, char **argv) {
     exit(-1);
   }
 
+  for ( int n = 1; n < argc; n++ )
+  {
+    if ( strncmp ( argv[n], "old-format", 10 ) == 0 ) {
+      new_format = false;
+      op_printf("Using old format bathymetry\n");
+    }
+  }
+
   const char *filename_h5 = argv[1];
   int writeOption = atoi(argv[2]); // 0 - HDF5, 1 - VTK ASCII, 2 - VTK Binary
 
   op_init(argc, argv, 2);
 
   EPS = 1e-6; //machine epsilon, for doubles 1e-11
-	
+
   hid_t file;
   file = H5Fopen(filename_h5, H5F_ACC_RDONLY, H5P_DEFAULT);
   //Some simulation parameters when using InitGaussianLandslide and InitBore
@@ -87,7 +95,7 @@ int main(int argc, char **argv) {
   check_hdf5_error(H5LTread_dataset_int(file, "numEvents", &num_events));
   std::vector<TimerParams> timers(num_events);
   std::vector<EventParams> events(num_events);
-	
+
 	//Read Event "objects" (Init and Output events) into timers and events
   read_events_hdf5(file, num_events, &timers, &events, &num_outputLocation);
 
@@ -103,6 +111,9 @@ int main(int argc, char **argv) {
   /*
    * Define OP2 set maps
    */
+  op_map cellsToCells = op_decl_map_hdf5(cells, cells, N_NODESPERCELL,
+      filename_h5,
+      "cellsToCells");
   op_map cellsToNodes = op_decl_map_hdf5(cells, nodes, N_NODESPERCELL,
       filename_h5,
       "cellsToNodes");
@@ -112,9 +123,6 @@ int main(int argc, char **argv) {
   op_map cellsToEdges = op_decl_map_hdf5(cells, edges, N_NODESPERCELL,
       filename_h5,
       "cellsToEdges");
-  op_map cellsToCells = op_decl_map_hdf5(cells, cells, N_NODESPERCELL,
-      filename_h5,
-      "cellsToCells");
 
   // When using OutputLocation events we have already computed the cell
   // index of the points so we don't have to locate the cell every time
@@ -188,7 +196,7 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &CFL);
   op_decl_const(1, "float", &EPS);
   op_decl_const(1, "float", &g);
-  
+
   //Read InitBathymetry and InitEta event data when they come from files
   for (unsigned int i = 0; i < events.size(); i++) {
       if (!strcmp(events[i].className.c_str(), "InitEta")) {
@@ -268,8 +276,8 @@ int main(int argc, char **argv) {
 
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
-                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, 
-                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, 
+                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
+                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
                      gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
@@ -408,7 +416,7 @@ int main(int argc, char **argv) {
       int len = locationData.time[0].size();
       int pts = locationData.n_points;
       int pts1 = locationData.n_points+1;
-      float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float)); 
+      float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float));
       for (int i = 0; i < len; i++) {
         loc_data[i*pts1] = locationData.time[0][i];
         for (int j = 0; j < pts; j++) {

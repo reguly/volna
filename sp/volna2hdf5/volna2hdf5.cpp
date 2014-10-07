@@ -96,6 +96,17 @@ void read_large_bathymetry_geom(const char *streamname, int *n_points, int *n_ce
   }
 }
 
+int file_exists(const char *fname)
+{
+    FILE *file;
+    if (file = fopen(fname, "r"))
+    {
+        fclose(file);
+        return 1;
+    }
+    return 0;
+}
+
 void read_large_bathymetry_data(const char *streamname, float* event_data, int n_points, int n_cells) {
   FILE* fp;
   fp = fopen(streamname, "r");
@@ -103,12 +114,12 @@ void read_large_bathymetry_data(const char *streamname, float* event_data, int n
     op_printf("can't open file %s. Check if the file exists.\n",streamname);
     exit(-1);
   }
-  for (int i = 0; i < n_cells+1; i++) {
+  /*for (int i = 0; i < n_cells+1; i++) {
     fscanf(fp, "%*[^\n]\n", NULL);
-  }
-  float x,y;
+  }*/
+  //float x,y;
   for(int i=0; i<n_points; i++) {
-    fscanf(fp, "%g %g %g\n", &x,&y,&event_data[i]);
+    fscanf(fp, "%g\n", &event_data[i]);
   }
   if(fclose(fp) != 0) {
     op_printf("can't close file %s\n",streamname);
@@ -508,9 +519,29 @@ int main(int argc, char **argv) {
           free(initBathymetry);
           char filename[255];
           strcpy(filename, event_streamName[i].c_str());
-          const char* substituteIndexPattern = "%i";
+          char substituteIndexPattern[10] = "%i";
+          char substituteIndex[255];
           char* pos;
           pos = strstr(filename, substituteIndexPattern);
+          int sublen = 1;
+          if (pos != NULL) {
+            sprintf(substituteIndex, "%01d.txt", timer_istart[i]+0*timer_istep[i]);
+            strcpy(pos, substituteIndex);
+            if (file_exists(filename)) {sublen=1; strcpy(substituteIndexPattern, "%01d.txt");}
+            sprintf(substituteIndex, "%02d.txt", timer_istart[i]+0*timer_istep[i]);
+            strcpy(pos, substituteIndex);
+            if (file_exists(filename)) {sublen=2; strcpy(substituteIndexPattern, "%02d.txt");}
+            sprintf(substituteIndex, "%03d.txt", timer_istart[i]+0*timer_istep[i]);
+            strcpy(pos, substituteIndex);
+            if (file_exists(filename)) {sublen=3; strcpy(substituteIndexPattern, "%03d.txt");}
+            sprintf(substituteIndex, "%04d.txt", timer_istart[i]+0*timer_istep[i]);
+            strcpy(pos, substituteIndex);
+            if (file_exists(filename)) {sublen=4; strcpy(substituteIndexPattern, "%04d.txt");}
+            sprintf(substituteIndex, "%05d.txt", timer_istart[i]+0*timer_istep[i]);
+            strcpy(pos, substituteIndex);
+            if (file_exists(filename)) {sublen=5; strcpy(substituteIndexPattern, "%05d.txt");}
+          }
+
           if (new_format == false) {
             if(pos == NULL) {
               n_initBathymetry = 1;
@@ -537,11 +568,8 @@ int main(int argc, char **argv) {
               initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
               for(int k=0; k < n_initBathymetry; k++) {
                 initBathymetry[k] = (float*) malloc( ncell * sizeof(float));
-                char substituteIndex[255];
                 char tmp_filename[255];
-                //          strcpy(tmp_filename, event->streamName[i].c_str());
-                sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
-                //          pos = strstr(tmp_filename, substituteIndexPattern);
+                sprintf(substituteIndex, substituteIndexPattern, timer_istart[i]+k*timer_istep[i]);
                 strcpy(pos, substituteIndex);
                 op_printf("  %s\n", filename);
                 read_event_data(filename, initBathymetry[k], ncell);
@@ -562,15 +590,17 @@ int main(int argc, char **argv) {
             if (pos == NULL) {
               strcpy(filename, event_streamName[i].c_str());
             } else {
-              char substituteIndex[255];
-              char tmp_filename[255];
-              sprintf(substituteIndex, "%04d.txt", timer_istart[i]+0*timer_istep[i]);
-              strcpy(pos, substituteIndex);
+              //char tmp_filename[255];
+              //sprintf(substituteIndex, substituteIndexPattern, timer_istart[i]+0*timer_istep[i]);
+              //strcpy(pos, substituteIndex);
+              const char *append = "_geom.txt";
+              strcpy(pos, append);
             }
             read_large_bathymetry_geom(filename, &n_b_nodes,&n_b_cells,&b_cells_nodes,&b_points);
-            op_printf("bathy cells: %d nodes %d\n", n_b_cells, n_b_nodes);
-            for (int i = 0; i < n_b_cells; i++) op_printf("cell %d: %d %d %d\n",i,b_cells_nodes[3*i+0],b_cells_nodes[3*i+1],b_cells_nodes[3*i+2]);
-            for (int i = 0; i < n_b_nodes; i++) op_printf("point %d: %1.4f %1.4f\n",i,b_points[2*i+0],b_points[2*i+1]);
+            op_printf("Coarse bathy cells: %d nodes %d\n", n_b_cells, n_b_nodes);
+            //for (int j = 0; j < n_b_cells; j++) op_printf("cell %d: %d %d %d\n",j,b_cells_nodes[3*j+0],b_cells_nodes[3*j+1],b_cells_nodes[3*j+2]);
+            //for (int j = 0; j < n_b_nodes; j++) op_printf("point %d: %1.4f %1.4f\n",j,b_points[2*j+0],b_points[2*j+1]);
+
             if(pos == NULL) {
               n_initBathymetry = 1;
               initBathymetry = (float**) malloc(sizeof(float*));
@@ -594,13 +624,10 @@ int main(int argc, char **argv) {
               initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
               for(int k=0; k < n_initBathymetry; k++) {
                 initBathymetry[k] = (float*) malloc( n_b_nodes * sizeof(float));
-                char substituteIndex[255];
                 char tmp_filename[255];
-                //          strcpy(tmp_filename, event->streamName[i].c_str());
-                sprintf(substituteIndex, "%04d.txt", timer_istart[i]+k*timer_istep[i]);
-                //          pos = strstr(tmp_filename, substituteIndexPattern);
+                sprintf(substituteIndex, substituteIndexPattern, timer_istart[i]+k*timer_istep[i]);
                 strcpy(pos, substituteIndex);
-                op_printf("  %s\n", filename);
+                //op_printf("  %s\n", filename);
                 read_large_bathymetry_data(filename, initBathymetry[k], n_b_nodes, n_b_cells);
               }
             }
@@ -633,7 +660,7 @@ int main(int argc, char **argv) {
               "cellsToCells");
   op_map cellsToEdges = op_decl_map(cells, edges, N_NODESPERCELL, cedge,
               "cellsToEdges");
-  
+
   //
   // Define OP2 datasets
   //
@@ -682,7 +709,8 @@ int main(int argc, char **argv) {
       op_reorder_dat(cellCenters,  cells_iperm, cells);
       op_reorder_dat(cellVolumes,  cells_iperm, cells);
       op_reorder_dat(values,  cells_iperm, cells);
-      op_reorder_dat(initial_z,  cells_iperm, cells);
+      if (initial_zb)
+        op_reorder_dat(initial_z,  cells_iperm, cells);
 
       op_printf("Reordering edges... \n");
       // Reorder edges
@@ -730,7 +758,7 @@ int main(int argc, char **argv) {
 #endif
     }
   }
-  
+
 // !Bathymetry large cells
   op_set bathy_nodes;
   op_map cellsToBathynodes;
@@ -750,7 +778,7 @@ int main(int argc, char **argv) {
         triangleIndex(&def, &x, &y,
                       &b_points[2*b_cells_nodes[3*bc]], &b_points[2*b_cells_nodes[3*bc+1]], &b_points[2*b_cells_nodes[3*bc+2]], &w[4*c]);
         if (def != -1.0f*INFINITY) {
-          op_printf("Found cell %d in large cell %d\n",c,bc);
+          //op_printf("Found cell %d in large cell %d\n",c,bc);
           c2bathy[c*3] = b_cells_nodes[3*bc];
           c2bathy[c*3+1] = b_cells_nodes[3*bc+1];
           c2bathy[c*3+2] = b_cells_nodes[3*bc+2];
@@ -768,7 +796,7 @@ int main(int argc, char **argv) {
       }
     }
   }
-  
+
   //
   // Get OutputLocation: triangles that fall on the specified triangle
   //
@@ -801,7 +829,7 @@ int main(int argc, char **argv) {
   				output_map[j] = e;
   				def = -1.0f*INFINITY;
           done[i] = 1;
-  				printf("Location %d found in cell %d\n", j, e);
+  				//printf("Location %d found in cell %d\n", j, e);
   			}
 				j++;
   		}
@@ -855,7 +883,7 @@ int main(int argc, char **argv) {
   //WRITING VALUES MANUALLY
   hid_t h5file;
   h5file = H5Fopen(filename_h5, H5F_ACC_RDWR, H5P_DEFAULT);
-  
+
   const hsize_t dims = 1;
 
   check_hdf5_error(
@@ -940,7 +968,7 @@ int main(int argc, char **argv) {
     check_hdf5_error(
         H5LTset_attribute_int(h5file, buffer, "length", &length, 1));
     memset(buffer, 0, 22);
-    
+
     sprintf(buffer, "event_streamName%d", i);
     check_hdf5_error(
         H5LTmake_dataset_string(h5file, buffer, event_streamName[i].c_str()));
@@ -951,7 +979,7 @@ int main(int argc, char **argv) {
 
   check_hdf5_error(H5Fclose(h5file));
   op_printf("HDF5 file written and closed successfully.\n");
-  
+
   free(cellsToCells->map);
   free(cellsToNodes->map);
   free(cellsToEdges->map);
