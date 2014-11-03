@@ -711,6 +711,7 @@ int main(int argc, char **argv) {
       op_reorder_dat(values,  cells_iperm, cells);
       if (initial_zb)
         op_reorder_dat(initial_z,  cells_iperm, cells);
+      op_reorder_dat(initEta,      cells_iperm, cells);
 
       op_printf("Reordering edges... \n");
       // Reorder edges
