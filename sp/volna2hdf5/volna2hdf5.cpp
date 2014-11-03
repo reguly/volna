@@ -669,7 +669,7 @@ int main(int argc, char **argv) {
   op_dat cellVolumes = op_decl_dat(cells, 1, "float", carea, "cellVolumes");
   op_dat edgeNormals = op_decl_dat(edges, MESH_DIM, "float", enorm,
               "edgeNormals");
-  op_decl_dat(edges, MESH_DIM, "float", ecent,
+  op_dat edgeCenters = op_decl_dat(edges, MESH_DIM, "float", ecent,
               "edgeCenters");
   op_dat edgeLength = op_decl_dat(edges, 1, "float", eleng, "edgeLength");
   op_dat nodeCoords = op_decl_dat(nodes, MESH_DIM, "float", x, "nodeCoords");
@@ -679,7 +679,7 @@ int main(int argc, char **argv) {
     initial_z = op_decl_dat(cells, 1, "float", initial_zb, "initial_zb");
   }
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
-  op_decl_dat(cells, 1, "float", initEta, "initEta");
+  op_dat initEtadat = op_decl_dat(cells, 1, "float", initEta, "initEta");
 
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
@@ -711,7 +711,7 @@ int main(int argc, char **argv) {
       op_reorder_dat(values,  cells_iperm, cells);
       if (initial_zb)
         op_reorder_dat(initial_z,  cells_iperm, cells);
-      op_reorder_dat(initEta,      cells_iperm, cells);
+      op_reorder_dat(initEtadat,      cells_iperm, cells);
 
       op_printf("Reordering edges... \n");
       // Reorder edges
@@ -725,6 +725,7 @@ int main(int argc, char **argv) {
       op_reorder_dat(edgeNormals, edges_iperm, edges);
       op_reorder_dat(edgeLength, edges_iperm, edges);
       op_reorder_dat(isBoundary, edges_iperm, edges);
+      op_reorder_dat(edgeCenters, edges_iperm, edges);
 
       // Reorder nodes
       op_printf("Reordering nodes... \n");

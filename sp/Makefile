@@ -51,7 +51,7 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O0 -vec-report -xSSE4.2 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	CPPFLAGS = -O3 -vec-report -xSSE4.2 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -openmp -openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
