@@ -1,4 +1,4 @@
-inline void incConst(float *in, float *out, const int *variables) {
+inline void incConst(const float *in, float *out, const int *variables) {
   if (*variables & 1) {
     out[0] += *in;
   }

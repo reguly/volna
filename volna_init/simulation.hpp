@@ -37,8 +37,9 @@ struct InitExpression {
   std::string U;
   std::string V;
   std::string bathymetry;
+  std::string bathyrelative;
   InitExpression():
-    eta(""), U(""), V(""), bathymetry("") {}
+    eta(""), U(""), V(""), bathymetry(""), bathyrelative("") {}
 };
 
 class Simulation {
@@ -63,6 +64,7 @@ public:
   std::string InitFilename;
   std::string InitFormula;
   ScalarValue Bathymetry;
+  ScalarValue BathyRelative;
   //yac::controller mathParser;
   Simulation();
   Simulation( istream &is );
@@ -130,6 +132,7 @@ void Simulation::init() {
 	if (InitFormulas.eta.begin() != InitFormulas.eta.end() ||
 			InitFormulas.U.begin() != InitFormulas.U.end() ||
 			InitFormulas.V.begin() != InitFormulas.V.end() ||
+      InitFormulas.bathyrelative.begin() != InitFormulas.bathyrelative.end() ||
 			InitFormulas.bathymetry.begin() != InitFormulas.bathymetry.end()) {
 		printf("Unsupported method of specifiying initial values: please use Init events\n");
 		exit(-1);

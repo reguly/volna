@@ -1,4 +1,4 @@
-inline void initBore_select(float *values, float *center,
+inline void initBore_select(float *values, const float *center,
                      const float *x0,
                      const float *Hl,
                      const float *ul,

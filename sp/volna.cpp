@@ -176,7 +176,7 @@ int main(int argc, char **argv) {
 	op_set bathy_nodes;
   op_map cellsToBathyNodes;
   op_dat bathy_xy;
-  op_dat initial_zb;
+  op_dat initial_zb = NULL;
 
 
 
@@ -250,6 +250,16 @@ int main(int argc, char **argv) {
           }
         }
       }
+  }
+  
+  for (unsigned int i = 0; i < events.size(); i++) {
+    if (!strcmp(events[i].className.c_str(), "InitBathyRelative")) {
+      if (!new_format || n_initBathymetry < 1) {
+        printf("Error, trying to use InitBathyRelative with new-format or without an initial InitBathymetry event\n");
+        exit(-1);
+      }
+      initial_zb = temp_initBathymetry[0];
+    }
   }
 
 

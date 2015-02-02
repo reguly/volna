@@ -1,4 +1,4 @@
-inline void getMaxElevation(float* values, float* currentMaxElevation) {
+inline void getMaxElevation(const float* values, float* currentMaxElevation) {
   /*float tmp = values[0]+values[3];
   *currentMaxElevation = *currentMaxElevation > tmp ? *currentMaxElevation : tmp;*/
   if (values[0] > currentMaxElevation[0]) {

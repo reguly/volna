@@ -1,6 +1,6 @@
 inline void EvolveValuesRK2_2(const float *dT, float *outConservative, //OP_RW, discard
-            float *inConservative, //OP_READ, discard
-            float *midPointConservative, //OP_READ, discard
+            const float *inConservative, //OP_READ, discard
+            const float *midPointConservative, //OP_READ, discard
             float *out) //OP_WRITE
 
 {

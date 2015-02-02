@@ -1,6 +1,6 @@
-inline void computeFluxes(float *cellLeft, float *cellRight,
-                                float *edgeLength, float *edgeNormals,
-                                int *isRightBoundary, //OP_READ
+inline void computeFluxes(const float *cellLeft, const float *cellRight,
+                                const float *edgeLength, const float *edgeNormals,
+                                const int *isRightBoundary, //OP_READ
                                 float *bathySource, float *out, //OP_WRITE
                                 float *maxEdgeEigenvalues) //OP_WRITE
 {

@@ -1,3 +1,3 @@
-inline void getTotalVol(float* cellVolume, float* value, float* totalVol) {
+inline void getTotalVol(const float* cellVolume, const float* value, float* totalVol) {
   (*totalVol) += (*cellVolume) * value[0];
 }

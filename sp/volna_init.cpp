@@ -4,6 +4,7 @@
 #include "initBathymetry_formula.h"
 #include "initBathymetry_large.h"
 #include "initBathymetry_update.h"
+#include "initBathyRelative_formula.h"
 #include "initBore_select.h"
 #include "initEta_formula.h"
 #include "initGaussianLandslide.h"
@@ -114,10 +115,18 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
   } else {
     //TODO: document the fact that this actually sets to the value of Zb
     // i.e. user should only access values[3]
-    op_par_loop(initBathymetry_formula, "initBathymetry_formula", cells,
+    if (initial_zb != NULL) {
+      op_par_loop(initBathyRelative_formula, "initBathyRelative_formula", cells,
+                op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
+                op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
+                op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
+                op_arg_gbl(&timestamp, 1, "double", OP_READ));
+    } else {
+      op_par_loop(initBathymetry_formula, "initBathymetry_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
                 op_arg_gbl(&timestamp, 1, "double", OP_READ));
+    }
   }
   op_par_loop(initBathymetry_update, "initBathymetry_update", cells,
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),

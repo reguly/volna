@@ -109,6 +109,28 @@ void InitBathymetry::dump(EventParams &p) {
   p.post_update = post_update;
 }
 
+class InitBathyRelative : public Init {
+public:
+  InitBathyRelative( std::string &, std::string &, const Timer & );
+  virtual void init( Simulation * );
+
+  virtual void dump(EventParams &p);
+};
+
+InitBathyRelative::InitBathyRelative( std::string &formula_, std::string
+        &streamName_, const Timer &timer ):
+  Init( formula_, streamName_, timer ) {};
+
+void InitBathyRelative::init( Simulation *sim ) {
+}
+
+void InitBathyRelative::dump(EventParams &p) {
+  p.className = "InitBathyRelative";
+  p.formula = formula;
+  p.streamName = streamName;
+  p.post_update = post_update;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 
 class InitBore : public Init {

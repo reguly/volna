@@ -237,6 +237,8 @@ int main(int argc, char **argv) {
       << "'" << std::endl;
   std::cerr << "Bathymetry formula is : '"
       << sim.InitFormulas.bathymetry << "'" << std::endl;
+  std::cerr << "BathyRelative formula is : '"
+      << sim.InitFormulas.bathyrelative << "'" << std::endl;
   std::cerr << "Horizontal velocity formula is : '"
       << sim.InitFormulas.U << "'" << std::endl;
   std::cerr << "Vertical velocity formula is : '" << sim.InitFormulas.V
@@ -276,6 +278,7 @@ int main(int argc, char **argv) {
     event_post_update[i] = e_p.post_update;
     event_className[i] = e_p.className;
     event_streamName[i] = e_p.streamName;
+    printf("Event %s\n", e_p.className.c_str());
     int prev = 0;
     int fl = 0;
     std::string temp;
@@ -305,6 +308,8 @@ int main(int argc, char **argv) {
       FILE* fp;
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fp = fopen("../initBathymetry_formula.h", "w");
+      } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
+        fp = fopen("../initBathyRelative_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fp = fopen("../initU_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -318,6 +323,8 @@ int main(int argc, char **argv) {
       fprintf(fp, "inline void init");
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fprintf(fp, "Bathymetry");
+      } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
+        fprintf(fp, "BathyRelative");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fprintf(fp, "U");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -325,10 +332,15 @@ int main(int argc, char **argv) {
       } else if (strcmp(e_p.className.c_str(), "InitEta") == 0) {
         fprintf(fp, "Eta");
       }
-      fprintf(fp, "_formula(float *coords, float *values, const double *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
+      if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0)
+        fprintf(fp, "_formula(const float *coords, float *values, const float *bathy0, const double *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
+      else
+        fprintf(fp, "_formula(const float *coords, float *values, const double *time) {\n  float x = coords[0];\n  float y = coords[1];\n  float t = *time;\n  float val =");
       fprintf(fp,"%s;\n", event_formula[i].c_str());
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fprintf(fp, "  values[3] = val;\n}");
+      } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
+        fprintf(fp, "  values[3] += *bathy0 + val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fprintf(fp, "  values[1] += val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -513,7 +525,7 @@ int main(int argc, char **argv) {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
         read_event_data(event_streamName[i].c_str(), initEta, ncell);
       }
-      if(strncmp(event_className[i].c_str(), "InitBathymetry",14) == 0) {
+      if(strcmp(event_className[i].c_str(), "InitBathymetry") == 0) {
         if(strcmp(event_streamName[i].c_str(), "") != 0) {
           free(initBathymetry[0]);
           free(initBathymetry);

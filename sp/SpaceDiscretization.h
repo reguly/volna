@@ -1,10 +1,10 @@
 inline void SpaceDiscretization(float *left, //OP_INC
               float *right, //OP_INC
-              float *edgeFluxes, //OP_READ
-              float *bathySource, //OP_READ
-              float *edgeNormals, int *isRightBoundary, 
-              float *cellVolumes0, //OP_READ
-              float *cellVolumes1 //OP_READ
+              const float *edgeFluxes, //OP_READ
+              const float *bathySource, //OP_READ
+              const float *edgeNormals, const int *isRightBoundary, 
+              const float *cellVolumes0, //OP_READ
+              const float *cellVolumes1 //OP_READ
 )
 {
   left[0] -= (edgeFluxes[0])/cellVolumes0[0];

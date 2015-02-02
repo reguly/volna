@@ -3,27 +3,31 @@
 //
 
 //user function
-#include "simulation_1.h"
+#include "initBathyRelative_formula.h"
 
 // host stub function
-void op_par_loop_simulation_1(char const *name, op_set set,
+void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1){
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3){
 
-  int nargs = 2;
-  op_arg args[2];
+  int nargs = 4;
+  op_arg args[4];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
+  args[3] = arg3;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(2);
+  op_timing_realloc(10);
   op_timers_core(&cpu_t1, &wall_t1);
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  simulation_1");
+    printf(" kernel routine w/o indirection:  initBathyRelative_formula");
   }
 
   op_mpi_halo_exchanges(set, nargs, args);
@@ -42,9 +46,11 @@ void op_par_loop_simulation_1(char const *name, op_set set,
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
       for ( int n=start; n<finish; n++ ){
-        simulation_1(
-          &((float*)arg0.data)[4*n],
-          &((float*)arg1.data)[4*n]);
+        initBathyRelative_formula(
+          &((float*)arg0.data)[2*n],
+          &((float*)arg1.data)[4*n],
+          &((float*)arg2.data)[1*n],
+          (double*)arg3.data);
       }
     }
   }
@@ -54,9 +60,10 @@ void op_par_loop_simulation_1(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[2].name      = name;
-  OP_kernels[2].count    += 1;
-  OP_kernels[2].time     += wall_t2 - wall_t1;
-  OP_kernels[2].transfer += (float)set->size * arg0.size;
-  OP_kernels[2].transfer += (float)set->size * arg1.size;
+  OP_kernels[10].name      = name;
+  OP_kernels[10].count    += 1;
+  OP_kernels[10].time     += wall_t2 - wall_t1;
+  OP_kernels[10].transfer += (float)set->size * arg0.size;
+  OP_kernels[10].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[10].transfer += (float)set->size * arg2.size;
 }

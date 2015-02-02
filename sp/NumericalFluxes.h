@@ -1,10 +1,10 @@
-inline void NumericalFluxes(float *maxEdgeEigenvalues0,
-          float *maxEdgeEigenvalues1, 
-          float *maxEdgeEigenvalues2, 
-          float *EdgeVolumes0,
-          float *EdgeVolumes1,
-          float *EdgeVolumes2,
-          float *cellVolumes, //OP_READ
+inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
+          const float *maxEdgeEigenvalues1, 
+          const float *maxEdgeEigenvalues2, 
+          const float *EdgeVolumes0,
+          const float *EdgeVolumes1,
+          const float *EdgeVolumes2,
+          const float *cellVolumes, //OP_READ
             float *zeroInit, float *minTimeStep ) //OP_MIN
 {
   float local = 0.0f;

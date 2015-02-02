@@ -184,7 +184,8 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         InitU(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
-      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0) {
+      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 ||
+                 strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
           InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);

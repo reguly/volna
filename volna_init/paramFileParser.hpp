@@ -108,6 +108,20 @@ private:
   Simulation &simulation;
 };
 
+struct assign_string_bathyrelative
+{
+public:
+  assign_string_bathyrelative( Simulation &s ):
+    simulation( s ) {}
+  template <typename ItT>
+  void operator() ( ItT first, ItT last ) const
+  {
+    simulation.InitFormulas.bathyrelative = string(first, last);
+  }
+private:
+  Simulation &simulation;
+};
+
 
 struct add_event
 {
@@ -195,6 +209,12 @@ public:
       ptr = boost::shared_ptr<Event>
 	( new InitBathymetry( simulation.InitFormula, 
 			      simulation.InitFilename, timer ) );
+    }
+
+    else if ( simulation.InitVar == "BathyRelative" ) {
+      ptr = boost::shared_ptr<Event>
+  ( new InitBathyRelative( simulation.InitFormula, 
+            simulation.InitFilename, timer ) );
     }
 
     else if ( simulation.InitVar == "Bore" ) {
@@ -374,7 +394,7 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 	    >> *(timer_option) 
 	    >> ch_p('}')
 	    >>
-	    (str_p("Bathymetry")|str_p("Eta")|str_p("U")|str_p("V"))
+	    (str_p("Bathymetry")|str_p("BathyRelative")|str_p("Eta")|str_p("U")|str_p("V"))
 	    [ assign_a( self.sim.InitVar ) ]
 	    >> 
 	    (
@@ -447,6 +467,9 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
           ( str_p("V") >> ch_p("{")
             >> math_expression[ assign_string_v( self.sim ) ]
             ) |
+          ( str_p("BathyRelative") >> ch_p("{")
+            >> math_expression[ assign_string_bathyrelative( self.sim ) ]
+            ) |
           ( str_p("Bathymetry") >> ch_p("{")
             >> math_expression[ assign_string_bathymetry( self.sim ) ]
             ) ) >> ch_p('}');
@@ -477,7 +500,7 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
     rule_t simulation_objects_list, simulation_object;
     rule_t param_options, num_param_options;
     rule_t time, time_options;
-    rule_t mesh, initial_value, event, bathymetry, physical_params;
+    rule_t mesh, initial_value, event, bathymetry, bathyrelative, physical_params;
     rule_t boundary_condition;
     rule_t numerical_params;
     rule_t meshfilename, event_filename;
