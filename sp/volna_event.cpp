@@ -184,8 +184,8 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         InitU(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
-      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 ||
-                 strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
+      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 /*||
+                 strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0*/) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
           InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
@@ -201,6 +201,9 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
             InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
           }
         }
+      } else if (strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
+        //TODO: has to verify that firstTime happened already with plain bathymetry event
+        InitBathymetry(cells, cellCenters, values, NULL, 0, false, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb);
       } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
         InitBore(cells, cellCenters, values, bore_params);
       } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {

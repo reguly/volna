@@ -262,6 +262,25 @@ int main(int argc, char **argv) {
   std::vector < std::string > event_streamName(num_events);
   int num_outputLocation = 0;
   std::string numbers("0123456789.");
+
+  //if there is InitBathymetry and InitBathymetryRelative, make sure they are in the correct order
+  int bathyidx = -1;
+  int bathyrelidx = -1;
+  for (int i = 0; i < num_events; i++) {
+    TimerParams t_p;
+    EventParams e_p;
+    (*sim.events[i]).dump(e_p);
+    (*sim.events[i]).timer.dump(t_p);
+    if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0)
+      bathyidx = i;
+    else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) 
+      bathyrelidx = i;
+  }
+  if (bathyidx>=0 && bathyrelidx>=0 && bathyidx > bathyrelidx) {
+    printf("Error, you must define InitBathymetry event before InitBathymetryRelative event\n");
+    exit(-1);
+  }
+
   for (int i = 0; i < num_events; i++) {
     TimerParams t_p;
     EventParams e_p;
@@ -340,7 +359,7 @@ int main(int argc, char **argv) {
       if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0) {
         fprintf(fp, "  values[3] = val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
-        fprintf(fp, "  values[3] += *bathy0 + val;\n}");
+        fprintf(fp, "  values[3] = *bathy0 + val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fprintf(fp, "  values[1] += val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {

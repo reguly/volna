@@ -211,7 +211,7 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
     if (initial_zb != NULL) {
       op_par_loop_initBathyRelative_formula("initBathyRelative_formula",cells,
                   op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
-                  op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
+                  op_arg_dat(values,-1,OP_ID,4,"float",OP_RW),
                   op_arg_dat(initial_zb,-1,OP_ID,1,"float",OP_READ),
                   op_arg_gbl(&timestamp,1,"double",OP_READ));
     } else {
