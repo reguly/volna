@@ -71,7 +71,7 @@ displays the current iteration number and timestep on the console, \texttt{istar
 Saves all the state variables as specified by \texttt{istart, istep, iend}, in order (H,U,V,Zb). Outputs either VTK files or HDF5 files, for configuration, please see Section \ref{sec/running}.
 
 \item \texttt{OutputMaxElevation \{ istart = 0 istep = 1 iend = 10 \} "output\_\%i.vtk" } \\
-Saves the value of state variables when H is maximum so far during the simulation. If only \texttt{istep=-1} is defined, it will save all the sate variables at the very first step and when H (wave elevation from the reference 0 elevation) reaches the maximum overall during the whole simulation before exiting.
+Saves the value of state variables when H is maximum so far during the simulation. If only \texttt{istep=-1} is defined, it will save all the state variables at the very first step and when H (wave elevation from the reference 0 elevation) reaches the maximum overall during the whole simulation before exiting.
 
 \item \texttt{OutputLocation \{ istep = 1 \} "output.txt" \{ x = ... y = ...\} }
 Saves total elevation (H+Zb), at a particular location in the simulation domain into the output file. All location events are aggregated into a gauges.h5 file, please see Section \ref{sec/location}.
@@ -127,6 +127,7 @@ When running VOLNA, the second argument specifies the file format for outputting
 {\tt hdf52vtk\_convert\_files.sh simluation\_input.h5}\\
 which will iterate through any files in the directory, and use the input file to the original execution of VOLNA to combine geometry information with the state variables stored in the output files to generate VTK files.
 The HDF5 files can be used by themselves as well, they contain a single dataset \texttt{/values}, which stores the four state variables (H, U, V, Zb) in this order, for each cell, the cells are ordered in the same way as in the input simulation file. Note however that the ordering (numbering) of cells is usually different from the input Gmsh file; to improve locality volna2hdf5 reorders them. To access the matching coordinates of the cell centers, you can open the input file and read the \texttt{/cellCenters} dataset, which contains the x-y coordinate pairs for each cell, and is ordered the same way, so for a given cell index $idx$, the coordinates are $(cellCenters[idx][0], cellCenters[idx][1]$ and the $(H,U,V,Zb)$ values are $(values[idx][0],values[idx][1],values[idx][2],values[idx][3]$.
+The VTK files contain several fields; Eta (which is H+Zb), U, V, Zb and Visual (which is Eta). 
 
 \section{Performance considerations}
 \begin{enumerate}
