@@ -27,6 +27,8 @@
 #ifndef EIGEN_MEMORY_H
 #define EIGEN_MEMORY_H
 
+#include <stddef.h>
+
 #if defined(__APPLE__) || defined(_WIN64)
   #define EIGEN_MALLOC_ALREADY_ALIGNED 1
 #else
