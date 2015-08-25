@@ -4,7 +4,6 @@
 #include "EvolveValuesRK2_2.h"
 #include "simulation_1.h"
 #include "limits.h"
-
 //
 // Sequential OP2 function declarations
 //
@@ -333,6 +332,7 @@ int main(int argc, char **argv) {
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
 #endif
       float dT = CFL * minTimestep;
+      dT= dT < dtmax ? dT : dtmax;
 
       op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
@@ -355,15 +355,13 @@ int main(int argc, char **argv) {
           op_arg_dat(inConservative, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
+      timestep=dT;
 
-      timestep = dT;
     } //end EvolveValuesRK2
 
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
-
-    timestep = timestep < dtmax ? timestep : dtmax;
 
 #ifdef DEBUG
 //    if (itercount%50 == 0) {
