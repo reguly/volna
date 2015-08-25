@@ -818,6 +818,21 @@ int main(int argc, char **argv) {
         }
       }
     }
+    //Sanity test: ese every bathy node included?
+    int *touched = (int*)malloc(n_b_nodes*sizeof(int));
+    memset(touched,0,n_b_nodes*sizeof(int));
+    for(int c = 0; c < ncell; c++) {
+      touched[c2bathy[c*3]] = 1;
+      touched[c2bathy[c*3+1]] = 1;
+      touched[c2bathy[c*3+2]] = 1;
+    }
+    int any = 0;
+    for(int i = 0 ; i < n_b_nodes; i++) {
+      if (touched[i]==0) {any=1; printf("Error at coarse bathymetry node number %d (%g %g)\n",i,b_points[2*i],b_points[2*i+1]);}
+    }
+    if (any) {printf("Error: the coarse bathy nodes above are not part of any coarse cell that would contain any mesh cells. Please remove it.\n");exit(-1);}
+    free(touched);
+    
     cellsToBathynodes = op_decl_map(cells, bathy_nodes, N_NODESPERCELL, c2bathy, "cellsToBathynodes");
     if (n_initBathymetry == 1) op_dat temp_initBathymetry = op_decl_dat(bathy_nodes, 1, "float", initBathymetry[0], "initBathymetry");
     else {

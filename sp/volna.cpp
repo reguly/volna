@@ -44,6 +44,7 @@ void print_info() {
 }
 
 int main(int argc, char **argv) {
+  op_init(argc, argv, 2);
   if(argc < 3) {
     op_printf("Wrong parameters! \n");
     print_info();
@@ -60,8 +61,6 @@ int main(int argc, char **argv) {
 
   const char *filename_h5 = argv[1];
   int writeOption = atoi(argv[2]); // 0 - HDF5, 1 - VTK ASCII, 2 - VTK Binary
-
-  op_init(argc, argv, 2);
 
   EPS = 1e-6; //machine epsilon, for doubles 1e-11
 
