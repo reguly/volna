@@ -53,6 +53,7 @@ int size, char *dat, char const *name){
 #include "initGaussianLandslide_kernel.cu"
 #include "getTotalVol_kernel.cu"
 #include "getMaxElevation_kernel.cu"
+#include "getMaxSpeed_kernel.cu"
 #include "gatherLocations_kernel.cu"
 #include "computeFluxes_kernel.cu"
 #include "NumericalFluxes_kernel.cu"

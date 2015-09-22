@@ -166,6 +166,11 @@ public:
         ( new OutputMaxElevation(simulation.EventFilename,timer));
 	simulation.events.push_back( ptr );
     }
+    else if (simulation.EventName == "OutputMaxSpeed" ) {
+      boost::shared_ptr<Event> ptr = boost::shared_ptr<Event>
+        ( new OutputMaxSpeed(simulation.EventFilename,timer));
+	simulation.events.push_back( ptr );
+    }
     
     // reset the timer
     simulation.EventTimer = Timer();
@@ -340,7 +345,8 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 	= ( ( (str_p("OutputSimulation")|
 	       str_p("OutputTime")|
 	       str_p("OutputConservedQuantities")|
-	       str_p("OutputMaxElevation"))
+	       str_p("OutputMaxElevation")|
+	       str_p("OutputMaxSpeed"))
 	     [ assign_a( self.sim.EventName ) ] )
 	    >> ch_p('{') 
 	    >> *(timer_option) 

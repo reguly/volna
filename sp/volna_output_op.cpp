@@ -6,6 +6,7 @@
 #include "volna_common.h"
 #include "getTotalVol.h"
 #include "getMaxElevation.h"
+#include "getMaxSpeed.h"
 #include "gatherLocations.h"
 #include "simulation_1.h"
 #include  "op_lib_cpp.h"
@@ -31,6 +32,10 @@ void op_par_loop_simulation_1(char const *, op_set,
   op_arg );
 
 void op_par_loop_getMaxElevation(char const *, op_set,
+  op_arg,
+  op_arg );
+
+void op_par_loop_getMaxSpeed(char const *, op_set,
   op_arg,
   op_arg );
 
@@ -92,6 +97,39 @@ void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer,
     strcpy((char*)currentMaxElevation->name, "values");
     OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation);
     strcpy((char*)currentMaxElevation->name,"maxElevation");
+  }
+}
+
+void OutputMaxSpeed(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells) {
+// Warning: The function only finds the maximum of every
+// "timer.istep"-th step. Therefore intermediate maximums might be neglected.
+
+  // first time the event is executed
+  float *temp = NULL;
+  if (timer->iter == timer->istart) {
+    currentMaxSpeed = op_decl_dat_temp(cells, 4, "float",
+        temp,
+        "maxSpeed");
+
+    op_par_loop(simulation_1, "simulation_1", cells,
+        op_arg_dat(currentMaxSpeed, -1, OP_ID, 4, "float", OP_WRITE),
+        op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ));
+
+    if (timer->step == -1) {
+      strcpy((char*)currentMaxSpeed->name,"values");
+      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed);
+      strcpy((char*)currentMaxSpeed->name,"maxSpeed");
+    }
+  }
+  // Get the max elevation
+  op_par_loop(getMaxSpeed, "getMaxSpeed", cells,
+      op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
+      op_arg_dat(currentMaxSpeed, -1, OP_ID, 4, "float", OP_RW));
+
+  if (timer->step != -1) {
+    strcpy((char*)currentMaxSpeed->name, "values");
+    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed);
+    strcpy((char*)currentMaxSpeed->name,"maxSpeed");
   }
 }
 

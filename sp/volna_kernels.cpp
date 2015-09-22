@@ -27,6 +27,7 @@ extern float g;
 #include "initGaussianLandslide_kernel.cpp"
 #include "getTotalVol_kernel.cpp"
 #include "getMaxElevation_kernel.cpp"
+#include "getMaxSpeed_kernel.cpp"
 #include "gatherLocations_kernel.cpp"
 #include "computeFluxes_kernel.cpp"
 #include "NumericalFluxes_kernel.cpp"

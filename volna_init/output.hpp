@@ -133,6 +133,29 @@ void OutputMaxElevation::dump(EventParams &p) {
   p.post_update = post_update;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+class OutputMaxSpeed : public Output {
+public:
+  OutputMaxSpeed( std::string &, const Timer & );
+  void execute (Mesh &, Values & );
+  void dump(EventParams &p);
+private:
+  ScalarValue CurrentMaxSpeed;
+};
+
+// ///////////////////////////////////////////////////////////////////////////////
+
+OutputMaxSpeed::OutputMaxSpeed( std::string &streamName_,
+					const Timer &timer_ ):
+  Output( streamName_, timer_) {};
+
+void OutputMaxSpeed::dump(EventParams &p) {
+  p.className = "OutputMaxSpeed";
+  p.formula = "";
+  p.streamName = streamName;
+  p.post_update = post_update;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 

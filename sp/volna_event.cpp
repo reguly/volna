@@ -227,6 +227,11 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
         OutputMaxElevation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
+      } else if (strcmp((*events)[i].className.c_str(), "OutputMaxSpeed") == 0) {
+        // 0 - HDF5 output
+        // 1 - VTK ASCII output
+        // 2 - VTK Binary output
+        OutputMaxSpeed(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
       } else {
         op_printf("Unrecognized event %s\n", (*events)[i].className.c_str());
         exit(-1);
