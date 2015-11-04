@@ -192,8 +192,7 @@ int main(int argc, char **argv) {
         "the numbering of cells, edges and nodes... (default)\n");
     break;
   case 3:
-    op_printf("\nImporting Volna data to HDF5 file by leaving the "
-        "original ordering untouched... (no-reorder)\n");
+    op_printf("\nImporting Volna data to HDF5\n");
     if(strcmp(argv[2], "no-reorder")==0) {
       op_printf("no-reorder set: No reordering will be done during data import. \n");
       reorder = false;
@@ -289,7 +288,7 @@ int main(int argc, char **argv) {
     timer_start[i] = t_p.start;
     timer_step[i] = t_p.step;
     timer_end[i] = t_p.end;
-    timer_start[i] = t_p.istart;
+    timer_istart[i] = t_p.istart;
     timer_istep[i] = t_p.istep;
     timer_iend[i] = t_p.iend == MAXINT ? INT_MAX : t_p.iend;
     event_location_x[i] = e_p.location_x;
