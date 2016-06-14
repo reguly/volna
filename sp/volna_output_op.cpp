@@ -142,7 +142,7 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
                 op_arg_dat(values,0,outputLocation_map,4,"float",OP_READ),
                 op_arg_dat(outputLocation_dat,-1,OP_ID,1,"float",OP_WRITE));
     // Fetch data on every node
-    op_fetch_data_hdf5(outputLocation_dat, locationData.tmp, 0, locationData.n_points-1);
+    op_fetch_data_hdf5_file(outputLocation_dat, locationData.tmp, 0, locationData.n_points-1);
     outputLocation_lastupdate = timer->iter;
   }
 
