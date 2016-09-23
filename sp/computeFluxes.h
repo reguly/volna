@@ -86,9 +86,12 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   float uLn = leftCellValues[1] * edgeNormals[0] + leftCellValues[2] * edgeNormals[1];
   float uRn = rightCellValues[1] * edgeNormals[0] + rightCellValues[2] * edgeNormals[1];
 
-  float unStar = 0.5f * (uLn + uRn) - 0.25f* (cL+cR);
-  float cStar = 0.5f * (cL + cR) - 0.25f* (uLn-uRn);
-
+  //float unStar = 0.5f * (uLn + uRn) - 0.25f* (cL+cR);
+  //float cStar = 0.5f * (cL + cR) - 0.25f* (uLn-uRn);
+    
+	float unStar = 0.5f * (uLn + uRn) + (cL-cR);
+	float cStar = 0.5f * (cL + cR) - 0.25f* (uRn-uLn);
+        
   float sL = (uLn - cL) < (unStar - cStar) ? (uLn - cL) : (unStar - cStar);
   float sLMinus = sL < 0.0f ? sL : 0.0f;
 
