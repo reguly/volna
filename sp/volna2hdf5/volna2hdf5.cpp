@@ -802,6 +802,7 @@ int main(int argc, char **argv) {
     memset(c2bathy,0,ncell*3*sizeof(int));
     float *w = (float*)values->data;
     op_printf("ncells %d n_b_cells %d \n",ncell, n_b_cells);
+    #pragma omp parallel for schedule(dynamic)
     for (int c = 0; c < ncell; c++) {
       float x = ((float*)cellCenters->data)[2*c];
       float y = ((float*)cellCenters->data)[2*c+1];
@@ -814,6 +815,7 @@ int main(int argc, char **argv) {
           c2bathy[c*3] = b_cells_nodes[3*bc];
           c2bathy[c*3+1] = b_cells_nodes[3*bc+1];
           c2bathy[c*3+2] = b_cells_nodes[3*bc+2];
+          break;
         }
       }
     }
