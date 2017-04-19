@@ -152,7 +152,8 @@ void op_par_loop_values_operation2(char const *name, op_set set,
       (int *) arg4.data_d,
       offset_s,
       set->size );
-  }
+  } else
+    op_mpi_wait_all_cuda(nargs, args);
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);

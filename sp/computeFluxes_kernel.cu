@@ -175,7 +175,8 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
     }
     OP_kernels[18].transfer  += Plan->transfer;
     OP_kernels[18].transfer2 += Plan->transfer2;
-  }
+  } else
+    op_mpi_wait_all_cuda(nargs, args);
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);

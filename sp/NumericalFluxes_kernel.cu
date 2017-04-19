@@ -229,7 +229,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
     }
     arg8.data = (char *)arg8h;
     op_mpi_reduce(&arg8,arg8h);
-  }
+  } else
+    op_mpi_wait_all_cuda(nargs, args);
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);

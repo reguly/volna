@@ -96,16 +96,16 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
   #endif
   
   int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
-  
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timers_core(&cpu_t1, &wall_t1);
   
+  op_timing_realloc(17);
+  OP_kernels[17].name      = name;
+  OP_kernels[17].count    += 1;
+
   if (set->size > 0) {
     
-    op_timing_realloc(17);
-    OP_kernels[17].name      = name;
-    OP_kernels[17].count    += 1;
     
     op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
     
@@ -147,7 +147,9 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
     }
     OP_kernels[17].transfer  += Plan->transfer;
     OP_kernels[17].transfer2 += Plan->transfer2;
-  }
+  } else
+    op_mpi_wait_all_cuda(nargs, args);
+
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);

@@ -135,7 +135,8 @@ void op_par_loop_getTotalVol(char const *name, op_set set,
     }
     arg2.data = (char *)arg2h;
     op_mpi_reduce(&arg2,arg2h);
-  }
+  } else
+    op_mpi_wait_all_cuda(nargs, args);
   op_mpi_set_dirtybit_cuda(nargs, args);
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);

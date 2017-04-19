@@ -69,7 +69,7 @@ endif
 # set flags for NVCC compilation and linking
 #
 
-NVCCFLAGS	= -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 #-g -G
+NVCCFLAGS	= -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g #-G
 
 #
 # master to make all versions
