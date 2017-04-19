@@ -51,7 +51,7 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -vec-report -xSSE4.2 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	CPPFLAGS = -O3 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -openmp -openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
@@ -69,7 +69,7 @@ endif
 # set flags for NVCC compilation and linking
 #
 
-NVCCFLAGS	= -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g -G
+NVCCFLAGS	= -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 #-g -G
 
 #
 # master to make all versions

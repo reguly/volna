@@ -169,7 +169,7 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
   // 0 - write to HDF5 file
   if(writeOption == 0) {
     sprintf(substituteIndex, "%04d.h5", timer->iter);
-    strcpy(pos, substituteIndex);
+    if (pos != NULL) strcpy(pos, substituteIndex);
     op_printf("Writing %s to HDF5 file: %s \n",values->name, filename);
     op_fetch_data_hdf5_file(values, filename);
   }
