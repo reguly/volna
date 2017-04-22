@@ -289,7 +289,7 @@ int main(int argc, char **argv) {
     timer_step[i] = t_p.step;
     timer_end[i] = t_p.end;
     timer_istart[i] = t_p.istart;
-    timer_istep[i] = t_p.istep;
+    timer_istep[i] = (t_p.step != INFTY) ? MAXINT : t_p.istep;
     timer_iend[i] = t_p.iend == MAXINT ? INT_MAX : t_p.iend;
     event_location_x[i] = e_p.location_x;
     event_location_y[i] = e_p.location_y;
