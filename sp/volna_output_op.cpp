@@ -73,7 +73,7 @@ void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer,
 
   // first time the event is executed
   float *temp = NULL;
-  if (timer->iter == timer->istart) {
+  if (timer->iter == timer->istart || currentMaxElevation==NULL) {
     currentMaxElevation = op_decl_dat_temp(cells, 4, "float",
         temp,
         "maxElevation");

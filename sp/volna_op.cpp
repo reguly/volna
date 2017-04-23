@@ -423,7 +423,7 @@ int main(int argc, char **argv) {
 
     itercount++;
     timestamp += timestep;
-
+printf("timestamp %g\n",timestamp);
 		//process post_update==true events (usually Output events)
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,

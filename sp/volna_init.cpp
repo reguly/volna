@@ -74,7 +74,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
 //
 //}
 
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_map cellsToBathyNodes, op_dat bathy_xy, op_dat initial_zb) {
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb) {
   if (firstTime) {
     int result = 0;
     int leftOperand = 0;
@@ -95,15 +95,15 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                   op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
                   op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
                   op_arg_gbl(&variable, 1, "int", OP_READ));
-      op_par_loop(initBathymetry_large, "initBathymetry_large", cells,
-                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                  op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
-                  op_arg_dat(bathy_xy, 0, cellsToBathyNodes, 2, "float", OP_READ),
-                  op_arg_dat(bathy_xy, 1, cellsToBathyNodes, 2, "float", OP_READ),
-                  op_arg_dat(bathy_xy, 2, cellsToBathyNodes, 2, "float", OP_READ),
-                  op_arg_dat(initValues, 0, cellsToBathyNodes, 1, "float", OP_READ),
-                  op_arg_dat(initValues, 1, cellsToBathyNodes, 1, "float", OP_READ),
-                  op_arg_dat(initValues, 2, cellsToBathyNodes, 1, "float", OP_READ));
+      op_par_loop(initBathymetry_large, "initBathymetry_large", lifted_cells,
+                  op_arg_dat(values, 0, liftedcellsToCells, 4, "float", OP_INC),
+                  op_arg_dat(cellCenters, 0, liftedcellsToCells, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 0, liftedcellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 1, liftedcellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(bathy_xy, 2, liftedcellsToBathyNodes, 2, "float", OP_READ),
+                  op_arg_dat(initValues, 0, liftedcellsToBathyNodes, 1, "float", OP_READ),
+                  op_arg_dat(initValues, 1, liftedcellsToBathyNodes, 1, "float", OP_READ),
+                  op_arg_dat(initValues, 2, liftedcellsToBathyNodes, 1, "float", OP_READ));
     } else {
       int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
       //TODO: we are only overwriting H, moving the whole thing

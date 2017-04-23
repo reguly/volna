@@ -173,7 +173,9 @@ int main(int argc, char **argv) {
   op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
   int n_initBathymetry = 0; // Number of initBathymetry files
 	op_set bathy_nodes;
-  op_map cellsToBathyNodes;
+  op_set lifted_cells;
+  op_map liftedcellsToBathyNodes;
+  op_map liftedcellsToCells;
   op_dat bathy_xy;
   op_dat initial_zb = NULL;
 
@@ -208,9 +210,13 @@ int main(int argc, char **argv) {
           op_set bathy_set = cells;
           if (new_format) {
             bathy_nodes = op_decl_set_hdf5(filename_h5, "bathy_nodes");
-            cellsToBathyNodes = op_decl_map_hdf5(cells, bathy_nodes, N_NODESPERCELL,
+            lifted_cells = op_decl_set_hdf5(filename_h5, "liftedCells");
+            liftedcellsToBathyNodes = op_decl_map_hdf5(lifted_cells, bathy_nodes, N_NODESPERCELL,
                                                  filename_h5,
-                                                 "cellsToBathynodes");
+                                                 "liftedcellsToBathynodes");
+            liftedcellsToCells = op_decl_map_hdf5(lifted_cells, cells, N_NODESPERCELL,
+                                                 filename_h5,
+                                                 "liftedcellsToCells");
             bathy_xy = op_decl_dat_hdf5(bathy_nodes, MESH_DIM, "float",
                                         filename_h5,
                                         "bathy_xy");
@@ -286,7 +292,7 @@ int main(int argc, char **argv) {
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
                      cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-                     temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
+                     temp_initEta, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
                      gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
@@ -316,7 +322,7 @@ int main(int argc, char **argv) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
- 									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
+ 									temp_initEta, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
 #ifdef DEBUG
@@ -392,7 +398,7 @@ int main(int argc, char **argv) {
 		//process post_update==true events (usually Output events)
     processEvents(&timers, &events, 0, 1, timestep, 1, 1,
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-									temp_initEta, bathy_nodes, cellsToBathyNodes, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
+									temp_initEta, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 

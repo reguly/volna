@@ -793,13 +793,17 @@ int main(int argc, char **argv) {
 
 // !Bathymetry large cells
   op_set bathy_nodes;
-  op_map cellsToBathynodes;
+  op_set lifted_cells;
+  op_map liftedcellsToCells;
+  op_map liftedcellsToBathynodes;
   op_dat bathy_xy;
   if (new_format && n_initBathymetry>0) {
     bathy_nodes = op_decl_set(n_b_nodes, "bathy_nodes");
     bathy_xy = op_decl_dat(bathy_nodes, MESH_DIM, "float", b_points, "bathy_xy");
     int *c2bathy = (int *)malloc(ncell*3*sizeof(int));
-    memset(c2bathy,0,ncell*3*sizeof(int));
+    for (int i = 0; i < ncell*3; i++) {
+      c2bathy[i] = -1;
+    }
     float *w = (float*)values->data;
     op_printf("ncells %d n_b_cells %d \n",ncell, n_b_cells);
     #pragma omp parallel for schedule(dynamic)
@@ -820,9 +824,12 @@ int main(int argc, char **argv) {
       }
     }
     //Sanity test: ese every bathy node included?
+    int liftedCellCount = 0;
     int *touched = (int*)malloc(n_b_nodes*sizeof(int));
     memset(touched,0,n_b_nodes*sizeof(int));
     for(int c = 0; c < ncell; c++) {
+      if (c2bathy[c*3]==-1) continue;
+      liftedCellCount++;
       touched[c2bathy[c*3]] = 1;
       touched[c2bathy[c*3+1]] = 1;
       touched[c2bathy[c*3+2]] = 1;
@@ -834,7 +841,22 @@ int main(int argc, char **argv) {
     if (any) {printf("Error: the coarse bathy nodes above are not part of any coarse cell that would contain any mesh cells. Please remove it.\n");exit(-1);}
     free(touched);
     
-    cellsToBathynodes = op_decl_map(cells, bathy_nodes, N_NODESPERCELL, c2bathy, "cellsToBathynodes");
+    lifted_cells = op_decl_set(liftedCellCount,"liftedCells");
+    int *m_lcellstobnodes = (int *)malloc(MESH_DIM*liftedCellCount*sizeof(int));
+    int *m_lcellstocells = (int*)malloc(liftedCellCount*sizeof(int));
+    liftedCellCount = 0;
+    for(int c = 0; c < ncell; c++) {
+      if (c2bathy[c*3]==-1) continue;
+      m_lcellstobnodes[3*liftedCellCount+0] = c2bathy[c*3+0];
+      m_lcellstobnodes[3*liftedCellCount+1] = c2bathy[c*3+1];
+      m_lcellstobnodes[3*liftedCellCount+2] = c2bathy[c*3+2];
+      m_lcellstocells[liftedCellCount] = c;
+      liftedCellCount++;
+    }
+    
+    liftedcellsToBathynodes = op_decl_map(lifted_cells, bathy_nodes, N_NODESPERCELL, m_lcellstobnodes, "liftedcellsToBathynodes");
+    liftedcellsToCells = op_decl_map(lifted_cells,cells,1,m_lcellstocells,"liftedCellsToCells");
+
     if (n_initBathymetry == 1) op_dat temp_initBathymetry = op_decl_dat(bathy_nodes, 1, "float", initBathymetry[0], "initBathymetry");
     else {
       for(int k=0; k<n_initBathymetry; k++) {
