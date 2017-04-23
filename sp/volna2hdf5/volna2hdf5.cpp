@@ -842,7 +842,7 @@ int main(int argc, char **argv) {
     free(touched);
     
     lifted_cells = op_decl_set(liftedCellCount,"liftedCells");
-    int *m_lcellstobnodes = (int *)malloc(MESH_DIM*liftedCellCount*sizeof(int));
+    int *m_lcellstobnodes = (int *)malloc(N_NODESPERCELL*liftedCellCount*sizeof(int));
     int *m_lcellstocells = (int*)malloc(liftedCellCount*sizeof(int));
     liftedCellCount = 0;
     for(int c = 0; c < ncell; c++) {
