@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
             liftedcellsToBathyNodes = op_decl_map_hdf5(lifted_cells, bathy_nodes, N_NODESPERCELL,
                                                  filename_h5,
                                                  "liftedcellsToBathynodes");
-            liftedcellsToCells = op_decl_map_hdf5(lifted_cells, cells, N_NODESPERCELL,
+            liftedcellsToCells = op_decl_map_hdf5(lifted_cells, cells, 1,
                                                  filename_h5,
                                                  "liftedcellsToCells");
             bathy_xy = op_decl_dat_hdf5(bathy_nodes, MESH_DIM, "float",
