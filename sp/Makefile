@@ -53,8 +53,8 @@ ifeq ($(OP2_COMPILER),intel)
 #	CPPFLAGS = -g -O0
 	CPPFLAGS = -O3 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
-	OMPFLAGS = -openmp -openmp-report2
-	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
+	OMPFLAGS = -qopenmp #-openmp-report2
+	MPICPP = mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
