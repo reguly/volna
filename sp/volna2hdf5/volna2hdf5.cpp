@@ -855,7 +855,7 @@ int main(int argc, char **argv) {
     }
     
     liftedcellsToBathynodes = op_decl_map(lifted_cells, bathy_nodes, N_NODESPERCELL, m_lcellstobnodes, "liftedcellsToBathynodes");
-    liftedcellsToCells = op_decl_map(lifted_cells,cells,1,m_lcellstocells,"liftedCellsToCells");
+    liftedcellsToCells = op_decl_map(lifted_cells,cells,1,m_lcellstocells,"liftedcellsToCells");
 
     if (n_initBathymetry == 1) op_dat temp_initBathymetry = op_decl_dat(bathy_nodes, 1, "float", initBathymetry[0], "initBathymetry");
     else {
