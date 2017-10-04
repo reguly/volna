@@ -18,7 +18,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(18);
+  op_timing_realloc(6);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 1;
@@ -29,8 +29,8 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_18
-    int part_size = OP_PART_SIZE_18;
+  #ifdef OP_PART_SIZE_6
+    int part_size = OP_PART_SIZE_6;
   #else
     int part_size = OP_part_size;
   #endif
@@ -39,7 +39,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   if (set->size >0) {
 
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+    op_plan *Plan = op_plan_get_stage_upload(name,set,part_size,nargs,args,ninds,inds,OP_STAGE_ALL,0);
 
     // execute plan
     int block_offset = 0;
@@ -57,16 +57,17 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
           int map0idx = arg0.map_data[n * arg0.map->dim + 0];
 
+
           gatherLocations(
             &((float*)arg0.data)[4 * map0idx],
-            &((float*)arg1.data)[1 * n]);
+            &((float*)arg1.data)[5 * n]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[18].transfer  += Plan->transfer;
-    OP_kernels[18].transfer2 += Plan->transfer2;
+    OP_kernels[6].transfer  += Plan->transfer;
+    OP_kernels[6].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -77,7 +78,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[18].name      = name;
-  OP_kernels[18].count    += 1;
-  OP_kernels[18].time     += wall_t2 - wall_t1;
+  OP_kernels[6].name      = name;
+  OP_kernels[6].count    += 1;
+  OP_kernels[6].time     += wall_t2 - wall_t1;
 }

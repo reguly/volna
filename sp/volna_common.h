@@ -23,6 +23,7 @@ struct LocationData{
   float *tmp;
   std::vector<std::vector<float> > time;
   std::vector<std::vector<float> > value;
+  std::vector<std::vector<float> > allvalues;
 };
 
 extern LocationData locationData;

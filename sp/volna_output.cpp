@@ -5,13 +5,12 @@
 #include "getMaxSpeed.h"
 #include "gatherLocations.h"
 #include "simulation_1.h"
+
 #include "op_lib_cpp.h"
 
 //
 // mpi header file - included by user for user level mpi
 //
-
-//#include <mpi.h>
 
 int outputLocation_lastupdate = -1;
 
@@ -102,7 +101,7 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
   if (outputLocation_lastupdate == -1 || timer->iter != (unsigned int)outputLocation_lastupdate) {
     op_par_loop(gatherLocations, "gatherLocations", outputLocation_map->from,
         op_arg_dat(values, 0, outputLocation_map, 4, "float", OP_READ),
-        op_arg_dat(outputLocation_dat, -1, OP_ID, 1, "float", OP_WRITE));
+        op_arg_dat(outputLocation_dat, -1, OP_ID, 5, "float", OP_WRITE));
     // Fetch data on every node
     op_fetch_data_idx(outputLocation_dat, locationData.tmp, 0, locationData.n_points-1);
     outputLocation_lastupdate = timer->iter;
@@ -111,7 +110,11 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
   // Write location data to std vectors
   if(op_is_root()) {
     locationData.time[event->loc_index].push_back(timer->t);
-    locationData.value[event->loc_index].push_back(locationData.tmp[event->loc_index]);
+    locationData.value[event->loc_index].push_back(locationData.tmp[5*event->loc_index]);
+    locationData.allvalues[event->loc_index].push_back(locationData.tmp[5*event->loc_index+1]);
+    locationData.allvalues[event->loc_index].push_back(locationData.tmp[5*event->loc_index+2]);
+    locationData.allvalues[event->loc_index].push_back(locationData.tmp[5*event->loc_index+3]);
+    locationData.allvalues[event->loc_index].push_back(locationData.tmp[5*event->loc_index+4]);
   }
 }
 

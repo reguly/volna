@@ -173,7 +173,8 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
     locationData.n_points = locationData.filename.size();
     locationData.time.resize(locationData.n_points);
     locationData.value.resize(locationData.n_points);
-    locationData.tmp = (float*) malloc(locationData.n_points*sizeof(float));
+    locationData.allvalues.resize(locationData.n_points);
+    locationData.tmp = (float*) malloc(locationData.n_points*5*sizeof(float));
     i = 0;
   }
   while (i < size){

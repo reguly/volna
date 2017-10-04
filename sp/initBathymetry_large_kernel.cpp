@@ -30,7 +30,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(9);
+  op_timing_realloc(16);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 4;
@@ -41,8 +41,8 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_9
-    int part_size = OP_PART_SIZE_9;
+  #ifdef OP_PART_SIZE_16
+    int part_size = OP_PART_SIZE_16;
   #else
     int part_size = OP_part_size;
   #endif
@@ -51,7 +51,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   if (set->size >0) {
 
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+    op_plan *Plan = op_plan_get_stage_upload(name,set,part_size,nargs,args,ninds,inds,OP_STAGE_ALL,0);
 
     // execute plan
     int block_offset = 0;
@@ -72,6 +72,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
           int map3idx = arg2.map_data[n * arg2.map->dim + 1];
           int map4idx = arg2.map_data[n * arg2.map->dim + 2];
 
+
           initBathymetry_large(
             &((float*)arg0.data)[4 * map0idx],
             &((float*)arg1.data)[2 * map0idx],
@@ -86,8 +87,8 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
       block_offset += nblocks;
     }
-    OP_kernels[9].transfer  += Plan->transfer;
-    OP_kernels[9].transfer2 += Plan->transfer2;
+    OP_kernels[16].transfer  += Plan->transfer;
+    OP_kernels[16].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -98,7 +99,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[9].name      = name;
-  OP_kernels[9].count    += 1;
-  OP_kernels[9].time     += wall_t2 - wall_t1;
+  OP_kernels[16].name      = name;
+  OP_kernels[16].count    += 1;
+  OP_kernels[16].time     += wall_t2 - wall_t1;
 }

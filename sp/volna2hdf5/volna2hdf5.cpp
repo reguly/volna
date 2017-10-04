@@ -875,11 +875,9 @@ int main(int argc, char **argv) {
   op_timers(&c1,&t1);
   op_set outputLocation = NULL;
   op_map outputLocation_map = NULL;
-  op_dat outputLocation_dat = NULL;
   if (num_outputLocation) {
   	float def = -1.0f*INFINITY;
   	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
-    float *output_dat = (float *)malloc(num_outputLocation*sizeof(float));
     vector<int> done(event_className.size(), 0);
     for (int i = 0; i < event_className.size(); i++) {
       if (strcmp(event_className[i].c_str(), "OutputLocation")) done[i] = -1;
@@ -906,7 +904,6 @@ int main(int argc, char **argv) {
   		}
   	}
   	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
-  	outputLocation_dat = op_decl_dat(outputLocation, 1, "float", output_dat, "outputLocation_dat");
   }
   op_timers(&c2,&t2);
   printf("OutputLocation time %g\n", t2-t1);

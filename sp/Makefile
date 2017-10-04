@@ -54,7 +54,7 @@ ifeq ($(OP2_COMPILER),intel)
 	CPPFLAGS = -O3 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
-	MPICPP = mpiCC
+	MPICPP = mpic++
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
@@ -69,7 +69,7 @@ endif
 # set flags for NVCC compilation and linking
 #
 
-NVCCFLAGS	= -arch=sm_20 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g #-G
+NVCCFLAGS	= -arch=sm_60 -Xptxas=-v -use_fast_math -O3 -m64 -g #-G
 
 #
 # master to make all versions

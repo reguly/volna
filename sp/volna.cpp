@@ -133,9 +133,6 @@ int main(int argc, char **argv) {
     outputLocation_map = op_decl_map_hdf5(outputLocation, cells, 1,
         filename_h5,
         "outputLocation_map");
-    outputLocation_dat = op_decl_dat_hdf5(outputLocation, 1, "float",
-        filename_h5,
-        "outputLocation_dat");
   }
 
   /*
@@ -289,6 +286,10 @@ int main(int argc, char **argv) {
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timers(&cpu_t1, &wall_t1);
 
+  float *tmp_elem = NULL;
+  outputLocation_dat = op_decl_dat_temp(outputLocation, 5, "float",
+                                        tmp_elem,"outputLocation_dat");
+
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
                      cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
@@ -298,7 +299,6 @@ int main(int argc, char **argv) {
   //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
   //and in and out in EvolveValuesRK2() (timeStepper.hpp)
 
-  float *tmp_elem = NULL;
 
 	/*
 	 *  Declaring temporary dats
@@ -391,6 +391,7 @@ int main(int argc, char **argv) {
       printf("H+Zb: %g\n", sqrt(norm));
     }
 #endif
+    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
 
     itercount++;
     timestamp += timestep;
