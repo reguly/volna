@@ -47,8 +47,6 @@ void op_par_loop_gatherLocations(char const *, op_set,
 #endif
 #endif
 
-"
-
 //
 // mpi header file - included by user for user level mpi
 //
