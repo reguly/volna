@@ -729,6 +729,8 @@ int main(int argc, char **argv) {
 
 #ifdef HAVE_PTSCOTCH
     if(reorder) {
+      double t1,t2,c1,c2;
+      op_timers(&c1,&t1);
       //  Reorder cells
       op_printf("Reordering cells... \n");
       op_get_permutation(&cells_perm, &cells_iperm, cellsToCells, cells);
@@ -762,6 +764,8 @@ int main(int argc, char **argv) {
       op_get_permutation(&nodes_perm, &nodes_iperm, cellsToNodes, nodes);
       op_reorder_map(cellsToNodes, nodes_perm, nodes_iperm, nodes);
       op_reorder_dat(nodeCoords, nodes_iperm, nodes);
+      op_timers(&c2,&t2);
+      printf("Reordering done in %g sec\n",t2-t1);
     }
 #else
     op_printf("\nCan not use GPS reordering, because no PT-SCOTCH library was specified during build. Rebuild volna2hdf5 with PT-SCOTCH! Exiting... \n");

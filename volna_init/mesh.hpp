@@ -575,7 +575,7 @@ void Mesh::ComputeGeometricQuantities() {
 
   CellCenters = GeomValues::GeomValues( NVolumes );
   CellVolumes = ScalarValue::Zero( NVolumes );
-
+#pragma omp parallel for
   for (  int i = 0; i < NVolumes; ++i ) {
 
     // Cell barycenters
@@ -604,7 +604,7 @@ void Mesh::ComputeGeometricQuantities() {
   FacetCenters = GeomValues::GeomValues( NFaces );
   FacetNormals = GeomValues::GeomValues( NFaces );
   FacetVolumes = ScalarValue::Zero( NFaces );
-
+#pragma omp parallel for
   for (  int i = 0; i < NFaces; ++i ) {
 
     // Facet barycenter
