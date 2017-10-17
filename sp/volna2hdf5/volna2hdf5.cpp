@@ -876,31 +876,31 @@ int main(int argc, char **argv) {
   op_set outputLocation = NULL;
   op_map outputLocation_map = NULL;
   if (num_outputLocation) {
-  	float def = -1.0f*INFINITY;
   	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
     vector<int> done(event_className.size(), 0);
+    vector<int> locidx(event_className.size(), 0);
+    int j=0;
     for (int i = 0; i < event_className.size(); i++) {
-      if (strcmp(event_className[i].c_str(), "OutputLocation")) done[i] = -1;
+      if (strcmp(event_className[i].c_str(), "OutputLocation")) {done[i] = -1; locidx[i] = -1;}
+      else locidx[i] = j++;
 		}
     float *x = (float*)nodeCoords->data;
     float *w = (float*)values->data;
     int *cnode = (int*)cellsToNodes->map;
   	outputLocation = op_decl_set(num_outputLocation, "outputLocation");
-//  	#pragma omp parallel for shared(done,output_map)
+  	#pragma omp parallel for shared(done,output_map)
   	for (int e = 0; e < ncell; e++) {
-      int j = 0;
   		for (int i = 0; i < event_className.size(); i++) {
-        if (done[i]==1) {j++; continue;}
+        if (done[i]==1) continue;
         if (done[i]==-1) continue;
+        float def = -1.0f*INFINITY;
   			triangleIndex(&def, &event_location_x[i], &event_location_y[i],
   										&x[2*cnode[3*e]], &x[2*cnode[3*e+1]], &x[2*cnode[3*e+2]],	&w[4*e]);
   			if (def != -1.0f*INFINITY) {
-  				output_map[j] = e;
-  				def = -1.0f*INFINITY;
+  				output_map[locidx[i]] = e;
           done[i] = 1;
   				//printf("Location %d found in cell %d\n", j, e);
   			}
-				j++;
   		}
   	}
   	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
