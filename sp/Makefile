@@ -37,7 +37,7 @@ endif
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
-	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
+	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr -lscotch
 endif
 
 ifeq ($(OP2_COMPILER),gnu)
@@ -51,7 +51,7 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	CPPFLAGS = -O3 -parallel -xHost -qopt-report #-g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = mpic++
@@ -130,6 +130,16 @@ volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op
 	$(PARMETIS_INC) $(PTSCOTCH_INC) \
 	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_openmp
+
+volna_mpi_vec: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_veckernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_vec
+
+volna_mpi_omp_vec: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) -DVECTORIZE $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_ompveckernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_omp_vec
 
 volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_kernels_mpi_cu.o Makefile
 	$(MPICPP) $(MPIFLAGS) volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp -lm volna_kernels_mpi_cu.o \
