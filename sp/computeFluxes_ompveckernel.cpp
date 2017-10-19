@@ -475,6 +475,7 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
             &(ptr7)[1 * n]);
         }
       }
+      block_offset += nblocks;
     }
   }
 

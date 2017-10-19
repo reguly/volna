@@ -12,15 +12,15 @@ __device__ void NumericalFluxes_gpu( const float *maxEdgeEigenvalues0,
           const float *cellVolumes,
             float *zeroInit, float *minTimeStep ) {
   float local = 0.0f;
-  local += *maxEdgeEigenvalues0 * *(EdgeVolumes0);
-  local += *maxEdgeEigenvalues1 * *(EdgeVolumes1);
-  local += *maxEdgeEigenvalues2 * *(EdgeVolumes2);
+  local += maxEdgeEigenvalues0[0] * EdgeVolumes0[0];
+  local += maxEdgeEigenvalues1[0] * EdgeVolumes1[0];
+  local += maxEdgeEigenvalues2[0] * EdgeVolumes2[0];
   zeroInit[0] = 0.0f;
   zeroInit[1] = 0.0f;
   zeroInit[2] = 0.0f;
   zeroInit[3] = 0.0f;
 
-  *minTimeStep = MIN(*minTimeStep, 2.0f * *cellVolumes / local);
+  *minTimeStep = MIN(*minTimeStep, 2.0f * cellVolumes[0] / local);
 }
 
 // CUDA kernel function
@@ -120,10 +120,10 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(8);
+  op_timing_realloc(4);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[8].name      = name;
-  OP_kernels[8].count    += 1;
+  OP_kernels[4].name      = name;
+  OP_kernels[4].count    += 1;
 
 
   int    ninds   = 2;
@@ -134,8 +134,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_8
-    int part_size = OP_PART_SIZE_8;
+  #ifdef OP_PART_SIZE_4
+    int part_size = OP_PART_SIZE_4;
   #else
     int part_size = OP_part_size;
   #endif
@@ -173,8 +173,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_8
-      int nthread = OP_BLOCK_SIZE_8;
+      #ifdef OP_BLOCK_SIZE_4
+      int nthread = OP_BLOCK_SIZE_4;
       #else
       int nthread = OP_block_size;
       #endif
@@ -206,8 +206,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[8].transfer  += Plan->transfer;
-    OP_kernels[8].transfer2 += Plan->transfer2;
+    OP_kernels[4].transfer  += Plan->transfer;
+    OP_kernels[4].transfer2 += Plan->transfer2;
     for ( int b=0; b<maxblocks; b++ ){
       for ( int d=0; d<1; d++ ){
         arg8h[d] = MIN(arg8h[d],((float *)arg8.data)[d+b*1]);
@@ -220,5 +220,5 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[8].time     += wall_t2 - wall_t1;
+  OP_kernels[4].time     += wall_t2 - wall_t1;
 }

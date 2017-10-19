@@ -217,6 +217,7 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
             &arg8h);
         }
       }
+      block_offset += nblocks;
     }
   }
 

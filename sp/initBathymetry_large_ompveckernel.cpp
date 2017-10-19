@@ -286,6 +286,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
             &(ptr7)[1 * map4idx]);
         }
       }
+      block_offset += nblocks;
     }
   }
 

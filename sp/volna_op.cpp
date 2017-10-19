@@ -324,7 +324,7 @@ int main(int argc, char **argv) {
   op_timers(&cpu_t1, &wall_t1);
 
   float *tmp_elem = NULL;
-  if (num_outputLocation) 
+  if (num_outputLocation)
     outputLocation_dat = op_decl_dat_temp(outputLocation, 5, "float",
                                         tmp_elem,"outputLocation_dat");
 

@@ -8,13 +8,13 @@ inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
             float *zeroInit, float *minTimeStep ) //OP_MIN
 {
   float local = 0.0f;
-  local += *maxEdgeEigenvalues0 * *(EdgeVolumes0);
-  local += *maxEdgeEigenvalues1 * *(EdgeVolumes1);
-  local += *maxEdgeEigenvalues2 * *(EdgeVolumes2);
+  local += maxEdgeEigenvalues0[0] * EdgeVolumes0[0];
+  local += maxEdgeEigenvalues1[0] * EdgeVolumes1[0];
+  local += maxEdgeEigenvalues2[0] * EdgeVolumes2[0];
   zeroInit[0] = 0.0f;
   zeroInit[1] = 0.0f;
   zeroInit[2] = 0.0f;
   zeroInit[3] = 0.0f;
 
-  *minTimeStep = MIN(*minTimeStep, 2.0f * *cellVolumes / local);
+  *minTimeStep = MIN(*minTimeStep, 2.0f * cellVolumes[0] / local);
 }

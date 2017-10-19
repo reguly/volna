@@ -211,6 +211,7 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
             &(ptr7)[1 * map1idx]);
         }
       }
+      block_offset += nblocks;
     }
   }
 

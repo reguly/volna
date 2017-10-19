@@ -126,6 +126,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
             &(ptr1)[5 * n]);
         }
       }
+      block_offset += nblocks;
     }
   }
 
