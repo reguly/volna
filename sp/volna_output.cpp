@@ -1,3 +1,7 @@
+#include "op_seq.h"
+
+
+
 #include "volna_writeVTK.h"
 #include "volna_common.h"
 #include "getTotalVol.h"
@@ -6,7 +10,6 @@
 #include "gatherLocations.h"
 #include "simulation_1.h"
 
-#include "op_lib_cpp.h"
 
 //
 // mpi header file - included by user for user level mpi

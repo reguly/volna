@@ -392,7 +392,7 @@ int main(int argc, char **argv) {
       printf("H+Zb: %g\n", sqrt(norm));
     }
 #endif
-    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
+//    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
 
     itercount++;
     timestamp += timestep;
