@@ -881,6 +881,7 @@ int main(int argc, char **argv) {
   op_map outputLocation_map = NULL;
   if (num_outputLocation) {
   	int *output_map = (int *)malloc(num_outputLocation*sizeof(int));
+    memset(output_map, 0, num_outputLocation*sizeof(int));
     vector<int> done(event_className.size(), 0);
     vector<int> locidx(event_className.size(), 0);
     int j=0;
@@ -903,10 +904,13 @@ int main(int argc, char **argv) {
   			if (def != -1.0f*INFINITY) {
   				output_map[locidx[i]] = e;
           done[i] = 1;
-  				//printf("Location %d found in cell %d\n", j, e);
+  				//printf("Location %d found in cell %d\n", locidx[i], e);
   			}
   		}
   	}
+    for (int i = 0; i < event_className.size(); i++) {
+      if (done[i] == 0) printf("WARNING: OutputLocation at %g %g not found - will return data for cell #0\n",event_location_x[i], event_location_y[i]);
+    }
   	outputLocation_map = op_decl_map(outputLocation, cells, 1, output_map, "outputLocation_map");
   }
   op_timers(&c2,&t2);
