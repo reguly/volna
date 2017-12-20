@@ -4,7 +4,7 @@
 
 \begin{document}
 \title{VOLNA-OP2 documentation}
-\author{Istvan Reguly - istvan.reguly@oerc.ox.ac.uk}
+\author{Istvan Reguly - reguly.istvan@itk.ppke.hu}
 \maketitle
 \section{Introduction}
 This document describes the structure, compilation and usage of VOLNA-OP2.
@@ -56,7 +56,7 @@ which specifies the simulation mesh, either as a \textit{Gmsh} file, or as a rec
 define physical and numerical parameters of the simulation
 \item \texttt{Init \{istart = 0 istep = 1 iend = 10\} TYPE \{ return f(x,y,t);\}} or \\
 \texttt{Init \{istart = 0 istep = 1 iend = 10\} TYPE "filename"}\\
-Defines initial conditions where \texttt{TYPE} is one of the following: \texttt{H, U, V, Bathymetry} depending on which state variable is to be set. The initial/boundary condition is imposed beginning at simulation step defined by \texttt{istart} every \texttt{istep} until \texttt{iend} is reached.
+Defines initial conditions where \texttt{TYPE} is one of the following: \texttt{Eta, U, V, Bathymetry} depending on which state variable is to be set (Eta corresponds to H). The initial/boundary condition is imposed beginning at simulation step defined by \texttt{istart} every \texttt{istep} until \texttt{iend} is reached.
 
 If a fuction is defined, it has to be a one-line expression returning a single value, that may be a function of \texttt{x,y,t}, which is going to be computed for each cell, with barycenter \texttt{x,y} at timestep \texttt{t}. \emph{Important}: with formulas, a header file will be generated, one directory up from where volna2hdf5 is run, if it's not in the default place, you will have to copy those files to the \texttt{sp} directory and recompile VOLNA. A more complicated expression can be used by editing the generated header file (e.g. \texttt{initBathymetry\_formula.h} for Bathymetry events), and then recompiling VOLNA.
 
