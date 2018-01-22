@@ -417,7 +417,7 @@ int main(int argc, char **argv) {
 //      dumpme(values,3);
 //      if (itercount==300) exit(-1);
 //    }
-//    printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
+    printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
     op_printf("timestep = %g\n", timestep);
     {
       int dim = values->dim;
@@ -429,7 +429,7 @@ int main(int argc, char **argv) {
       printf("H+Zb: %g\n", sqrt(norm));
     }
 #endif
-    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
+//    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
 
     itercount++;
     timestamp += timestep;
