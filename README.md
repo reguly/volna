@@ -19,6 +19,7 @@ Check out the Volna-OP2 code from [this](https://github.com/reguly/Volna) GitHub
   * make volna_mpi_cuda builds the MPI+CUDA version
 		
 ## Use
+For all details and configuration options please see the documentation.
 To use volna-OP2 with the *.vln configuration files, first you have to use volna2hdf5, e.g.
  * ./volna2hdf5 gaussian_landslide.vln which will output a gaussian_landslide.h5 file
 Afterwards, call volna-op2 with the above input file, e.g.:
