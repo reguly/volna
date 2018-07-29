@@ -4,6 +4,7 @@
 
 //header
 #include "op_lib_cpp.h"
+
 #include "op_cuda_rt_support.h"
 #include "op_cuda_reduction.h"
 
@@ -12,57 +13,35 @@
 #define MAX_CONST_SIZE 128
 #endif
 
-#define STRIDE(x,y) x*y
-__constant__ int nodes_stride;
-__constant__ int edges_stride;
-__constant__ int cells_stride;
-__constant__ int outputLocation_stride;
-__constant__ int bathy_nodes_stride;
-__constant__ int liftedCells_stride;
 __constant__ float CFL;
 __constant__ float EPS;
 __constant__ float g;
 
-void op_register_strides() {
-  int size;
-  size = op_size_of_set("nodes");
-  cutilSafeCall(cudaMemcpyToSymbol(nodes_stride, &size, sizeof(int)));
-  size = op_size_of_set("edges");
-  cutilSafeCall(cudaMemcpyToSymbol(edges_stride, &size, sizeof(int)));
-  size = op_size_of_set("cells");
-  cutilSafeCall(cudaMemcpyToSymbol(cells_stride, &size, sizeof(int)));
-  size = op_size_of_set("outputLocation");
-  cutilSafeCall(cudaMemcpyToSymbol(outputLocation_stride, &size, sizeof(int)));
-  size = op_size_of_set("bathy_nodes");
-  cutilSafeCall(cudaMemcpyToSymbol(bathy_nodes_stride, &size, sizeof(int)));
-  size = op_size_of_set("liftedCells");
-  cutilSafeCall(cudaMemcpyToSymbol(liftedCells_stride, &size, sizeof(int)));
-}
-
 void op_decl_const_char(int dim, char const *type,
 int size, char *dat, char const *name){
-  if (OP_hybrid_gpu) {
-    if (!strcmp(name,"CFL")) {
-      cutilSafeCall(cudaMemcpyToSymbol(CFL, dat, dim*size));
-    }
-    else
-    if (!strcmp(name,"EPS")) {
-      cutilSafeCall(cudaMemcpyToSymbol(EPS, dat, dim*size));
-    }
-    else
-    if (!strcmp(name,"g")) {
-      cutilSafeCall(cudaMemcpyToSymbol(g, dat, dim*size));
-    }
-    else
-    {
-      printf("error: unknown const name\n"); exit(1);
-    }
+  if (!OP_hybrid_gpu) return;
+  if (!strcmp(name,"CFL")) {
+    cutilSafeCall(cudaMemcpyToSymbol(CFL, dat, dim*size));
+  }
+  else
+  if (!strcmp(name,"EPS")) {
+    cutilSafeCall(cudaMemcpyToSymbol(EPS, dat, dim*size));
+  }
+  else
+  if (!strcmp(name,"g")) {
+    cutilSafeCall(cudaMemcpyToSymbol(g, dat, dim*size));
+  }
+  else
+  {
+    printf("error: unknown const name\n"); exit(1);
   }
 }
 
 //user kernel files
-#include "EvolveValuesRK2_1_kernel.cu"
-#include "EvolveValuesRK2_2_kernel.cu"
+#include "EvolveValuesRK3_1_kernel.cu"
+#include "EvolveValuesRK3_2_kernel.cu"
+#include "EvolveValuesRK3_3_kernel.cu"
+#include "EvolveValuesRK3_4_kernel.cu"
 #include "simulation_1_kernel.cu"
 #include "computeGradient_kernel.cu"
 #include "limiter_kernel.cu"

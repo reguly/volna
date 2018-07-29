@@ -17,6 +17,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 //
 // op_par_loop declarations
 //
+#ifdef OPENACC
+#ifdef __cplusplus
+extern "C" {
+#endif
+#endif
 
 void op_par_loop_getTotalVol(char const *, op_set,
   op_arg,
@@ -38,6 +43,11 @@ void op_par_loop_getMaxSpeed(char const *, op_set,
 void op_par_loop_gatherLocations(char const *, op_set,
   op_arg,
   op_arg );
+#ifdef OPENACC
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 
 

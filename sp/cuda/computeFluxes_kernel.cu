@@ -3,18 +3,16 @@
 //
 
 //user function
-__device__
-inline void computeFluxes_gpu(const float *cellLeft, const float *cellRight,
-                                const float *qmin, const float *qmax,
+__device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight,
+                                const float *alphaleft, const float *alpharight,
                                 const float *edgeLength, const float *edgeNormals,
                                 const float *leftcellCenters, const float *rightcellCenters,
                                 const float *edgeCenters,
                                 const float *leftGradient, const float *rightGradient,
-                                const int *isRightBoundary, //OP_READ
-                                float *bathySource, float *out, //OP_WRITE
-                                float *maxEdgeEigenvalues) //OP_WRITE
-{
-  //begin EdgesValuesFromCellValues
+                                const int *isRightBoundary,
+                                float *bathySource, float *out,
+                                float *maxEdgeEigenvalues) {
+
   float leftCellValues[4];
   float rightCellValues[4];
   float InterfaceBathy;
@@ -22,160 +20,112 @@ inline void computeFluxes_gpu(const float *cellLeft, const float *cellRight,
   leftCellValues[1] = cellLeft[1];
   leftCellValues[2] = cellLeft[2];
   leftCellValues[3] = cellLeft[3];
-  float dx, dy;
-  dx = (leftcellCenters[0] - edgeCenters[0]);
-  dy = (leftcellCenters[1] - edgeCenters[1]);
-  float q_j = (cellLeft[0] + cellRight[0]) / 2.0;
-  float alpha1, alpha2, alpha;  
-  if( q_j == cellLeft[0]){
-	 alpha1 = 1.0;
-  } else if( q_j < cellLeft[0]){
-	 alpha1 = (*qmin - cellLeft[0]) / (q_j - cellLeft[0]);
-  } else{
-	 alpha1 = (*qmax - cellLeft[0]) / (q_j - cellLeft[0]);
-  };
-  
-  alpha = MAX(MIN(alpha1, 1.0), MIN(alpha1, 1.0));
+  float dxl, dyl, dxr, dyr;
+  dxl = (edgeCenters[0] - leftcellCenters[0]);
+  dyl = (edgeCenters[1] - leftcellCenters[1]);
 
-  
+  dxr = (edgeCenters[0] - rightcellCenters[0]);
+  dyr = (edgeCenters[1] - rightcellCenters[1]);
+
   if (!*isRightBoundary) {
     rightCellValues[0] = cellRight[0];
     rightCellValues[1] = cellRight[1];
     rightCellValues[2] = cellRight[2];
     rightCellValues[3] = cellRight[3];
-    //op_printf("Before gradients %g \n",rightCellValues[0]);
-    dx = (rightcellCenters[0] - edgeCenters[0]);
-    dy = (rightcellCenters[1] - edgeCenters[1]);
-    
-
-    if( q_j == cellRight[0]){
-         alpha = 1.0;
-    } else if( q_j < cellRight[0]){
-         alpha = (*qmin - cellRight[0]) / (q_j - cellRight[0]);
-    } else{
-         alpha = (*qmax - cellRight[0]) / (q_j - cellRight[0]);
-    };
-    
-    alpha2 = MAX(MIN(alpha2, 1.0), MIN(alpha2, 1.0));
-    alpha = MIN(alpha2,alpha );
-
- 
- 
-    rightCellValues[0] += 0.5 *((dx * rightGradient[0])+(dy * rightGradient[1]));
-    rightCellValues[1] += 0.5 *((dx * rightGradient[2])+(dy * rightGradient[3]));
-    rightCellValues[2] += 0.5 *((dx * rightGradient[4])+(dy * rightGradient[5]));
-    rightCellValues[3] += 0.5 *((dx * rightGradient[6])+(dy * rightGradient[7]));
-
-    //op_printf("After gradients %g \n",rightCellValues[0]);
-
   } else {
     rightCellValues[3] = cellLeft[3];
     float nx = edgeNormals[0];
     float ny = edgeNormals[1];
     float inNormalVelocity = cellLeft[1] * nx + cellLeft[2] * ny;
     float inTangentVelocity = -1.0f *  cellLeft[1] * ny + cellLeft[2] * nx;
-
     float outNormalVelocity = 0.0f;
     float outTangentVelocity = 0.0f;
 
-    //WALL
     rightCellValues[0] = cellLeft[0];
     outNormalVelocity = -1.0f * inNormalVelocity;
     outTangentVelocity = inTangentVelocity;
 
 
-    /* //HEIGHTSUBC
-     rightCellValues[0] = -1.0 * rightCellValues[3];
-     rightCellValues[0] += 0.1 * sin(10.0*t);
-     outNormalVelocity = inNormalVelocity;
-     outNormalVelocity +=
-     2.0 * sqrt( g * cellLeft[0] );
-     outNormalVelocity -=
-     2.0 * sqrt( g * rightCellValues[0] );
-
-     outTangentVelocity = inTangentVelocity;
-     */ //end HEIGHTSUBC
-
-    /* //FLOWSUBC
-     outNormalVelocity = 1;
-
-     //rightCellValues[0] = - rightCellValues[3];
-
-     rightCellValues[0] = (inNormalVelocity - outNormalVelocity);
-     rightCellValues[0] *= .5 / sqrt( g );
-
-     rightCellValues[0] += sqrt( cellLeft[0] );
-
-     outTangentVelocity = inTangentVelocity;
-     */
 
     rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
     rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
-
   }
 
 
-
-  leftCellValues[0] += 0.5 * ((dx * leftGradient[0])+(dy * leftGradient[1]));
-  leftCellValues[1] += 0.5 * ((dx * leftGradient[2])+(dy * leftGradient[3]));
-  leftCellValues[2] += 0.5 * ((dx * leftGradient[4])+(dy * leftGradient[5]));
-  leftCellValues[3] += 0.5 * ((dx * leftGradient[6])+(dy * leftGradient[7]));
-
-  //op_printf(" LEFT %g RIGHT %g \n", leftCellValues[0], rightCellValues[0]);
-
-
   InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
-  //SpaceDiscretization_1
   bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
   bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
+
+  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
+  hL = hL > 0.0f? hL : 0.0f;
+  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
+  hR = hR > 0.0f ? hR : 0.0f;
+  bathySource[0] -= .5f * g * (hL * hL);
+  bathySource[1] -= .5f * g * (hR * hR);
+
+  bathySource[0] *= *edgeLength;
+  bathySource[1] *= *edgeLength;
+
+  if (!*isRightBoundary) {
+  leftCellValues[0] +=  alphaleft[8] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
+  rightCellValues[0] +=  alpharight[8] * ((dxr * rightGradient[0])+(dyr * rightGradient[1]));
+  leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
+  rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
+
+  leftCellValues[3] += alphaleft[11] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
+  rightCellValues[3] += alpharight[11] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
+  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
   leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
   rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
-  //NumericalFluxes_1
-  bathySource[0] -= .5f * g * (leftCellValues[0]*leftCellValues[0]);
-  bathySource[1] -= .5f * g * (rightCellValues[0]*rightCellValues[0]);
-  bathySource[0] *= *edgeLength;
-  bathySource[1] *= *edgeLength;
+
+  leftCellValues[1] += alphaleft[9] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
+  leftCellValues[2] += alphaleft[10] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
+
+  rightCellValues[1] += alpharight[9] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
+  rightCellValues[2] += alpharight[10] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
+  }
+
+
+
   float cL = sqrt(g * leftCellValues[0]);
   cL = cL > 0.0f ? cL : 0.0f;
   float cR = sqrt(g * rightCellValues[0]);
   cR = cR > 0.0f ? cR : 0.0f;
-
   float uLn = leftCellValues[1] * edgeNormals[0] + leftCellValues[2] * edgeNormals[1];
   float uRn = rightCellValues[1] * edgeNormals[0] + rightCellValues[2] * edgeNormals[1];
 
-  //float unStar = 0.5f * (uLn + uRn) - 0.25f* (cL+cR);
-  //float cStar = 0.5f * (cL + cR) - 0.25f* (uLn-uRn);
-    
-	float unStar = 0.5f * (uLn + uRn) + (cL-cR);
-	float cStar = 0.5f * (cL + cR) - 0.25f* (uRn-uLn);
-        
+  float unStar = 0.5f * (uLn + uRn) + (cL-cR);
+  float cStar = 0.5f * (cL + cR) - 0.25f* (uRn-uLn);
   float sL = (uLn - cL) < (unStar - cStar) ? (uLn - cL) : (unStar - cStar);
-  float sLMinus = sL < 0.0f ? sL : 0.0f;
-
   float sR = (uRn + cR) > (unStar + cStar) ? (uRn + cR) : (unStar + cStar);
+
+  float sStar;
+  sStar = (sL*rightCellValues[0]*(uRn - sR) - sR*leftCellValues[0]*(uLn - sL))/
+          (rightCellValues[0]*(uRn - sR) - leftCellValues[0]*(uLn - sL));
+
+
+
+  float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
-
-  sL = leftCellValues[0] < EPS ? uRn - 2.0f*cR : sL; // is this 2.0 or 2? (i.e. float/int)
-  sR = leftCellValues[0] < EPS ? uRn + cR : sR;
-
-  sR = rightCellValues[0] < EPS ? uLn + 2.0f*cL : sR; // is this 2.0 or 2? (i.e. float/int)
-  sL = rightCellValues[0] < EPS ? uLn - cL : sL;
-
   float sRMinussL = sRPlus - sLMinus;
-  sRMinussL = sRMinussL < EPS ? EPS : sRMinussL;
+  sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
 
   float t1 = sRPlus / sRMinussL;
-  //assert( ( 0 <= t1 ) && ( t1 <= 1 ) );
+
 
   float t2 = ( -1.0 * sLMinus ) / sRMinussL;
-  //assert( ( 0 <= t2 ) && ( t2 <= 1 ) );
+
 
   float t3 = ( sRPlus * sLMinus ) / sRMinussL;
 
-  float LeftFluxes_H, LeftFluxes_U, LeftFluxes_V;
-  //inlined ProjectedPhysicalFluxes(leftCellValues, Normals, params, LeftFluxes);
+
+  float uLp = leftCellValues[2]*edgeNormals[0] - leftCellValues[1]*edgeNormals[1];
+  float uRp = rightCellValues[2]*edgeNormals[0] - rightCellValues[1]*edgeNormals[1];
+
+  float LeftFluxes_H, LeftFluxes_U, LeftFluxes_V, LeftFluxes_N;
+
   float HuDotN = (leftCellValues[0] * leftCellValues[1]) * edgeNormals[0] +
   (leftCellValues[0] * leftCellValues[2]) * edgeNormals[1];
 
@@ -183,12 +133,15 @@ inline void computeFluxes_gpu(const float *cellLeft, const float *cellRight,
   LeftFluxes_U = HuDotN * leftCellValues[1];
   LeftFluxes_V = HuDotN * leftCellValues[2];
 
+  LeftFluxes_N = HuDotN * uLn;
+
   LeftFluxes_U += (.5f * g * edgeNormals[0] ) * ( leftCellValues[0] * leftCellValues[0] );
   LeftFluxes_V += (.5f * g * edgeNormals[1] ) * ( leftCellValues[0] * leftCellValues[0] );
-  //end of inlined
+  LeftFluxes_N += (.5f * g ) * ( leftCellValues[0] * leftCellValues[0] );
 
-  float RightFluxes_H, RightFluxes_U, RightFluxes_V;
-  //inlined ProjectedPhysicalFluxes(rightCellValues, Normals, params, RightFluxes);
+
+  float RightFluxes_H,RightFluxes_U, RightFluxes_V, RightFluxes_N;
+
   HuDotN = (rightCellValues[0] * rightCellValues[1] * edgeNormals[0]) +
   (rightCellValues[0] * rightCellValues[2] * edgeNormals[1]);
 
@@ -196,39 +149,52 @@ inline void computeFluxes_gpu(const float *cellLeft, const float *cellRight,
   RightFluxes_U =   HuDotN * rightCellValues[1];
   RightFluxes_V =   HuDotN * rightCellValues[2];
 
+  RightFluxes_N =   HuDotN * uRn;
+
   RightFluxes_U += (.5f * g * edgeNormals[0] ) * ( rightCellValues[0] * rightCellValues[0] );
   RightFluxes_V += (.5f * g * edgeNormals[1] ) * ( rightCellValues[0] * rightCellValues[0] );
-  //end of inlined
+  RightFluxes_N += (.5f * g) * ( rightCellValues[0] * rightCellValues[0] );
 
-
-  out[0] =
+  float FStar[3];
+  FStar[0] =
   ( t1 * LeftFluxes_H ) +
   ( t2 * RightFluxes_H ) +
   ( t3 * ( rightCellValues[0] - leftCellValues[0] ) );
 
-  out[1] =
-  ( t1 * LeftFluxes_U ) +
-  ( t2 * RightFluxes_U ) +
-  ( t3 * ( (rightCellValues[0] * rightCellValues[1]) -
-          (leftCellValues[0] * leftCellValues[1]) ) );
+  FStar[1] =
+  ( t1 * LeftFluxes_N ) +
+  ( t2 * RightFluxes_N ) +
+  ( t3 * ( (rightCellValues[0] * uRn) -
+          (leftCellValues[0] * uLn) ) );
 
-  out[2] =
-  ( t1 * LeftFluxes_V ) +
-  ( t2 * RightFluxes_V ) +
-  ( t3 * ( (rightCellValues[0] * rightCellValues[2]) -
-          (leftCellValues[0] * leftCellValues[2]) ) );
 
+  if( sL >= 0.0f) {
+    out[0] = LeftFluxes_H;
+    out[1] = LeftFluxes_U;
+    out[2] = LeftFluxes_V;
+  } else if ((sL < 0.0f) && (sStar >= 0.0f)){
+    out[0] = FStar[0];
+    FStar[2] = FStar[0] * uLp;
+    out[1] = FStar[1]*edgeNormals[0] - FStar[2]*edgeNormals[1];
+    out[2] = FStar[1]*edgeNormals[1] + FStar[2]*edgeNormals[0];
+  } else if((sStar < 0.0f) && (sR >= 0.0f)){
+    out[0] = FStar[0];
+    FStar[2] = FStar[0] * uRp;
+    out[1] = FStar[1]*edgeNormals[0] - FStar[2]*edgeNormals[1];
+    out[2] = FStar[1]*edgeNormals[1] + FStar[2]*edgeNormals[0];
+  } else {
+    out[0] = RightFluxes_H;
+    out[1] = RightFluxes_U;
+    out[2] = RightFluxes_V;
+  }
   out[0] *= *edgeLength;
   out[1] *= *edgeLength;
   out[2] *= *edgeLength;
-//  out[3] = 0.0;
-
   float maximum = fabs(uLn + cL);
   maximum = maximum > fabs(uLn - cL) ? maximum : fabs(uLn - cL);
   maximum = maximum > fabs(uRn + cR) ? maximum : fabs(uRn + cR);
   maximum = maximum > fabs(uRn - cR) ? maximum : fabs(uRn - cR);
   *maxEdgeEigenvalues = maximum;
-  //op_printf("maxEig = %g \n ", maximum);
 }
 
 // CUDA kernel function
@@ -236,9 +202,8 @@ __global__ void op_cuda_computeFluxes(
   const float *__restrict ind_arg0,
   const float *__restrict ind_arg1,
   const float *__restrict ind_arg2,
+  const float *__restrict ind_arg3,
   const int *__restrict opDat0Map,
-  const float *arg2,
-  const float *arg3,
   const float *__restrict arg4,
   const float *__restrict arg5,
   const float *__restrict arg8,
@@ -273,34 +238,36 @@ __global__ void op_cuda_computeFluxes(
 
   }
   __syncthreads(); // make sure all of above completed
+
   for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
     int map0idx;
     int map1idx;
     map0idx = opDat0Map[n + offset_b + set_size * 0];
     map1idx = opDat0Map[n + offset_b + set_size * 1];
 
+
     //user-supplied kernel call
     computeFluxes_gpu(ind_arg0+map0idx*4,
                   ind_arg0+map1idx*4,
-                  arg2,
-                  arg3,
+                  ind_arg1+map0idx*12,
+                  ind_arg1+map1idx*12,
                   arg4+(n+offset_b)*1,
                   arg5+(n+offset_b)*2,
-                  ind_arg1+map0idx*2,
-                  ind_arg1+map1idx*2,
+                  ind_arg2+map0idx*2,
+                  ind_arg2+map1idx*2,
                   arg8+(n+offset_b)*2,
-                  ind_arg2+map0idx*8,
-                  ind_arg2+map1idx*8,
+                  ind_arg3+map0idx*8,
+                  ind_arg3+map1idx*8,
                   arg11+(n+offset_b)*1,
-                  arg12+(n+offset_b)*2,
+                  arg12+(n+offset_b)*4,
                   arg13+(n+offset_b)*3,
                   arg14+(n+offset_b)*1);
   }
 }
 
 
-//GPU host stub function
-void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_computeFluxes(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -317,8 +284,6 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
   op_arg arg13,
   op_arg arg14){
 
-  float*arg2h = (float *)arg2.data;
-  float*arg3h = (float *)arg3.data;
   int nargs = 15;
   op_arg args[15];
 
@@ -340,23 +305,22 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(7);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
-  if (OP_kernels[5].count==1) op_register_strides();
+  OP_kernels[7].name      = name;
+  OP_kernels[7].count    += 1;
 
 
-  int    ninds   = 3;
-  int    inds[15] = {0,0,-1,-1,-1,-1,1,1,-1,2,2,-1,-1,-1,-1};
+  int    ninds   = 4;
+  int    inds[15] = {0,0,1,1,-1,-1,2,2,-1,3,3,-1,-1,-1,-1};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: computeFluxes\n");
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_7
+    int part_size = OP_PART_SIZE_7;
   #else
     int part_size = OP_part_size;
   #endif
@@ -366,26 +330,6 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
 
     op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
 
-    //transfer constants to GPU
-    int consts_bytes = 0;
-    consts_bytes += ROUND_UP(1*sizeof(float));
-    consts_bytes += ROUND_UP(1*sizeof(float));
-    reallocConstArrays(consts_bytes);
-    consts_bytes = 0;
-    arg2.data   = OP_consts_h + consts_bytes;
-    arg2.data_d = OP_consts_d + consts_bytes;
-    for ( int d=0; d<1; d++ ){
-      ((float *)arg2.data)[d] = arg2h[d];
-    }
-    consts_bytes += ROUND_UP(1*sizeof(float));
-    arg3.data   = OP_consts_h + consts_bytes;
-    arg3.data_d = OP_consts_d + consts_bytes;
-    for ( int d=0; d<1; d++ ){
-      ((float *)arg3.data)[d] = arg3h[d];
-    }
-    consts_bytes += ROUND_UP(1*sizeof(float));
-    mvConstArraysToDevice(consts_bytes);
-
     //execute plan
 
     int block_offset = 0;
@@ -393,8 +337,8 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_5
-      int nthread = OP_BLOCK_SIZE_5;
+      #ifdef OP_BLOCK_SIZE_7
+      int nthread = OP_BLOCK_SIZE_7;
       #else
       int nthread = OP_block_size;
       #endif
@@ -404,11 +348,10 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
       if (Plan->ncolblk[col] > 0) {
         op_cuda_computeFluxes<<<nblocks,nthread>>>(
         (float *)arg0.data_d,
+        (float *)arg2.data_d,
         (float *)arg6.data_d,
         (float *)arg9.data_d,
         arg0.map_data_d,
-        (float*)arg2.data_d,
-        (float*)arg3.data_d,
         (float*)arg4.data_d,
         (float*)arg5.data_d,
         (float*)arg8.data_d,
@@ -428,125 +371,12 @@ void op_par_loop_computeFluxes_gpu(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[5].transfer  += Plan->transfer;
-    OP_kernels[5].transfer2 += Plan->transfer2;
+    OP_kernels[7].transfer  += Plan->transfer;
+    OP_kernels[7].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].time     += wall_t2 - wall_t1;
+  OP_kernels[7].time     += wall_t2 - wall_t1;
 }
-
-void op_par_loop_computeFluxes_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7,
-  op_arg arg8,
-  op_arg arg9,
-  op_arg arg10,
-  op_arg arg11,
-  op_arg arg12,
-  op_arg arg13,
-  op_arg arg14);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_computeFluxes(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7,
-  op_arg arg8,
-  op_arg arg9,
-  op_arg arg10,
-  op_arg arg11,
-  op_arg arg12,
-  op_arg arg13,
-  op_arg arg14){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_computeFluxes_gpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4,
-      arg5,
-      arg6,
-      arg7,
-      arg8,
-      arg9,
-      arg10,
-      arg11,
-      arg12,
-      arg13,
-      arg14);
-
-    }else{
-    op_par_loop_computeFluxes_cpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4,
-      arg5,
-      arg6,
-      arg7,
-      arg8,
-      arg9,
-      arg10,
-      arg11,
-      arg12,
-      arg13,
-      arg14);
-
-  }
-}
-#else
-void op_par_loop_computeFluxes(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7,
-  op_arg arg8,
-  op_arg arg9,
-  op_arg arg10,
-  op_arg arg11,
-  op_arg arg12,
-  op_arg arg13,
-  op_arg arg14){
-
-  op_par_loop_computeFluxes_gpu(name, set,
-    arg0,
-    arg1,
-    arg2,
-    arg3,
-    arg4,
-    arg5,
-    arg6,
-    arg7,
-    arg8,
-    arg9,
-    arg10,
-    arg11,
-    arg12,
-    arg13,
-    arg14);
-
-  }
-#endif //OP_HYBRID_GPU

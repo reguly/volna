@@ -3,16 +3,13 @@
 //
 
 //user function
-__device__
-inline void initBathymetry_large_gpu(float *values, const float *cellCenter,
+__device__ void initBathymetry_large_gpu( float *values, const float *cellCenter,
 	const float *node0, const float *node1, const float *node2,
 	const float *bathy0, const float *bathy1, const float *bathy2) {
 
-	//First, check whether the cell is in the large triangle
 	bool isInside = false;
 
-  	// First, check if the point is in the bounding box of the triangle
-  	// vertices (else, the algorithm is not nearly robust enough)
+
 	float xmin = MIN(MIN(node0[0], node1[0]), node2[0]);
 	float xmax = MAX(MAX(node0[0], node1[0]), node2[0]);
 	float ymin = MIN(MIN(node0[1], node1[1]), node2[1]);
@@ -22,19 +19,19 @@ inline void initBathymetry_large_gpu(float *values, const float *cellCenter,
 		( cellCenter[1] < ymin ) || ( cellCenter[1] > ymax ) ) {
 		isInside = false;
 	}else{
-	    // Case where the point is in the bounding box. Here, if abc is not
-	    // Check if the Triangle vertices are clockwise or
-	    // counter-clockwise
+
+
+
 		float insider = 1.0f;
 		float p[2] = {cellCenter[0], cellCenter[1]};
 
 #define ORIENT2D(pA, pB, pC) (pA[0] - pC[0]) * (pB[1] - pC[1]) - (pA[1] - pC[1]) * (pB[0] - pC[0])
-    if ( ORIENT2D(node0, node1, node2) > 0 ) {  // counter clockwise
+    if ( ORIENT2D(node0, node1, node2) > 0 ) {
     	insider =  ORIENT2D( node0, p, node2);
     	insider *= ORIENT2D( node0, node1, p);
     	insider *= ORIENT2D( node1, node2, p);
     }
-    else {      // clockwise
+    else {
     	insider =  ORIENT2D( node0, p, node1);
     	insider *= ORIENT2D( node0, node2, p);
     	insider *= ORIENT2D( node2, node1, p);
@@ -42,13 +39,12 @@ inline void initBathymetry_large_gpu(float *values, const float *cellCenter,
     isInside = insider >= 0.0f;
 	}
 
-  //If it's inside, then calculate the bathymetry value, with a simple linear interpolation
   if (isInside) {
-    //get the normal vector
+
     float a =  (node1[1]-node0[1])*(*bathy2-*bathy0)-(node2[1]-node0[1])*(*bathy1-*bathy0);
     float b = -(node1[0]-node0[0])*(*bathy2-*bathy0)+(node2[0]-node0[0])*(*bathy1-*bathy0);
     float c =  (node1[0]-node0[0])*(node2[1]-node0[1])-(node2[0]-node0[0])*(node1[1]-node0[1]);
-    //get z so that the vector is orthogonal to the normal
+
     values[3] += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
   }
 }
@@ -71,6 +67,7 @@ __global__ void op_cuda_initBathymetry_large(
   int   set_size) {
   float arg0_l[4];
 
+  __shared__ int    nelems2, ncolor;
   __shared__ int    nelem, offset_b;
 
   extern __shared__ char shared[];
@@ -87,20 +84,31 @@ __global__ void op_cuda_initBathymetry_large(
     nelem    = nelems[blockId];
     offset_b = offset[blockId];
 
+    nelems2  = blockDim.x*(1+(nelem-1)/blockDim.x);
+    ncolor   = ncolors[blockId];
+
   }
   __syncthreads(); // make sure all of above completed
-  for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
+
+  for ( int n=threadIdx.x; n<nelems2; n+=blockDim.x ){
+    int col2 = -1;
     int map0idx;
     int map2idx;
     int map3idx;
     int map4idx;
-    map0idx = opDat0Map[n + offset_b + set_size * 0];
-    map2idx = opDat2Map[n + offset_b + set_size * 0];
-    map3idx = opDat2Map[n + offset_b + set_size * 1];
-    map4idx = opDat2Map[n + offset_b + set_size * 2];
+    if (n<nelem) {
+      //initialise local variables
+      for ( int d=0; d<4; d++ ){
+        arg0_l[d] = ZERO_float;
+      }
+      map0idx = opDat0Map[n + offset_b + set_size * 0];
+      map2idx = opDat2Map[n + offset_b + set_size * 0];
+      map3idx = opDat2Map[n + offset_b + set_size * 1];
+      map4idx = opDat2Map[n + offset_b + set_size * 2];
 
-    //user-supplied kernel call
-    initBathymetry_large_gpu(arg0_l,
+
+      //user-supplied kernel call
+      initBathymetry_large_gpu(arg0_l,
                          ind_arg1+map0idx*2,
                          ind_arg2+map2idx*2,
                          ind_arg2+map3idx*2,
@@ -108,12 +116,30 @@ __global__ void op_cuda_initBathymetry_large(
                          ind_arg3+map2idx*1,
                          ind_arg3+map3idx*1,
                          ind_arg3+map4idx*1);
+      col2 = colors[n+offset_b];
+    }
+
+    //store local variables
+
+    for ( int col=0; col<ncolor; col++ ){
+      if (col2==col) {
+        arg0_l[0] += ind_arg0[0+map0idx*4];
+        arg0_l[1] += ind_arg0[1+map0idx*4];
+        arg0_l[2] += ind_arg0[2+map0idx*4];
+        arg0_l[3] += ind_arg0[3+map0idx*4];
+        ind_arg0[0+map0idx*4] = arg0_l[0];
+        ind_arg0[1+map0idx*4] = arg0_l[1];
+        ind_arg0[2+map0idx*4] = arg0_l[2];
+        ind_arg0[3+map0idx*4] = arg0_l[3];
+      }
+      __syncthreads();
+    }
   }
 }
 
 
-//GPU host stub function
-void op_par_loop_initBathymetry_large_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_initBathymetry_large(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -137,11 +163,10 @@ void op_par_loop_initBathymetry_large_gpu(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(14);
+  op_timing_realloc(16);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[14].name      = name;
-  OP_kernels[14].count    += 1;
-  if (OP_kernels[14].count==1) op_register_strides();
+  OP_kernels[16].name      = name;
+  OP_kernels[16].count    += 1;
 
 
   int    ninds   = 4;
@@ -152,8 +177,8 @@ void op_par_loop_initBathymetry_large_gpu(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_14
-    int part_size = OP_PART_SIZE_14;
+  #ifdef OP_PART_SIZE_16
+    int part_size = OP_PART_SIZE_16;
   #else
     int part_size = OP_part_size;
   #endif
@@ -170,8 +195,8 @@ void op_par_loop_initBathymetry_large_gpu(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_14
-      int nthread = OP_BLOCK_SIZE_14;
+      #ifdef OP_BLOCK_SIZE_16
+      int nthread = OP_BLOCK_SIZE_16;
       #else
       int nthread = OP_block_size;
       #endif
@@ -198,83 +223,12 @@ void op_par_loop_initBathymetry_large_gpu(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[14].transfer  += Plan->transfer;
-    OP_kernels[14].transfer2 += Plan->transfer2;
+    OP_kernels[16].transfer  += Plan->transfer;
+    OP_kernels[16].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[14].time     += wall_t2 - wall_t1;
+  OP_kernels[16].time     += wall_t2 - wall_t1;
 }
-
-void op_par_loop_initBathymetry_large_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_initBathymetry_large(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_initBathymetry_large_gpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4,
-      arg5,
-      arg6,
-      arg7);
-
-    }else{
-    op_par_loop_initBathymetry_large_cpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4,
-      arg5,
-      arg6,
-      arg7);
-
-  }
-}
-#else
-void op_par_loop_initBathymetry_large(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4,
-  op_arg arg5,
-  op_arg arg6,
-  op_arg arg7){
-
-  op_par_loop_initBathymetry_large_gpu(name, set,
-    arg0,
-    arg1,
-    arg2,
-    arg3,
-    arg4,
-    arg5,
-    arg6,
-    arg7);
-
-  }
-#endif //OP_HYBRID_GPU

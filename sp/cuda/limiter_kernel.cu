@@ -3,201 +3,201 @@
 //
 
 //user function
-__device__
-inline void limiter_gpu(const float *data_in,
-                    float *qmin,
-                    float *qmax)
-{
-  //op_printf( "Before  QMIN %.5f QMAX %.5f h %.5f \n  ", *qmin , *qmax, data_in[0]);
-  if ( data_in[0] < *qmin){
-      *qmin = data_in[0];
-   }else{
-	*qmin = *qmin;
-  }
-  
-  if ( data_in[0]> *qmax){
-      *qmax = data_in[0];
-  }else{
-	*qmax = *qmax;
-  }
-  //op_printf( "After  QMIN %.5f QMAX %.5f h %.5f \n  ", *qmin , *qmax, data_in[0]);
-   
+__device__ void limiter_gpu( float *q,
+  const float *value, const float *gradient,
+  const float *edgecenter1, const float *edgecenter2,
+  const float *edgecenter3, const float *cellcenter) {
 
+  float facevalue[3], dx[3], dy[3], y;
+  int i, j;
+  float edgealpha[3];
+
+  dx[0] = (edgecenter1[0] - cellcenter[0]);
+  dy[0] = (edgecenter1[1] - cellcenter[1]);
+  dx[1] = (edgecenter2[0] - cellcenter[0]);
+  dy[1] = (edgecenter2[1] - cellcenter[1]);
+  dx[2] = (edgecenter3[0] - cellcenter[0]);
+  dy[2] = (edgecenter3[1] - cellcenter[1]);
+
+  if((value[0] > EPS) && (q[0]> EPS)){
+
+
+
+
+
+
+    for(j=0;j<4;j++){
+      for(i =0 ; i<3; i++){
+        facevalue[i] = value[j] + ((gradient[2*j]*dx[i]) + (gradient[2*j + 1]*dy[i]));
+        if(facevalue[i] > value[j]) {
+          y = (q[2*j + 1] - value[j]) / (facevalue[i] - value[j]);
+          edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
+        } else if (facevalue[i] < value[j]){
+          y = (q[2*j] - value[j]) / (facevalue[i] - value[j]);
+          edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
+        } else{
+          edgealpha[i] = 1.0f;
+        }
+      }
+      q[j+8] = edgealpha[0] < edgealpha[1] ? q[j+8] : edgealpha[1];
+      q[j+8] = q[j+8] < edgealpha[2] ? q[j+8]: edgealpha[2];
+      q[j+8] = q[j+8] < 1.0f ? q[j+8] : 1.0f;
+      q[j+8] = q[j+8] > 0.0f ? q[j+8] : 0.0f;
+    }
+  } else {
+    q[8] = 0.0f;
+    q[9] = 0.0f;
+    q[10] = 0.0f;
+    q[11] = 0.0f;
+  }
 }
 
 // CUDA kernel function
 __global__ void op_cuda_limiter(
-  const float *__restrict arg0,
-  float *arg1,
-  float *arg2,
-  int   set_size ) {
+  const float *__restrict ind_arg0,
+  const int *__restrict opDat3Map,
+  float *arg0,
+  const float *__restrict arg1,
+  const float *__restrict arg2,
+  const float *__restrict arg6,
+  int    block_offset,
+  int   *blkmap,
+  int   *offset,
+  int   *nelems,
+  int   *ncolors,
+  int   *colors,
+  int   nblocks,
+  int   set_size) {
 
-  float arg1_l[1];
-  for ( int d=0; d<1; d++ ){
-    arg1_l[d]=arg1[d+blockIdx.x*1];
-  }
-  float arg2_l[1];
-  for ( int d=0; d<1; d++ ){
-    arg2_l[d]=arg2[d+blockIdx.x*1];
-  }
+  __shared__ int    nelem, offset_b;
 
-  //process set elements
-  for ( int n=threadIdx.x+blockIdx.x*blockDim.x; n<set_size; n+=blockDim.x*gridDim.x ){
+  extern __shared__ char shared[];
+
+  if (blockIdx.x+blockIdx.y*gridDim.x >= nblocks) {
+    return;
+  }
+  if (threadIdx.x==0) {
+
+    //get sizes and shift pointers and direct-mapped data
+
+    int blockId = blkmap[blockIdx.x + blockIdx.y*gridDim.x  + block_offset];
+
+    nelem    = nelems[blockId];
+    offset_b = offset[blockId];
+
+  }
+  __syncthreads(); // make sure all of above completed
+
+  for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
+    int map3idx;
+    int map4idx;
+    int map5idx;
+    map3idx = opDat3Map[n + offset_b + set_size * 0];
+    map4idx = opDat3Map[n + offset_b + set_size * 1];
+    map5idx = opDat3Map[n + offset_b + set_size * 2];
+
 
     //user-supplied kernel call
-    limiter_gpu(arg0+n*4,
-            arg1_l,
-            arg2_l);
-  }
-
-  //global reductions
-
-  for ( int d=0; d<1; d++ ){
-    op_reduction<OP_MIN>(&arg1[d+blockIdx.x*1],arg1_l[d]);
-  }
-  for ( int d=0; d<1; d++ ){
-    op_reduction<OP_MAX>(&arg2[d+blockIdx.x*1],arg2_l[d]);
+    limiter_gpu(arg0+(n+offset_b)*12,
+            arg1+(n+offset_b)*4,
+            arg2+(n+offset_b)*8,
+            ind_arg0+map3idx*2,
+            ind_arg0+map4idx*2,
+            ind_arg0+map5idx*2,
+            arg6+(n+offset_b)*2);
   }
 }
 
 
-//GPU host stub function
-void op_par_loop_limiter_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
-  op_arg arg2){
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6){
 
-  float*arg1h = (float *)arg1.data;
-  float*arg2h = (float *)arg2.data;
-  int nargs = 3;
-  op_arg args[3];
+  int nargs = 7;
+  op_arg args[7];
 
   args[0] = arg0;
   args[1] = arg1;
   args[2] = arg2;
+  args[3] = arg3;
+  args[4] = arg4;
+  args[5] = arg5;
+  args[6] = arg6;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(4);
+  op_timing_realloc(6);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[4].name      = name;
-  OP_kernels[4].count    += 1;
-  if (OP_kernels[4].count==1) op_register_strides();
+  OP_kernels[6].name      = name;
+  OP_kernels[6].count    += 1;
 
+
+  int    ninds   = 1;
+  int    inds[7] = {-1,-1,-1,0,0,0,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  limiter");
+    printf(" kernel routine with indirection: limiter\n");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
+  //get plan
+  #ifdef OP_PART_SIZE_6
+    int part_size = OP_PART_SIZE_6;
+  #else
+    int part_size = OP_part_size;
+  #endif
+
+  int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
   if (set->size > 0) {
 
-    //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_4
-      int nthread = OP_BLOCK_SIZE_4;
-    #else
+    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+
+    //execute plan
+
+    int block_offset = 0;
+    for ( int col=0; col<Plan->ncolors; col++ ){
+      if (col==Plan->ncolors_core) {
+        op_mpi_wait_all_cuda(nargs, args);
+      }
+      #ifdef OP_BLOCK_SIZE_6
+      int nthread = OP_BLOCK_SIZE_6;
+      #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
-    #endif
+      #endif
 
-    int nblocks = 200;
+      dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
+      Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
+      if (Plan->ncolblk[col] > 0) {
+        op_cuda_limiter<<<nblocks,nthread>>>(
+        (float *)arg3.data_d,
+        arg3.map_data_d,
+        (float*)arg0.data_d,
+        (float*)arg1.data_d,
+        (float*)arg2.data_d,
+        (float*)arg6.data_d,
+        block_offset,
+        Plan->blkmap,
+        Plan->offset,
+        Plan->nelems,
+        Plan->nthrcol,
+        Plan->thrcol,
+        Plan->ncolblk[col],
+        set->size+set->exec_size);
 
-    //transfer global reduction data to GPU
-    int maxblocks = nblocks;
-    int reduct_bytes = 0;
-    int reduct_size  = 0;
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    reduct_size   = MAX(reduct_size,sizeof(float));
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    reduct_size   = MAX(reduct_size,sizeof(float));
-    reallocReductArrays(reduct_bytes);
-    reduct_bytes = 0;
-    arg1.data   = OP_reduct_h + reduct_bytes;
-    arg1.data_d = OP_reduct_d + reduct_bytes;
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        ((float *)arg1.data)[d+b*1] = arg1h[d];
       }
+      block_offset += Plan->ncolblk[col];
     }
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    arg2.data   = OP_reduct_h + reduct_bytes;
-    arg2.data_d = OP_reduct_d + reduct_bytes;
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        ((float *)arg2.data)[d+b*1] = arg2h[d];
-      }
-    }
-    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
-    mvReductArraysToDevice(reduct_bytes);
-
-    int nshared = reduct_size*nthread;
-    op_cuda_limiter<<<nblocks,nthread,nshared>>>(
-      (float *) arg0.data_d,
-      (float *) arg1.data_d,
-      (float *) arg2.data_d,
-      set->size );
-    //transfer global reduction data back to CPU
-    mvReductArraysToHost(reduct_bytes);
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        arg1h[d] = MIN(arg1h[d],((float *)arg1.data)[d+b*1]);
-      }
-    }
-    arg1.data = (char *)arg1h;
-    op_mpi_reduce(&arg1,arg1h);
-    for ( int b=0; b<maxblocks; b++ ){
-      for ( int d=0; d<1; d++ ){
-        arg2h[d] = MAX(arg2h[d],((float *)arg2.data)[d+b*1]);
-      }
-    }
-    arg2.data = (char *)arg2h;
-    op_mpi_reduce(&arg2,arg2h);
+    OP_kernels[6].transfer  += Plan->transfer;
+    OP_kernels[6].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[4].time     += wall_t2 - wall_t1;
-  OP_kernels[4].transfer += (float)set->size * arg0.size;
+  OP_kernels[6].time     += wall_t2 - wall_t1;
 }
-
-void op_par_loop_limiter_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_limiter(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_limiter_gpu(name, set,
-      arg0,
-      arg1,
-      arg2);
-
-    }else{
-    op_par_loop_limiter_cpu(name, set,
-      arg0,
-      arg1,
-      arg2);
-
-  }
-}
-#else
-void op_par_loop_limiter(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2){
-
-  op_par_loop_limiter_gpu(name, set,
-    arg0,
-    arg1,
-    arg2);
-
-  }
-#endif //OP_HYBRID_GPU

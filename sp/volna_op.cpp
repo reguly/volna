@@ -29,6 +29,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 //
 // op_par_loop declarations
 //
+#ifdef OPENACC
+#ifdef __cplusplus
+extern "C" {
+#endif
+#endif
 
 void op_par_loop_EvolveValuesRK3_1(char const *, op_set,
   op_arg,
@@ -58,6 +63,11 @@ void op_par_loop_EvolveValuesRK3_4(char const *, op_set,
 void op_par_loop_simulation_1(char const *, op_set,
   op_arg,
   op_arg );
+#ifdef OPENACC
+#ifdef __cplusplus
+}
+#endif
+#endif
 
 
 //these are not const, we just don't want to pass them around
@@ -308,7 +318,7 @@ int main(int argc, char **argv) {
         }
       }
   }
-  
+
   for (unsigned int i = 0; i < events.size(); i++) {
     if (!strcmp(events[i].className.c_str(), "InitBathyRelative")) {
       if (!new_format || n_initBathymetry < 1) {
@@ -376,12 +386,10 @@ int main(int argc, char **argv) {
   op_dat midPointConservative1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative1"); //temp - cells - dim 4
   op_dat midPointConservative3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative3"); //temp - cells - dim 4
   op_dat Conservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Conservative"); //temp - cells - dim 4
-  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4 
-  op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4 
+  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
+  op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4
   // Compressed qmin, qmax and alpha into q - to parallelize.
   op_dat q = op_decl_dat_temp(cells, 12, "float", tmp_elem, "q"); //temp - edges - dim 1
-  //op_dat qmax = op_decl_dat_temp(cells, 1, "float", tmp_elem, "qmax"); //temp - edges - dim 1
-  //op_dat alpha = op_decl_dat_temp(cells, 1, "float", tmp_elem, "alpha");
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
@@ -394,7 +402,7 @@ int main(int argc, char **argv) {
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 #endif
   // ----------------------------------------------------
-    { 
+    {
       float minTimestep = 0.0;
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
@@ -433,7 +441,7 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_RW),
                   op_arg_dat(midPoint3,-1,OP_ID,4,"float",OP_WRITE));
-      //printf("New cell values %g %g %g %g    ", normcomp(midPoint3, 0), normcomp(midPoint3, 1),normcomp(midPoint3, 2),normcomp(midPoint3, 3));
+
       spaceDiscretization(midPoint3, midPointConservative3, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
@@ -445,7 +453,7 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative3,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(values_new,-1,OP_ID,4,"float",OP_WRITE));
-      
+
       timestep=dT;
 
     }// End of EvolveRK3_4
@@ -592,7 +600,7 @@ int main(int argc, char **argv) {
   //NumericalFluxes
   if (op_free_dat_temp(maxEdgeEigenvalues) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",maxEdgeEigenvalues->name);
-  
+
   if (op_free_dat_temp(q)< 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",q->name);
   op_timers(&cpu_t2, &wall_t2);

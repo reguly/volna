@@ -3,10 +3,8 @@
 //
 
 //user function
-__device__
-inline void getMaxSpeed_gpu(const float* values, float* currentMaxSpeed) {
-  /*float tmp = values[0]+values[3];
-  *currentMaxSpeed = *currentMaxSpeed > tmp ? *currentMaxSpeed : tmp;*/
+__device__ void getMaxSpeed_gpu( const float* values, float* currentMaxSpeed) {
+
   if (sqrt(values[1]*values[1]+values[2]*values[2]) > sqrt(currentMaxSpeed[1]*currentMaxSpeed[1]+currentMaxSpeed[2]*currentMaxSpeed[2])) {
     currentMaxSpeed[0] = values[0];
     currentMaxSpeed[1] = values[1];
@@ -32,8 +30,8 @@ __global__ void op_cuda_getMaxSpeed(
 }
 
 
-//GPU host stub function
-void op_par_loop_getMaxSpeed_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_getMaxSpeed(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1){
 
@@ -45,11 +43,10 @@ void op_par_loop_getMaxSpeed_gpu(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(22);
+  op_timing_realloc(24);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[22].name      = name;
-  OP_kernels[22].count    += 1;
-  if (OP_kernels[22].count==1) op_register_strides();
+  OP_kernels[24].name      = name;
+  OP_kernels[24].count    += 1;
 
 
   if (OP_diags>2) {
@@ -60,8 +57,8 @@ void op_par_loop_getMaxSpeed_gpu(char const *name, op_set set,
   if (set->size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_22
-      int nthread = OP_BLOCK_SIZE_22;
+    #ifdef OP_BLOCK_SIZE_24
+      int nthread = OP_BLOCK_SIZE_24;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -78,42 +75,7 @@ void op_par_loop_getMaxSpeed_gpu(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[22].time     += wall_t2 - wall_t1;
-  OP_kernels[22].transfer += (float)set->size * arg0.size;
-  OP_kernels[22].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[24].time     += wall_t2 - wall_t1;
+  OP_kernels[24].transfer += (float)set->size * arg0.size;
+  OP_kernels[24].transfer += (float)set->size * arg1.size * 2.0f;
 }
-
-void op_par_loop_getMaxSpeed_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_getMaxSpeed(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_getMaxSpeed_gpu(name, set,
-      arg0,
-      arg1);
-
-    }else{
-    op_par_loop_getMaxSpeed_cpu(name, set,
-      arg0,
-      arg1);
-
-  }
-}
-#else
-void op_par_loop_getMaxSpeed(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1){
-
-  op_par_loop_getMaxSpeed_gpu(name, set,
-    arg0,
-    arg1);
-
-  }
-#endif //OP_HYBRID_GPU

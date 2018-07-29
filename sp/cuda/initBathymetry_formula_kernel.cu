@@ -3,14 +3,14 @@
 //
 
 //user function
-__device__
-inline void initBathymetry_formula_gpu(const float *coords, float *values, const double *time) {
+__device__ void initBathymetry_formula_gpu( const float *coords, float *values, const double *time) {
   float x = coords[0];
   float y = coords[1];
   float t = *time;
-  float val = exp(-(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*M_PI)/360.f)))-sqrt(g)*0.01f*t)*(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*M_PI)/360.f)))-sqrt(g)*0.01f*t));;
+  float val = .2f*(-5.0f-x)*(x<0.0f)-(x>=0.0f)+.2f*(t<1.0f)*exp(-(x+3.0f-2.0f*t)*(x+3.0f-2.0f*t)-y*y)+.2f*(t>=1.0f)*exp(-(x+1.0f)*(x+1.0f)-y*y);;
   values[3] = val;
 }
+
 // CUDA kernel function
 __global__ void op_cuda_initBathymetry_formula(
   const float *__restrict arg0,
@@ -30,8 +30,8 @@ __global__ void op_cuda_initBathymetry_formula(
 }
 
 
-//GPU host stub function
-void op_par_loop_initBathymetry_formula_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_initBathymetry_formula(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
@@ -46,11 +46,10 @@ void op_par_loop_initBathymetry_formula_gpu(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(16);
+  op_timing_realloc(18);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[16].name      = name;
-  OP_kernels[16].count    += 1;
-  if (OP_kernels[16].count==1) op_register_strides();
+  OP_kernels[18].name      = name;
+  OP_kernels[18].count    += 1;
 
 
   if (OP_diags>2) {
@@ -74,8 +73,8 @@ void op_par_loop_initBathymetry_formula_gpu(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_16
-      int nthread = OP_BLOCK_SIZE_16;
+    #ifdef OP_BLOCK_SIZE_18
+      int nthread = OP_BLOCK_SIZE_18;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -93,48 +92,7 @@ void op_par_loop_initBathymetry_formula_gpu(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[16].time     += wall_t2 - wall_t1;
-  OP_kernels[16].transfer += (float)set->size * arg0.size;
-  OP_kernels[16].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[18].time     += wall_t2 - wall_t1;
+  OP_kernels[18].transfer += (float)set->size * arg0.size;
+  OP_kernels[18].transfer += (float)set->size * arg1.size * 2.0f;
 }
-
-void op_par_loop_initBathymetry_formula_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_initBathymetry_formula(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_initBathymetry_formula_gpu(name, set,
-      arg0,
-      arg1,
-      arg2);
-
-    }else{
-    op_par_loop_initBathymetry_formula_cpu(name, set,
-      arg0,
-      arg1,
-      arg2);
-
-  }
-}
-#else
-void op_par_loop_initBathymetry_formula(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2){
-
-  op_par_loop_initBathymetry_formula_gpu(name, set,
-    arg0,
-    arg1,
-    arg2);
-
-  }
-#endif //OP_HYBRID_GPU
