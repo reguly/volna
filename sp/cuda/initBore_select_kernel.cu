@@ -3,7 +3,8 @@
 //
 
 //user function
-__device__ void initBore_select_gpu( float *values, const float *center,
+__device__
+inline void initBore_select_gpu(float *values, const float *center,
                      const float *x0,
                      const float *Hl,
                      const float *ul,
@@ -47,8 +48,8 @@ __global__ void op_cuda_initBore_select(
 }
 
 
-//host stub function
-void op_par_loop_initBore_select(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_initBore_select_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -81,10 +82,11 @@ void op_par_loop_initBore_select(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(16);
+  op_timing_realloc(18);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[16].name      = name;
-  OP_kernels[16].count    += 1;
+  OP_kernels[18].name      = name;
+  OP_kernels[18].count    += 1;
+  if (OP_kernels[18].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -150,8 +152,8 @@ void op_par_loop_initBore_select(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_16
-      int nthread = OP_BLOCK_SIZE_16;
+    #ifdef OP_BLOCK_SIZE_18
+      int nthread = OP_BLOCK_SIZE_18;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -175,7 +177,84 @@ void op_par_loop_initBore_select(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[16].time     += wall_t2 - wall_t1;
-  OP_kernels[16].transfer += (float)set->size * arg0.size * 2.0f;
-  OP_kernels[16].transfer += (float)set->size * arg1.size;
+  OP_kernels[18].time     += wall_t2 - wall_t1;
+  OP_kernels[18].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[18].transfer += (float)set->size * arg1.size;
 }
+
+void op_par_loop_initBore_select_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_initBore_select(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_initBore_select_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7,
+      arg8);
+
+    }else{
+    op_par_loop_initBore_select_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7,
+      arg8);
+
+  }
+}
+#else
+void op_par_loop_initBore_select(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8){
+
+  op_par_loop_initBore_select_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3,
+    arg4,
+    arg5,
+    arg6,
+    arg7,
+    arg8);
+
+  }
+#endif //OP_HYBRID_GPU

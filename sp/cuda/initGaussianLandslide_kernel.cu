@@ -3,7 +3,8 @@
 //
 
 //user function
-__device__ void initGaussianLandslide_gpu( const float *center, float *values, const float *mesh_xmin, const float *A, const double *t, const float *lx, const float *ly, const float *v) {
+__device__
+inline void initGaussianLandslide_gpu(const float *center, float *values, const float *mesh_xmin, const float *A, const double *t, const float *lx, const float *ly, const float *v) {
   float x = center[0];
   float y = center[1];
   values[3] = (*mesh_xmin-x)*(x<0.0)-5.0*(x>=0.0)+
@@ -40,8 +41,8 @@ __global__ void op_cuda_initGaussianLandslide(
 }
 
 
-//host stub function
-void op_par_loop_initGaussianLandslide(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_initGaussianLandslide_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -71,10 +72,11 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(17);
+  op_timing_realloc(19);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[17].name      = name;
-  OP_kernels[17].count    += 1;
+  OP_kernels[19].name      = name;
+  OP_kernels[19].count    += 1;
+  if (OP_kernels[19].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -133,8 +135,8 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_17
-      int nthread = OP_BLOCK_SIZE_17;
+    #ifdef OP_BLOCK_SIZE_19
+      int nthread = OP_BLOCK_SIZE_19;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -157,7 +159,78 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[17].time     += wall_t2 - wall_t1;
-  OP_kernels[17].transfer += (float)set->size * arg0.size;
-  OP_kernels[17].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[19].time     += wall_t2 - wall_t1;
+  OP_kernels[19].transfer += (float)set->size * arg0.size;
+  OP_kernels[19].transfer += (float)set->size * arg1.size * 2.0f;
 }
+
+void op_par_loop_initGaussianLandslide_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_initGaussianLandslide(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_initGaussianLandslide_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7);
+
+    }else{
+    op_par_loop_initGaussianLandslide_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7);
+
+  }
+}
+#else
+void op_par_loop_initGaussianLandslide(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7){
+
+  op_par_loop_initGaussianLandslide_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3,
+    arg4,
+    arg5,
+    arg6,
+    arg7);
+
+  }
+#endif //OP_HYBRID_GPU

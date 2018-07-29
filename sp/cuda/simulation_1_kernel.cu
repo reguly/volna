@@ -3,7 +3,9 @@
 //
 
 //user function
-__device__ void simulation_1_gpu( float *out, const float *in) {
+__device__
+inline void simulation_1_gpu(float *out, const float *in)
+{
   out[0] = in[0];
   out[1] = in[1];
   out[2] = in[2];
@@ -27,8 +29,8 @@ __global__ void op_cuda_simulation_1(
 }
 
 
-//host stub function
-void op_par_loop_simulation_1(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_simulation_1_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1){
 
@@ -44,6 +46,7 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   op_timers_core(&cpu_t1, &wall_t1);
   OP_kernels[2].name      = name;
   OP_kernels[2].count    += 1;
+  if (OP_kernels[2].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -76,3 +79,38 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   OP_kernels[2].transfer += (float)set->size * arg0.size;
   OP_kernels[2].transfer += (float)set->size * arg1.size;
 }
+
+void op_par_loop_simulation_1_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_simulation_1(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_simulation_1_gpu(name, set,
+      arg0,
+      arg1);
+
+    }else{
+    op_par_loop_simulation_1_cpu(name, set,
+      arg0,
+      arg1);
+
+  }
+}
+#else
+void op_par_loop_simulation_1(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1){
+
+  op_par_loop_simulation_1_gpu(name, set,
+    arg0,
+    arg1);
+
+  }
+#endif //OP_HYBRID_GPU

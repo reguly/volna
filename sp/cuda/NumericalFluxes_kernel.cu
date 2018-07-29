@@ -3,14 +3,16 @@
 //
 
 //user function
-__device__ void NumericalFluxes_gpu( const float *maxEdgeEigenvalues0,
-          const float *maxEdgeEigenvalues1,
-          const float *maxEdgeEigenvalues2,
+__device__
+inline void NumericalFluxes_gpu(const float *maxEdgeEigenvalues0,
+          const float *maxEdgeEigenvalues1, 
+          const float *maxEdgeEigenvalues2, 
           const float *EdgeVolumes0,
           const float *EdgeVolumes1,
           const float *EdgeVolumes2,
-          const float *cellVolumes,
-            float *zeroInit, float *minTimeStep ) {
+          const float *cellVolumes, //OP_READ
+            float *zeroInit, float *minTimeStep ) //OP_MIN
+{
   float local = 0.0f;
   local += *maxEdgeEigenvalues0 * *(EdgeVolumes0);
   local += *maxEdgeEigenvalues1 * *(EdgeVolumes1);
@@ -62,7 +64,6 @@ __global__ void op_cuda_NumericalFluxes(
 
   }
   __syncthreads(); // make sure all of above completed
-
   for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
     int map0idx;
     int map1idx;
@@ -70,7 +71,6 @@ __global__ void op_cuda_NumericalFluxes(
     map0idx = opDat0Map[n + offset_b + set_size * 0];
     map1idx = opDat0Map[n + offset_b + set_size * 1];
     map2idx = opDat0Map[n + offset_b + set_size * 2];
-
 
     //user-supplied kernel call
     NumericalFluxes_gpu(ind_arg0+map0idx*1,
@@ -92,8 +92,8 @@ __global__ void op_cuda_NumericalFluxes(
 }
 
 
-//host stub function
-void op_par_loop_NumericalFluxes(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_NumericalFluxes_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -120,10 +120,11 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(4);
+  op_timing_realloc(6);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[4].name      = name;
-  OP_kernels[4].count    += 1;
+  OP_kernels[6].name      = name;
+  OP_kernels[6].count    += 1;
+  if (OP_kernels[6].count==1) op_register_strides();
 
 
   int    ninds   = 2;
@@ -134,8 +135,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_4
-    int part_size = OP_PART_SIZE_4;
+  #ifdef OP_PART_SIZE_6
+    int part_size = OP_PART_SIZE_6;
   #else
     int part_size = OP_part_size;
   #endif
@@ -173,8 +174,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_4
-      int nthread = OP_BLOCK_SIZE_4;
+      #ifdef OP_BLOCK_SIZE_6
+      int nthread = OP_BLOCK_SIZE_6;
       #else
       int nthread = OP_block_size;
       #endif
@@ -206,8 +207,8 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[4].transfer  += Plan->transfer;
-    OP_kernels[4].transfer2 += Plan->transfer2;
+    OP_kernels[6].transfer  += Plan->transfer;
+    OP_kernels[6].transfer2 += Plan->transfer2;
     for ( int b=0; b<maxblocks; b++ ){
       for ( int d=0; d<1; d++ ){
         arg8h[d] = MIN(arg8h[d],((float *)arg8.data)[d+b*1]);
@@ -220,5 +221,82 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[4].time     += wall_t2 - wall_t1;
+  OP_kernels[6].time     += wall_t2 - wall_t1;
 }
+
+void op_par_loop_NumericalFluxes_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_NumericalFluxes(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_NumericalFluxes_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7,
+      arg8);
+
+    }else{
+    op_par_loop_NumericalFluxes_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7,
+      arg8);
+
+  }
+}
+#else
+void op_par_loop_NumericalFluxes(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8){
+
+  op_par_loop_NumericalFluxes_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3,
+    arg4,
+    arg5,
+    arg6,
+    arg7,
+    arg8);
+
+  }
+#endif //OP_HYBRID_GPU

@@ -3,8 +3,10 @@
 //
 
 //user function
-__device__ void getMaxElevation_gpu( const float* values, float* currentMaxElevation) {
-
+__device__
+inline void getMaxElevation_gpu(const float* values, float* currentMaxElevation) {
+  /*float tmp = values[0]+values[3];
+  *currentMaxElevation = *currentMaxElevation > tmp ? *currentMaxElevation : tmp;*/
   if (values[0] > currentMaxElevation[0]) {
     currentMaxElevation[0] = values[0];
     currentMaxElevation[1] = values[1];
@@ -30,8 +32,8 @@ __global__ void op_cuda_getMaxElevation(
 }
 
 
-//host stub function
-void op_par_loop_getMaxElevation(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_getMaxElevation_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1){
 
@@ -43,10 +45,11 @@ void op_par_loop_getMaxElevation(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(19);
+  op_timing_realloc(21);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[19].name      = name;
-  OP_kernels[19].count    += 1;
+  OP_kernels[21].name      = name;
+  OP_kernels[21].count    += 1;
+  if (OP_kernels[21].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -57,8 +60,8 @@ void op_par_loop_getMaxElevation(char const *name, op_set set,
   if (set->size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_19
-      int nthread = OP_BLOCK_SIZE_19;
+    #ifdef OP_BLOCK_SIZE_21
+      int nthread = OP_BLOCK_SIZE_21;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -75,7 +78,42 @@ void op_par_loop_getMaxElevation(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[19].time     += wall_t2 - wall_t1;
-  OP_kernels[19].transfer += (float)set->size * arg0.size;
-  OP_kernels[19].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[21].time     += wall_t2 - wall_t1;
+  OP_kernels[21].transfer += (float)set->size * arg0.size;
+  OP_kernels[21].transfer += (float)set->size * arg1.size * 2.0f;
 }
+
+void op_par_loop_getMaxElevation_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_getMaxElevation(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_getMaxElevation_gpu(name, set,
+      arg0,
+      arg1);
+
+    }else{
+    op_par_loop_getMaxElevation_cpu(name, set,
+      arg0,
+      arg1);
+
+  }
+}
+#else
+void op_par_loop_getMaxElevation(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1){
+
+  op_par_loop_getMaxElevation_gpu(name, set,
+    arg0,
+    arg1);
+
+  }
+#endif //OP_HYBRID_GPU

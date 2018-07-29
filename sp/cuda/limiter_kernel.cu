@@ -4,45 +4,70 @@
 
 //user function
 __device__
-inline void getTotalVol_gpu(const float* cellVolume, const float* value, float* totalVol) {
-  (*totalVol) += (*cellVolume) * value[0];
+inline void limiter_gpu(const float *data_in,
+                    float *qmin,
+                    float *qmax)
+{
+  //op_printf( "Before  QMIN %.5f QMAX %.5f h %.5f \n  ", *qmin , *qmax, data_in[0]);
+  if ( data_in[0] < *qmin){
+      *qmin = data_in[0];
+   }else{
+	*qmin = *qmin;
+  }
+  
+  if ( data_in[0]> *qmax){
+      *qmax = data_in[0];
+  }else{
+	*qmax = *qmax;
+  }
+  //op_printf( "After  QMIN %.5f QMAX %.5f h %.5f \n  ", *qmin , *qmax, data_in[0]);
+   
+
 }
 
 // CUDA kernel function
-__global__ void op_cuda_getTotalVol(
+__global__ void op_cuda_limiter(
   const float *__restrict arg0,
-  const float *__restrict arg1,
+  float *arg1,
   float *arg2,
   int   set_size ) {
 
+  float arg1_l[1];
+  for ( int d=0; d<1; d++ ){
+    arg1_l[d]=arg1[d+blockIdx.x*1];
+  }
   float arg2_l[1];
   for ( int d=0; d<1; d++ ){
-    arg2_l[d]=ZERO_float;
+    arg2_l[d]=arg2[d+blockIdx.x*1];
   }
 
   //process set elements
   for ( int n=threadIdx.x+blockIdx.x*blockDim.x; n<set_size; n+=blockDim.x*gridDim.x ){
 
     //user-supplied kernel call
-    getTotalVol_gpu(arg0+n*1,
-                arg1+n*4,
-                arg2_l);
+    limiter_gpu(arg0+n*4,
+            arg1_l,
+            arg2_l);
   }
 
   //global reductions
 
   for ( int d=0; d<1; d++ ){
-    op_reduction<OP_INC>(&arg2[d+blockIdx.x*1],arg2_l[d]);
+    op_reduction<OP_MIN>(&arg1[d+blockIdx.x*1],arg1_l[d]);
+  }
+  for ( int d=0; d<1; d++ ){
+    op_reduction<OP_MAX>(&arg2[d+blockIdx.x*1],arg2_l[d]);
   }
 }
 
 
 //GPU host stub function
-void op_par_loop_getTotalVol_gpu(char const *name, op_set set,
+void op_par_loop_limiter_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
 
+  float*arg1h = (float *)arg1.data;
   float*arg2h = (float *)arg2.data;
   int nargs = 3;
   op_arg args[3];
@@ -53,23 +78,23 @@ void op_par_loop_getTotalVol_gpu(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(20);
+  op_timing_realloc(4);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[20].name      = name;
-  OP_kernels[20].count    += 1;
-  if (OP_kernels[20].count==1) op_register_strides();
+  OP_kernels[4].name      = name;
+  OP_kernels[4].count    += 1;
+  if (OP_kernels[4].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  getTotalVol");
+    printf(" kernel routine w/o indirection:  limiter");
   }
 
   op_mpi_halo_exchanges_cuda(set, nargs, args);
   if (set->size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_20
-      int nthread = OP_BLOCK_SIZE_20;
+    #ifdef OP_BLOCK_SIZE_4
+      int nthread = OP_BLOCK_SIZE_4;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -83,20 +108,30 @@ void op_par_loop_getTotalVol_gpu(char const *name, op_set set,
     int reduct_size  = 0;
     reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
     reduct_size   = MAX(reduct_size,sizeof(float));
+    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
+    reduct_size   = MAX(reduct_size,sizeof(float));
     reallocReductArrays(reduct_bytes);
     reduct_bytes = 0;
+    arg1.data   = OP_reduct_h + reduct_bytes;
+    arg1.data_d = OP_reduct_d + reduct_bytes;
+    for ( int b=0; b<maxblocks; b++ ){
+      for ( int d=0; d<1; d++ ){
+        ((float *)arg1.data)[d+b*1] = arg1h[d];
+      }
+    }
+    reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
     arg2.data   = OP_reduct_h + reduct_bytes;
     arg2.data_d = OP_reduct_d + reduct_bytes;
     for ( int b=0; b<maxblocks; b++ ){
       for ( int d=0; d<1; d++ ){
-        ((float *)arg2.data)[d+b*1] = ZERO_float;
+        ((float *)arg2.data)[d+b*1] = arg2h[d];
       }
     }
     reduct_bytes += ROUND_UP(maxblocks*1*sizeof(float));
     mvReductArraysToDevice(reduct_bytes);
 
     int nshared = reduct_size*nthread;
-    op_cuda_getTotalVol<<<nblocks,nthread,nshared>>>(
+    op_cuda_limiter<<<nblocks,nthread,nshared>>>(
       (float *) arg0.data_d,
       (float *) arg1.data_d,
       (float *) arg2.data_d,
@@ -105,7 +140,14 @@ void op_par_loop_getTotalVol_gpu(char const *name, op_set set,
     mvReductArraysToHost(reduct_bytes);
     for ( int b=0; b<maxblocks; b++ ){
       for ( int d=0; d<1; d++ ){
-        arg2h[d] = arg2h[d] + ((float *)arg2.data)[d+b*1];
+        arg1h[d] = MIN(arg1h[d],((float *)arg1.data)[d+b*1]);
+      }
+    }
+    arg1.data = (char *)arg1h;
+    op_mpi_reduce(&arg1,arg1h);
+    for ( int b=0; b<maxblocks; b++ ){
+      for ( int d=0; d<1; d++ ){
+        arg2h[d] = MAX(arg2h[d],((float *)arg2.data)[d+b*1]);
       }
     }
     arg2.data = (char *)arg2h;
@@ -115,12 +157,11 @@ void op_par_loop_getTotalVol_gpu(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[20].time     += wall_t2 - wall_t1;
-  OP_kernels[20].transfer += (float)set->size * arg0.size;
-  OP_kernels[20].transfer += (float)set->size * arg1.size;
+  OP_kernels[4].time     += wall_t2 - wall_t1;
+  OP_kernels[4].transfer += (float)set->size * arg0.size;
 }
 
-void op_par_loop_getTotalVol_cpu(char const *name, op_set set,
+void op_par_loop_limiter_cpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2);
@@ -128,19 +169,19 @@ void op_par_loop_getTotalVol_cpu(char const *name, op_set set,
 
 //GPU host stub function
 #if OP_HYBRID_GPU
-void op_par_loop_getTotalVol(char const *name, op_set set,
+void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
 
   if (OP_hybrid_gpu) {
-    op_par_loop_getTotalVol_gpu(name, set,
+    op_par_loop_limiter_gpu(name, set,
       arg0,
       arg1,
       arg2);
 
     }else{
-    op_par_loop_getTotalVol_cpu(name, set,
+    op_par_loop_limiter_cpu(name, set,
       arg0,
       arg1,
       arg2);
@@ -148,12 +189,12 @@ void op_par_loop_getTotalVol(char const *name, op_set set,
   }
 }
 #else
-void op_par_loop_getTotalVol(char const *name, op_set set,
+void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
 
-  op_par_loop_getTotalVol_gpu(name, set,
+  op_par_loop_limiter_gpu(name, set,
     arg0,
     arg1,
     arg2);

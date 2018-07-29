@@ -3,7 +3,8 @@
 //
 
 //user function
-__device__ void initEta_formula_gpu( const float *coords, float *values, const double *time) {
+__device__
+inline void initEta_formula_gpu(const float *coords, float *values, const double *time) {
   float x = coords[0];
   float y = coords[1];
   float t = *time;
@@ -30,8 +31,8 @@ __global__ void op_cuda_initEta_formula(
 }
 
 
-//host stub function
-void op_par_loop_initEta_formula(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_initEta_formula_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
@@ -46,10 +47,11 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(7);
+  op_timing_realloc(9);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[7].name      = name;
-  OP_kernels[7].count    += 1;
+  OP_kernels[9].name      = name;
+  OP_kernels[9].count    += 1;
+  if (OP_kernels[9].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -73,8 +75,8 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_7
-      int nthread = OP_BLOCK_SIZE_7;
+    #ifdef OP_BLOCK_SIZE_9
+      int nthread = OP_BLOCK_SIZE_9;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -92,7 +94,48 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[7].time     += wall_t2 - wall_t1;
-  OP_kernels[7].transfer += (float)set->size * arg0.size;
-  OP_kernels[7].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[9].time     += wall_t2 - wall_t1;
+  OP_kernels[9].transfer += (float)set->size * arg0.size;
+  OP_kernels[9].transfer += (float)set->size * arg1.size * 2.0f;
 }
+
+void op_par_loop_initEta_formula_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_initEta_formula(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_initEta_formula_gpu(name, set,
+      arg0,
+      arg1,
+      arg2);
+
+    }else{
+    op_par_loop_initEta_formula_cpu(name, set,
+      arg0,
+      arg1,
+      arg2);
+
+  }
+}
+#else
+void op_par_loop_initEta_formula(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2){
+
+  op_par_loop_initEta_formula_gpu(name, set,
+    arg0,
+    arg1,
+    arg2);
+
+  }
+#endif //OP_HYBRID_GPU

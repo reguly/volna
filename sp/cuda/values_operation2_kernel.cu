@@ -3,7 +3,8 @@
 //
 
 //user function
-__device__ void values_operation2_gpu( float *values, const int *result, const int *left, const int *right, const int *op) {
+__device__
+inline void values_operation2_gpu(float *values, const int *result, const int *left, const int *right, const int *op) {
   switch (*op) {
   case 0:
     values[*result] = values[*left] + values[*right];
@@ -43,8 +44,8 @@ __global__ void op_cuda_values_operation2(
 }
 
 
-//host stub function
-void op_par_loop_values_operation2(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_values_operation2_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -66,10 +67,11 @@ void op_par_loop_values_operation2(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(10);
+  op_timing_realloc(12);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[10].name      = name;
-  OP_kernels[10].count    += 1;
+  OP_kernels[12].name      = name;
+  OP_kernels[12].count    += 1;
+  if (OP_kernels[12].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -114,8 +116,8 @@ void op_par_loop_values_operation2(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_10
-      int nthread = OP_BLOCK_SIZE_10;
+    #ifdef OP_BLOCK_SIZE_12
+      int nthread = OP_BLOCK_SIZE_12;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -135,6 +137,59 @@ void op_par_loop_values_operation2(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[10].time     += wall_t2 - wall_t1;
-  OP_kernels[10].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[12].time     += wall_t2 - wall_t1;
+  OP_kernels[12].transfer += (float)set->size * arg0.size * 2.0f;
 }
+
+void op_par_loop_values_operation2_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_values_operation2(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_values_operation2_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4);
+
+    }else{
+    op_par_loop_values_operation2_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4);
+
+  }
+}
+#else
+void op_par_loop_values_operation2(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4){
+
+  op_par_loop_values_operation2_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3,
+    arg4);
+
+  }
+#endif //OP_HYBRID_GPU

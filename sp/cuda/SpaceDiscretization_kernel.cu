@@ -3,14 +3,16 @@
 //
 
 //user function
-__device__ void SpaceDiscretization_gpu( float *left,
-              float *right,
-              const float *edgeFluxes,
-              const float *bathySource,
-              const float *edgeNormals, const int *isRightBoundary,
-              const float *cellVolumes0,
-              const float *cellVolumes1
-) {
+__device__
+inline void SpaceDiscretization_gpu(float *left, //OP_INC
+              float *right, //OP_INC
+              const float *edgeFluxes, //OP_READ
+              const float *bathySource, //OP_READ
+              const float *edgeNormals, const int *isRightBoundary, 
+              const float *cellVolumes0, //OP_READ
+              const float *cellVolumes1 //OP_READ
+)
+{
   left[0] -= (edgeFluxes[0])/cellVolumes0[0];
   left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
@@ -64,7 +66,6 @@ __global__ void op_cuda_SpaceDiscretization(
 
   }
   __syncthreads(); // make sure all of above completed
-
   for ( int n=threadIdx.x; n<nelems2; n+=blockDim.x ){
     int col2 = -1;
     int map0idx;
@@ -79,7 +80,6 @@ __global__ void op_cuda_SpaceDiscretization(
       }
       map0idx = opDat0Map[n + offset_b + set_size * 0];
       map1idx = opDat0Map[n + offset_b + set_size * 1];
-
 
       //user-supplied kernel call
       SpaceDiscretization_gpu(arg0_l,
@@ -101,14 +101,14 @@ __global__ void op_cuda_SpaceDiscretization(
         arg0_l[1] += ind_arg0[1+map0idx*4];
         arg0_l[2] += ind_arg0[2+map0idx*4];
         arg0_l[3] += ind_arg0[3+map0idx*4];
-        ind_arg0[0+map0idx*4] = arg0_l[0];
-        ind_arg0[1+map0idx*4] = arg0_l[1];
-        ind_arg0[2+map0idx*4] = arg0_l[2];
-        ind_arg0[3+map0idx*4] = arg0_l[3];
         arg1_l[0] += ind_arg0[0+map1idx*4];
         arg1_l[1] += ind_arg0[1+map1idx*4];
         arg1_l[2] += ind_arg0[2+map1idx*4];
         arg1_l[3] += ind_arg0[3+map1idx*4];
+        ind_arg0[0+map0idx*4] = arg0_l[0];
+        ind_arg0[1+map0idx*4] = arg0_l[1];
+        ind_arg0[2+map0idx*4] = arg0_l[2];
+        ind_arg0[3+map0idx*4] = arg0_l[3];
         ind_arg0[0+map1idx*4] = arg1_l[0];
         ind_arg0[1+map1idx*4] = arg1_l[1];
         ind_arg0[2+map1idx*4] = arg1_l[2];
@@ -120,8 +120,8 @@ __global__ void op_cuda_SpaceDiscretization(
 }
 
 
-//host stub function
-void op_par_loop_SpaceDiscretization(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_SpaceDiscretization_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -145,10 +145,11 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(7);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
+  OP_kernels[7].name      = name;
+  OP_kernels[7].count    += 1;
+  if (OP_kernels[7].count==1) op_register_strides();
 
 
   int    ninds   = 2;
@@ -159,8 +160,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_7
+    int part_size = OP_PART_SIZE_7;
   #else
     int part_size = OP_part_size;
   #endif
@@ -177,8 +178,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_5
-      int nthread = OP_BLOCK_SIZE_5;
+      #ifdef OP_BLOCK_SIZE_7
+      int nthread = OP_BLOCK_SIZE_7;
       #else
       int nthread = OP_block_size;
       #endif
@@ -206,12 +207,83 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[5].transfer  += Plan->transfer;
-    OP_kernels[5].transfer2 += Plan->transfer2;
+    OP_kernels[7].transfer  += Plan->transfer;
+    OP_kernels[7].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].time     += wall_t2 - wall_t1;
+  OP_kernels[7].time     += wall_t2 - wall_t1;
 }
+
+void op_par_loop_SpaceDiscretization_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_SpaceDiscretization(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_SpaceDiscretization_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7);
+
+    }else{
+    op_par_loop_SpaceDiscretization_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3,
+      arg4,
+      arg5,
+      arg6,
+      arg7);
+
+  }
+}
+#else
+void op_par_loop_SpaceDiscretization(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7){
+
+  op_par_loop_SpaceDiscretization_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3,
+    arg4,
+    arg5,
+    arg6,
+    arg7);
+
+  }
+#endif //OP_HYBRID_GPU

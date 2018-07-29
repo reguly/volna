@@ -16,9 +16,9 @@ for i in *.h5; do
 			newname=`echo ${i} | sed -e 's/\.h5$/\.vtk/g'`
        		 	echo "Converting ${i} to ${newname} ..."
 			if [ -z $2 ]; then
-				./hdf52vtk $1 $i 0 $newname 
+				../hdf52vtk/hdf52vtk $1 $i 0 $newname 
 			else
-				./hdf52vtk $1 $i $2 $newname 
+				../hdf52vtk/hdf52vtk $1 $i $2 $newname 
 			fi
 		fi
 	fi

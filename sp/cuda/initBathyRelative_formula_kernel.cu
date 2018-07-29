@@ -3,7 +3,8 @@
 //
 
 //user function
-__device__ void initBathyRelative_formula_gpu( const float *coords, float *values, const float *bathy0, const double *time) {
+__device__
+inline void initBathyRelative_formula_gpu(const float *coords, float *values, const float *bathy0, const double *time) {
   float x = coords[0];
   float y = coords[1];
   float t = *time;
@@ -32,8 +33,8 @@ __global__ void op_cuda_initBathyRelative_formula(
 }
 
 
-//host stub function
-void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
+//GPU host stub function
+void op_par_loop_initBathyRelative_formula_gpu(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -50,10 +51,11 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(13);
+  op_timing_realloc(15);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[13].name      = name;
-  OP_kernels[13].count    += 1;
+  OP_kernels[15].name      = name;
+  OP_kernels[15].count    += 1;
+  if (OP_kernels[15].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
@@ -77,8 +79,8 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_13
-      int nthread = OP_BLOCK_SIZE_13;
+    #ifdef OP_BLOCK_SIZE_15
+      int nthread = OP_BLOCK_SIZE_15;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -97,8 +99,55 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[13].time     += wall_t2 - wall_t1;
-  OP_kernels[13].transfer += (float)set->size * arg0.size;
-  OP_kernels[13].transfer += (float)set->size * arg1.size * 2.0f;
-  OP_kernels[13].transfer += (float)set->size * arg2.size;
+  OP_kernels[15].time     += wall_t2 - wall_t1;
+  OP_kernels[15].transfer += (float)set->size * arg0.size;
+  OP_kernels[15].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[15].transfer += (float)set->size * arg2.size;
 }
+
+void op_par_loop_initBathyRelative_formula_cpu(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3);
+
+
+//GPU host stub function
+#if OP_HYBRID_GPU
+void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3){
+
+  if (OP_hybrid_gpu) {
+    op_par_loop_initBathyRelative_formula_gpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3);
+
+    }else{
+    op_par_loop_initBathyRelative_formula_cpu(name, set,
+      arg0,
+      arg1,
+      arg2,
+      arg3);
+
+  }
+}
+#else
+void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3){
+
+  op_par_loop_initBathyRelative_formula_gpu(name, set,
+    arg0,
+    arg1,
+    arg2,
+    arg3);
+
+  }
+#endif //OP_HYBRID_GPU
