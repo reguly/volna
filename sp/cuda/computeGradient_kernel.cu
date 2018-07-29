@@ -207,7 +207,7 @@ __global__ void op_cuda_computeGradient(
                     ind_arg1+map1idx*2,
                     ind_arg1+map2idx*2,
                     ind_arg1+map3idx*2,
-                    arg8+(n+offset_b)*12,
+                    arg8+(n+offset_b)*8,
                     arg9+(n+offset_b)*8);
   }
 }

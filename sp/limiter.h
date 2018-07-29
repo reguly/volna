@@ -1,4 +1,4 @@
-inline void limiter(float *q,
+inline void limiter(const float *q, float *q2,
   const float *value, const float *gradient,
   const float *edgecenter1, const float *edgecenter2,
   const float *edgecenter3, const float *cellcenter)
@@ -18,10 +18,10 @@ inline void limiter(float *q,
   if((value[0] > EPS) && (q[0]> EPS)){
   // The limiter is calculated for all physical variables using the
   // Venkatakrishnan formula.
-  // q[0] - Hmin , q[1] - Hmax , q[8] - Hlim
-  // q[2] - Umin , q[3] - Umax , q[9] - Ulim
-  // q[4] - Vmin , q[5] - Vmax , q[10] - Vlim
-  // q[6] - Zmin , q[7] - Zmax , q[11] - Zlim
+  // q[0] - Hmin , q[1] - Hmax , q2[0] - Hlim
+  // q[2] - Umin , q[3] - Umax , q2[1] - Ulim
+  // q[4] - Vmin , q[5] - Vmax , q2[2] - Vlim
+  // q[6] - Zmin , q[7] - Zmax , q2[3] - Zlim
     for(j=0;j<4;j++){
       for(i =0 ; i<3; i++){
         facevalue[i] = value[j] + ((gradient[2*j]*dx[i]) + (gradient[2*j + 1]*dy[i]));
@@ -35,15 +35,15 @@ inline void limiter(float *q,
           edgealpha[i] = 1.0f;
         }
       }
-      q[j+8] = edgealpha[0] < edgealpha[1] ? q[j+8] : edgealpha[1];
-      q[j+8] = q[j+8] < edgealpha[2] ? q[j+8]: edgealpha[2];
-      q[j+8] = q[j+8] < 1.0f ? q[j+8] : 1.0f;
-      q[j+8] = q[j+8] > 0.0f ? q[j+8] : 0.0f;
+      q2[j] = edgealpha[0] < edgealpha[1] ? q2[j] : edgealpha[1];
+      q2[j] = q2[j] < edgealpha[2] ? q2[j]: edgealpha[2];
+      q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
+      q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
     }
   } else {
-    q[8] = 0.0f;
-    q[9] = 0.0f;
-    q[10] = 0.0f;
-    q[11] = 0.0f;
+    q2[8] = 0.0f;
+    q2[9] = 0.0f;
+    q2[10] = 0.0f;
+    q2[11] = 0.0f;
   }
 }

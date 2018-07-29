@@ -89,24 +89,24 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   // Second order Reconstruction
   if (!*isRightBoundary) {
-  leftCellValues[0] +=  alphaleft[8] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
-  rightCellValues[0] +=  alpharight[8] * ((dxr * rightGradient[0])+(dyr * rightGradient[1]));
+  leftCellValues[0] +=  alphaleft[0] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
+  rightCellValues[0] +=  alpharight[0] * ((dxr * rightGradient[0])+(dyr * rightGradient[1]));
   leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
 
-  leftCellValues[3] += alphaleft[11] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
-  rightCellValues[3] += alpharight[11] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
+  leftCellValues[3] += alphaleft[3] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
+  rightCellValues[3] += alpharight[3] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
   InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
   leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
   rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
 
-  leftCellValues[1] += alphaleft[9] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
-  leftCellValues[2] += alphaleft[10] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
+  leftCellValues[1] += alphaleft[1] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
+  leftCellValues[2] += alphaleft[2] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
 
-  rightCellValues[1] += alpharight[9] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
-  rightCellValues[2] += alpharight[10] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
+  rightCellValues[1] += alpharight[1] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
+  rightCellValues[2] += alpharight[2] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
   }
 
   // ------------------------------------------------------------------------------------

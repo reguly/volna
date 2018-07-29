@@ -427,7 +427,8 @@ void op_par_loop_limiter_gpu(char const *name, op_set set,
   op_arg arg3,
   op_arg arg4,
   op_arg arg5,
-  op_arg arg6);
+  op_arg arg6,
+  op_arg arg7);
 
 //GPU host stub function
 #if OP_HYBRID_GPU
@@ -438,7 +439,8 @@ void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg3,
   op_arg arg4,
   op_arg arg5,
-  op_arg arg6){
+  op_arg arg6,
+  op_arg arg7){
 
   if (OP_hybrid_gpu) {
     op_par_loop_limiter_gpu(name, set,
@@ -448,7 +450,8 @@ void op_par_loop_limiter(char const *name, op_set set,
       arg3,
       arg4,
       arg5,
-      arg6);
+      arg6,
+      arg7);
 
     }else{
     op_par_loop_limiter_cpu(name, set,
@@ -458,7 +461,8 @@ void op_par_loop_limiter(char const *name, op_set set,
       arg3,
       arg4,
       arg5,
-      arg6);
+      arg6,
+      arg7);
 
   }
 }
@@ -470,7 +474,8 @@ void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg3,
   op_arg arg4,
   op_arg arg5,
-  op_arg arg6){
+  op_arg arg6,
+  op_arg arg7){
 
   op_par_loop_limiter_gpu(name, set,
     arg0,
@@ -479,7 +484,8 @@ void op_par_loop_limiter(char const *name, op_set set,
     arg3,
     arg4,
     arg5,
-    arg6);
+    arg6,
+    arg7);
 
   }
 #endif //OP_HYBRID_GPU

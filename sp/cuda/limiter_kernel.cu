@@ -3,7 +3,7 @@
 //
 
 //user function
-__device__ void limiter_gpu( float *q,
+__device__ void limiter_gpu( const float *q, float *q2,
   const float *value, const float *gradient,
   const float *edgecenter1, const float *edgecenter2,
   const float *edgecenter3, const float *cellcenter) {
@@ -39,27 +39,28 @@ __device__ void limiter_gpu( float *q,
           edgealpha[i] = 1.0f;
         }
       }
-      q[j+8] = edgealpha[0] < edgealpha[1] ? q[j+8] : edgealpha[1];
-      q[j+8] = q[j+8] < edgealpha[2] ? q[j+8]: edgealpha[2];
-      q[j+8] = q[j+8] < 1.0f ? q[j+8] : 1.0f;
-      q[j+8] = q[j+8] > 0.0f ? q[j+8] : 0.0f;
+      q2[j] = edgealpha[0] < edgealpha[1] ? q2[j] : edgealpha[1];
+      q2[j] = q2[j] < edgealpha[2] ? q2[j]: edgealpha[2];
+      q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
+      q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
     }
   } else {
-    q[8] = 0.0f;
-    q[9] = 0.0f;
-    q[10] = 0.0f;
-    q[11] = 0.0f;
+    q2[8] = 0.0f;
+    q2[9] = 0.0f;
+    q2[10] = 0.0f;
+    q2[11] = 0.0f;
   }
 }
 
 // CUDA kernel function
 __global__ void op_cuda_limiter(
   const float *__restrict ind_arg0,
-  const int *__restrict opDat3Map,
-  float *arg0,
-  const float *__restrict arg1,
+  const int *__restrict opDat4Map,
+  const float *__restrict arg0,
+  float *arg1,
   const float *__restrict arg2,
-  const float *__restrict arg6,
+  const float *__restrict arg3,
+  const float *__restrict arg7,
   int    block_offset,
   int   *blkmap,
   int   *offset,
@@ -89,22 +90,23 @@ __global__ void op_cuda_limiter(
   __syncthreads(); // make sure all of above completed
 
   for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
-    int map3idx;
     int map4idx;
     int map5idx;
-    map3idx = opDat3Map[n + offset_b + set_size * 0];
-    map4idx = opDat3Map[n + offset_b + set_size * 1];
-    map5idx = opDat3Map[n + offset_b + set_size * 2];
+    int map6idx;
+    map4idx = opDat4Map[n + offset_b + set_size * 0];
+    map5idx = opDat4Map[n + offset_b + set_size * 1];
+    map6idx = opDat4Map[n + offset_b + set_size * 2];
 
 
     //user-supplied kernel call
-    limiter_gpu(arg0+(n+offset_b)*12,
+    limiter_gpu(arg0+(n+offset_b)*8,
             arg1+(n+offset_b)*4,
-            arg2+(n+offset_b)*8,
-            ind_arg0+map3idx*2,
+            arg2+(n+offset_b)*4,
+            arg3+(n+offset_b)*8,
             ind_arg0+map4idx*2,
             ind_arg0+map5idx*2,
-            arg6+(n+offset_b)*2);
+            ind_arg0+map6idx*2,
+            arg7+(n+offset_b)*2);
   }
 }
 
@@ -117,10 +119,11 @@ void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg3,
   op_arg arg4,
   op_arg arg5,
-  op_arg arg6){
+  op_arg arg6,
+  op_arg arg7){
 
-  int nargs = 7;
-  op_arg args[7];
+  int nargs = 8;
+  op_arg args[8];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -129,6 +132,7 @@ void op_par_loop_limiter(char const *name, op_set set,
   args[4] = arg4;
   args[5] = arg5;
   args[6] = arg6;
+  args[7] = arg7;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -139,7 +143,7 @@ void op_par_loop_limiter(char const *name, op_set set,
 
 
   int    ninds   = 1;
-  int    inds[7] = {-1,-1,-1,0,0,0,-1};
+  int    inds[8] = {-1,-1,-1,-1,0,0,0,-1};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: limiter\n");
@@ -174,12 +178,13 @@ void op_par_loop_limiter(char const *name, op_set set,
       Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
       if (Plan->ncolblk[col] > 0) {
         op_cuda_limiter<<<nblocks,nthread>>>(
-        (float *)arg3.data_d,
-        arg3.map_data_d,
+        (float *)arg4.data_d,
+        arg4.map_data_d,
         (float*)arg0.data_d,
         (float*)arg1.data_d,
         (float*)arg2.data_d,
-        (float*)arg6.data_d,
+        (float*)arg3.data_d,
+        (float*)arg7.data_d,
         block_offset,
         Plan->blkmap,
         Plan->offset,
