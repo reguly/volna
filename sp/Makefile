@@ -151,4 +151,4 @@ cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
 #
 
 clean:
-	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o
+	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o 
