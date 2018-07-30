@@ -5,20 +5,35 @@
 //user function
 __device__ void SpaceDiscretization_gpu( float *left,
               float *right,
+              const float *cellLeft, const float *cellRight,
               const float *edgeFluxes,
               const float *bathySource,
               const float *edgeNormals, const int *isRightBoundary,
               const float *cellVolumes0,
-              const float *cellVolumes1
-) {
+              const float *cellVolumes1) {
+
+  if ((cellLeft[0] > EPS) || (cellRight[0] > EPS)){
   left[0] -= (edgeFluxes[0])/cellVolumes0[0];
   left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
 
+  }else{
+  left[0] -= 0.0f;
+  left[0] -= 0.0f;
+  left[0] -= 0.0f;
+  }
+
   if (!*isRightBoundary) {
+    if ((cellLeft[0] > EPS) || (cellRight[0] > EPS)){
     right[0] += edgeFluxes[0]/cellVolumes1[0];
     right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0];
     right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0];
+
+    }else{
+    right[0] += 0.0f;
+    right[1] += 0.0f;
+    right[2] += 0.0f;
+    }
   }
 }
 
@@ -26,11 +41,12 @@ __device__ void SpaceDiscretization_gpu( float *left,
 __global__ void op_cuda_SpaceDiscretization(
   float *__restrict ind_arg0,
   const float *__restrict ind_arg1,
+  const float *__restrict ind_arg2,
   const int *__restrict opDat0Map,
-  const float *__restrict arg2,
-  const float *__restrict arg3,
   const float *__restrict arg4,
-  const int *__restrict arg5,
+  const float *__restrict arg5,
+  const float *__restrict arg6,
+  const int *__restrict arg7,
   int    block_offset,
   int   *blkmap,
   int   *offset,
@@ -84,12 +100,14 @@ __global__ void op_cuda_SpaceDiscretization(
       //user-supplied kernel call
       SpaceDiscretization_gpu(arg0_l,
                         arg1_l,
-                        arg2+(n+offset_b)*3,
-                        arg3+(n+offset_b)*2,
-                        arg4+(n+offset_b)*2,
-                        arg5+(n+offset_b)*1,
-                        ind_arg1+map0idx*1,
-                        ind_arg1+map1idx*1);
+                        ind_arg1+map0idx*4,
+                        ind_arg1+map1idx*4,
+                        arg4+(n+offset_b)*3,
+                        arg5+(n+offset_b)*4,
+                        arg6+(n+offset_b)*2,
+                        arg7+(n+offset_b)*1,
+                        ind_arg2+map0idx*1,
+                        ind_arg2+map1idx*1);
       col2 = colors[n+offset_b];
     }
 
@@ -129,10 +147,12 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 10;
+  op_arg args[10];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -142,25 +162,27 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(9);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
+  OP_kernels[9].name      = name;
+  OP_kernels[9].count    += 1;
 
 
-  int    ninds   = 2;
-  int    inds[8] = {0,0,-1,-1,-1,-1,1,1};
+  int    ninds   = 3;
+  int    inds[10] = {0,0,1,1,-1,-1,-1,-1,2,2};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: SpaceDiscretization\n");
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_9
+    int part_size = OP_PART_SIZE_9;
   #else
     int part_size = OP_part_size;
   #endif
@@ -177,8 +199,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_5
-      int nthread = OP_BLOCK_SIZE_5;
+      #ifdef OP_BLOCK_SIZE_9
+      int nthread = OP_BLOCK_SIZE_9;
       #else
       int nthread = OP_block_size;
       #endif
@@ -188,12 +210,13 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       if (Plan->ncolblk[col] > 0) {
         op_cuda_SpaceDiscretization<<<nblocks,nthread>>>(
         (float *)arg0.data_d,
-        (float *)arg6.data_d,
+        (float *)arg2.data_d,
+        (float *)arg8.data_d,
         arg0.map_data_d,
-        (float*)arg2.data_d,
-        (float*)arg3.data_d,
         (float*)arg4.data_d,
-        (int*)arg5.data_d,
+        (float*)arg5.data_d,
+        (float*)arg6.data_d,
+        (int*)arg7.data_d,
         block_offset,
         Plan->blkmap,
         Plan->offset,
@@ -206,12 +229,12 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[5].transfer  += Plan->transfer;
-    OP_kernels[5].transfer2 += Plan->transfer2;
+    OP_kernels[9].transfer  += Plan->transfer;
+    OP_kernels[9].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].time     += wall_t2 - wall_t1;
+  OP_kernels[9].time     += wall_t2 - wall_t1;
 }

@@ -38,9 +38,13 @@ int size, char *dat, char const *name){
 }
 
 //user kernel files
-#include "EvolveValuesRK2_1_kernel.cu"
-#include "EvolveValuesRK2_2_kernel.cu"
+#include "EvolveValuesRK3_1_kernel.cu"
+#include "EvolveValuesRK3_2_kernel.cu"
+#include "EvolveValuesRK3_3_kernel.cu"
+#include "EvolveValuesRK3_4_kernel.cu"
 #include "simulation_1_kernel.cu"
+#include "computeGradient_kernel.cu"
+#include "limiter_kernel.cu"
 #include "computeFluxes_kernel.cu"
 #include "NumericalFluxes_kernel.cu"
 #include "SpaceDiscretization_kernel.cu"

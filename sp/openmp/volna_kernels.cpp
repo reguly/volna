@@ -10,9 +10,13 @@ extern float CFL;
 extern float EPS;
 extern float g;
 // user kernel files
-#include "EvolveValuesRK2_1_kernel.cpp"
-#include "EvolveValuesRK2_2_kernel.cpp"
+#include "EvolveValuesRK3_1_kernel.cpp"
+#include "EvolveValuesRK3_2_kernel.cpp"
+#include "EvolveValuesRK3_3_kernel.cpp"
+#include "EvolveValuesRK3_4_kernel.cpp"
 #include "simulation_1_kernel.cpp"
+#include "computeGradient_kernel.cpp"
+#include "limiter_kernel.cpp"
 #include "computeFluxes_kernel.cpp"
 #include "NumericalFluxes_kernel.cpp"
 #include "SpaceDiscretization_kernel.cpp"

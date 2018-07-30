@@ -1,9 +1,13 @@
 #
 # The following environment variables should be predefined:
 #
-# OP2_INSTALL_PATH
-# HDF5_INSTALL_PATH
-# MPI_INSTALL_PATH
+#OP2_INSTALL_PATH = 
+#HDF5_INSTALL_PATH =
+#MPI_INSTALL_PATH =
+#PARMETIS_INSTALL_PATH =
+#PTSCOTCH_INSTALL_PATH =
+#CUDA_INSTALL_PATH =
+#OP2_COMPILER =
 #
 
 #
@@ -36,25 +40,26 @@ endif
 
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
+PTSCOTCH_INC   = -I$(PTSCOTCH_INSTALL_PATH)/include
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
 	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 endif
 
 ifeq ($(OP2_COMPILER),gnu)
 	CPP = g++
-	#CPPFLAGS = -O0 -g
+	#CPPFLAGS = -O0
 	CPPFLAGS = -O2 -DUNIX -Wall #-DDEBUG
 	OMPFLAGS = -fopenmp
-	MPICPP = mpic++
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpic++
 	MPIFLAGS = $(CPPFLAGS)
 else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -parallel -g
+	CPPFLAGS = -O3 -vec-report -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
-	MPICPP = mpic++
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
@@ -62,14 +67,15 @@ print:
 endif
 endif
 
-#VOLNA_SRC = 
+#VOLNA_SRC =
 
 
 #
 # set flags for NVCC compilation and linking
 #
 
-NVCCFLAGS	= -arch=sm_60 -Xptxas=-v -use_fast_math -O3 -m64 -g #-G
+
+NVCCFLAGS	= -arch=sm_35 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g #-G
 
 #
 # master to make all versions
@@ -86,9 +92,9 @@ endif
 
 volna_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 ifdef MPI_INSTALL_PATH
-	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp -Iopenmp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
-else	
-	$(CPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp -Iopenmp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
+	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
+else
+	$(CPP) $(CPPFLAGS) $(OMPFLAGS)  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_openmp -lop2_hdf5 -o volna_openmp
 endif
 
 
@@ -100,22 +106,25 @@ volna_cuda:	volna_op.cpp cuda/volna_kernels_cu.o volna_simulation_op.cpp volna_i
 ifdef MPI_INSTALL_PATH
 	$(MPICPP) $(VAR) $(CPPFLAGS) volna_op.cpp volna_simulation_op.cpp volna_event.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp cuda/volna_kernels_cu.o \
 	$(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(PARMETIS_INC) $(CUDA_INC) $(OP2_INC) $(HDF5_INC) \
-	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o volna_cuda 
+	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o volna_cuda
 else
 	$(MPICPP) $(VAR) $(CPPFLAGS) volna_op.cpp volna_simulation_op.cpp volna_event.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp cuda/volna_kernels_cu.o \
 	$(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(PARMETIS_INC) $(CUDA_INC) $(OP2_INC) $(HDF5_INC) \
 	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o volna_cuda
-endif 
+endif
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK2_1.h EvolveValuesRK2_2.h applyConst.h getMaxElevation.h getTotalVol.h \
+	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK3_1_kernel.cu  cuda/EvolveValuesRK3_2_kernel.cu\
+	cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
+	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 
-	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -Icuda -c -o cuda/volna_kernels_cu.o cuda/volna_kernels.cu
+	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o cuda/volna_kernels_cu.o cuda/volna_kernels.cu
 
 volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp Makefile
 	$(MPICPP) $(MPIFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp $(OP2_INC) $(HDF5_INC) \
@@ -134,7 +143,7 @@ volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_eve
 	$(HDF5_LIB) $(CUDA_LIB) -lcudart -o volna_mpi_cuda
 
 cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
-	nvcc  $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include -Icuda \
+	nvcc  $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
 	-c -o cuda/volna_kernels_mpi_cu.o cuda/volna_kernels.cu
 
 #
@@ -142,5 +151,4 @@ cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
 #
 
 clean:
-	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o openmp/*.o
-
+	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o 

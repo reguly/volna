@@ -14,10 +14,12 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 10;
+  op_arg args[10];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -27,22 +29,24 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(9);
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 2;
-  int  inds[8] = {0,0,-1,-1,-1,-1,1,1};
+  int  ninds   = 3;
+  int  inds[10] = {0,0,1,1,-1,-1,-1,-1,2,2};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: SpaceDiscretization\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_9
+    int part_size = OP_PART_SIZE_9;
   #else
     int part_size = OP_part_size;
   #endif
@@ -74,19 +78,21 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
           SpaceDiscretization(
             &((float*)arg0.data)[4 * map0idx],
             &((float*)arg0.data)[4 * map1idx],
-            &((float*)arg2.data)[3 * n],
-            &((float*)arg3.data)[2 * n],
-            &((float*)arg4.data)[2 * n],
-            &((int*)arg5.data)[1 * n],
-            &((float*)arg6.data)[1 * map0idx],
-            &((float*)arg6.data)[1 * map1idx]);
+            &((float*)arg2.data)[4 * map0idx],
+            &((float*)arg2.data)[4 * map1idx],
+            &((float*)arg4.data)[3 * n],
+            &((float*)arg5.data)[4 * n],
+            &((float*)arg6.data)[2 * n],
+            &((int*)arg7.data)[1 * n],
+            &((float*)arg8.data)[1 * map0idx],
+            &((float*)arg8.data)[1 * map1idx]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[5].transfer  += Plan->transfer;
-    OP_kernels[5].transfer2 += Plan->transfer2;
+    OP_kernels[9].transfer  += Plan->transfer;
+    OP_kernels[9].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -97,7 +103,7 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
-  OP_kernels[5].time     += wall_t2 - wall_t1;
+  OP_kernels[9].name      = name;
+  OP_kernels[9].count    += 1;
+  OP_kernels[9].time     += wall_t2 - wall_t1;
 }

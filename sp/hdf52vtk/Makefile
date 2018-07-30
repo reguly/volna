@@ -1,14 +1,14 @@
 #
 # The following environment variables should be predefined:
-#
-# OP2_INSTALL_PATH
-# HDF5_INSTALL_PATH
-# MPI_INSTALL_PATH - (optional) if use of MPI is considered 
+OP2_INSTALL_PATH= /usr/local/OP2-Common/op2
+HDF5_INSTALL_PATH= /usr/local/hdf5-1.8.15/hdf5
+MPI_INSTALL_PATH= /usr/lib64/openmpi
 #
 
 #
 # set paths for header files and libraries
 #
+OP2_COMPILER= gnu
 
 OP2_INC = -I$(OP2_INSTALL_PATH)/c/include
 OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib

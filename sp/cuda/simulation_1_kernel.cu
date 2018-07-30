@@ -40,10 +40,10 @@ void op_par_loop_simulation_1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(2);
+  op_timing_realloc(4);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[2].name      = name;
-  OP_kernels[2].count    += 1;
+  OP_kernels[4].name      = name;
+  OP_kernels[4].count    += 1;
 
 
   if (OP_diags>2) {
@@ -54,8 +54,8 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   if (set->size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_2
-      int nthread = OP_BLOCK_SIZE_2;
+    #ifdef OP_BLOCK_SIZE_4
+      int nthread = OP_BLOCK_SIZE_4;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -72,7 +72,7 @@ void op_par_loop_simulation_1(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[2].time     += wall_t2 - wall_t1;
-  OP_kernels[2].transfer += (float)set->size * arg0.size;
-  OP_kernels[2].transfer += (float)set->size * arg1.size;
+  OP_kernels[4].time     += wall_t2 - wall_t1;
+  OP_kernels[4].transfer += (float)set->size * arg0.size;
+  OP_kernels[4].transfer += (float)set->size * arg1.size;
 }
