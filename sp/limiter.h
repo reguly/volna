@@ -42,9 +42,9 @@ inline void limiter(const float *q, float *q2,
       q2[j] = q2[j] / 3.0f;
     }
   } else {
-    q2[8] = 0.0f;
-    q2[9] = 0.0f;
-    q2[10] = 0.0f;
-    q2[11] = 0.0f;
+    q2[0] = 0.0f;
+    q2[1] = 0.0f;
+    q2[2] = 0.0f;
+    q2[3] = 0.0f;
   }
 }
