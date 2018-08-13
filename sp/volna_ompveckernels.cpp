@@ -9,7 +9,7 @@
 #define int_ALIGN 64
 #define VECTORIZE
 #ifdef VECTORIZE
-#define SIMD_VEC 4
+#define SIMD_VEC 16
 #define ALIGNED_double __attribute__((aligned(double_ALIGN)))
 #define ALIGNED_float __attribute__((aligned(float_ALIGN)))
 #define ALIGNED_int __attribute__((aligned(int_ALIGN)))
@@ -25,9 +25,13 @@ extern float CFL;
 extern float EPS;
 extern float g;
 // user kernel files
-#include "EvolveValuesRK2_1_ompveckernel.cpp"
-#include "EvolveValuesRK2_2_ompveckernel.cpp"
+#include "EvolveValuesRK3_1_ompveckernel.cpp"
+#include "EvolveValuesRK3_2_ompveckernel.cpp"
+#include "EvolveValuesRK3_3_ompveckernel.cpp"
+#include "EvolveValuesRK3_4_ompveckernel.cpp"
 #include "simulation_1_ompveckernel.cpp"
+#include "computeGradient_ompveckernel.cpp"
+#include "limiter_ompveckernel.cpp"
 #include "computeFluxes_ompveckernel.cpp"
 #include "NumericalFluxes_ompveckernel.cpp"
 #include "SpaceDiscretization_ompveckernel.cpp"

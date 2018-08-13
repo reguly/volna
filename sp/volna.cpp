@@ -1,7 +1,20 @@
+/*Copyright 2018, Frederic Dias, Serge Guillas, Istvan Reguly
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #include "volna_common.h"
 #include "volna_util.h"
-#include "EvolveValuesRK2_1.h"
-#include "EvolveValuesRK2_2.h"
+#include "EvolveValuesRK3_1.h"
+#include "EvolveValuesRK3_2.h"
+#include "EvolveValuesRK3_3.h"
+#include "EvolveValuesRK3_4.h"
 #include "simulation_1.h"
 #include "limits.h"
 //
@@ -142,6 +155,10 @@ int main(int argc, char **argv) {
                                     filename_h5,
                                     "cellCenters");
 
+  op_dat edgeCenters = op_decl_dat_hdf5(edges, MESH_DIM, "float",
+                                    filename_h5,
+                                    "edgeCenters");
+
   op_dat cellVolumes = op_decl_dat_hdf5(cells, 1, "float",
                                     filename_h5,
                                     "cellVolumes");
@@ -169,7 +186,7 @@ int main(int argc, char **argv) {
   op_dat temp_initEta         = NULL;
   op_dat* temp_initBathymetry = NULL;  // Store initBathymtery in an array: there might be more input files for different timesteps
   int n_initBathymetry = 0; // Number of initBathymetry files
-	op_set bathy_nodes;
+  op_set bathy_nodes;
   op_set lifted_cells;
   op_map liftedcellsToBathyNodes;
   op_map liftedcellsToCells;
@@ -253,7 +270,7 @@ int main(int argc, char **argv) {
         }
       }
   }
-  
+
   for (unsigned int i = 0; i < events.size(); i++) {
     if (!strcmp(events[i].className.c_str(), "InitBathyRelative")) {
       if (!new_format || n_initBathymetry < 1) {
@@ -305,20 +322,29 @@ int main(int argc, char **argv) {
 	 *  Declaring temporary dats
 	 */
   op_dat values_new = op_decl_dat_temp(cells, 4, "float",tmp_elem,"values_new"); //tmp - cells - dim 4
-
+  op_dat GradientatCell = op_decl_dat_temp(cells, 8, "float", tmp_elem, "GradientatCell");
   //EvolveValuesRK2
-  op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
-  op_dat inConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "inConservative"); //temp - cells - dim 4
-  op_dat outConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "outConservative"); //temp - cells - dim 4
-  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
+  //op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
+  //op_dat inConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "inConservative"); //temp - cells - dim 4
+  //op_dat outConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "outConservative"); //temp - cells - dim 4
+  //op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
   //SpaceDiscretization
-  op_dat bathySource = op_decl_dat_temp(edges, 2, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
+  op_dat bathySource = op_decl_dat_temp(edges, 4, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
   op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
+  //EvolveValuesRK34
+  op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
+  op_dat midPointConservative1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative1"); //temp - cells - dim 4
+  op_dat midPointConservative3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative3"); //temp - cells - dim 4
+  op_dat Conservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Conservative"); //temp - cells - dim 4
+  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
+  op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4
 
+  // Compressed qmin, qmax and alpha into q - to parallelize.
+  op_dat q1 = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q1"); //temp - edges - dim 1
+  op_dat q2 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "q2");
   double timestep;
-
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
@@ -329,48 +355,68 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 #endif
-
-    { //begin EvolveValuesRK2
+  // ----------------------------------------------------
+    {
       float minTimestep = 0.0;
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
-          cells, edges, edgesToCells, cellsToEdges, 0);
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 0);
 #ifdef DEBUG
-      printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
+      printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n  \n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
 #endif
       float dT = CFL * minTimestep;
       dT= dT < dtmax ? dT : dtmax;
-
-      op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
+      op_par_loop(EvolveValuesRK3_1, "EvolveValuesRK3_1", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
-          op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_RW),
+          op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(inConservative, -1, OP_ID, 4, "float", OP_WRITE),
+          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_WRITE),
           op_arg_dat(midPoint, -1, OP_ID, 4, "float", OP_WRITE));
 
       float dummy = 0.0;
 
-      //call to SpaceDiscretization( midPoint, outConservative, m, params, dummy_time, t );
-      spaceDiscretization(midPoint, outConservative, &dummy,
+      spaceDiscretization(midPoint, midPointConservative1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
-          cells, edges, edgesToCells, cellsToEdges, 1);
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 1);
 
-      op_par_loop(EvolveValuesRK2_2, "EvolveValuesRK2_2", cells,
+
+      op_par_loop(EvolveValuesRK3_2, "EvolveValuesRK3_2", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
-          op_arg_dat(outConservative, -1, OP_ID, 4, "float", OP_RW),
-          op_arg_dat(inConservative, -1, OP_ID, 4, "float", OP_READ),
+          op_arg_dat(midPointConservative1, -1, OP_ID, 4, "float", OP_READ),
+          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_RW));
+
+
+      op_par_loop(EvolveValuesRK3_3, "EvolveValuesRK3_3", cells,
+          op_arg_gbl(&dT,1,"float", OP_READ),
+          op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(midPointConservative, -1, OP_ID, 4, "float", OP_READ),
+          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_RW),
+          op_arg_dat(midPoint3, -1, OP_ID, 4, "float", OP_WRITE));
+
+      spaceDiscretization(midPoint3, midPointConservative3, &dummy,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 2);
+
+      op_par_loop(EvolveValuesRK3_4, "EvolveValuesRK3_4", cells,
+          op_arg_gbl(&dT,1,"float", OP_READ),
+          op_arg_dat(midPointConservative3, -1, OP_ID, 4, "float", OP_READ),
+          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
+
       timestep=dT;
 
-    } //end EvolveValuesRK2
+    }// End of EvolveRK3_4
+   // ----------------------------------------------------
 
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
-
+    //printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 #ifdef DEBUG
 //    if (itercount%50 == 0) {
 //      printf("itercount %d\n", itercount);
@@ -380,7 +426,7 @@ int main(int argc, char **argv) {
 //      dumpme(values,3);
 //      if (itercount==300) exit(-1);
 //    }
-    printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
+    //printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
     op_printf("timestep = %g\n", timestep);
     {
       int dim = values->dim;
@@ -392,7 +438,7 @@ int main(int argc, char **argv) {
       printf("H+Zb: %g\n", sqrt(norm));
     }
 #endif
-    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
+//    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
 
     itercount++;
     timestamp += timestep;
@@ -482,15 +528,24 @@ int main(int argc, char **argv) {
   //simulation
   if (op_free_dat_temp(values_new) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",values_new->name);
+  if (op_free_dat_temp(GradientatCell) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",GradientatCell->name);
+
   //EvolveValuesRK2
   if (op_free_dat_temp(midPointConservative) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",midPointConservative->name);
-  if (op_free_dat_temp(inConservative) < 0)
-    op_printf("Error: temporary op_dat %s cannot be removed\n",inConservative->name);
-  if (op_free_dat_temp(outConservative) < 0)
-    op_printf("Error: temporary op_dat %s cannot be removed\n",outConservative->name);
+  if (op_free_dat_temp(midPointConservative1) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",midPointConservative1->name);
+  if (op_free_dat_temp(midPointConservative3) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",midPointConservative3->name);
+
+  if (op_free_dat_temp(Conservative) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",Conservative->name);
   if (op_free_dat_temp(midPoint) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",midPoint->name);
+  if (op_free_dat_temp(midPoint3) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",midPoint3->name);
+
   //SpaceDiscretization
   if (op_free_dat_temp(bathySource) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",bathySource->name);
@@ -500,6 +555,10 @@ int main(int argc, char **argv) {
   if (op_free_dat_temp(maxEdgeEigenvalues) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",maxEdgeEigenvalues->name);
 
+  if (op_free_dat_temp(q1)< 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",q1->name);
+  if (op_free_dat_temp(q2)< 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",q2->name);
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);

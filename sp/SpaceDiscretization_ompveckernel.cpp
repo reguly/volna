@@ -5,35 +5,65 @@
 //user function
 inline void SpaceDiscretization(float *left, //OP_INC
               float *right, //OP_INC
+              const float *cellLeft, const float *cellRight,
               const float *edgeFluxes, //OP_READ
               const float *bathySource, //OP_READ
-              const float *edgeNormals, const int *isRightBoundary, 
+              const float *edgeNormals, const int *isRightBoundary,
               const float *cellVolumes0, //OP_READ
-              const float *cellVolumes1 //OP_READ
-)
+              const float *cellVolumes1) //OP_READ)
 {
+  //Stop introducing Fluxes in dry cells.
+  if ((cellLeft[0] > EPS) || (cellRight[0] > EPS)){
   left[0] -= (edgeFluxes[0])/cellVolumes0[0];
   left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
 
+  }else{
+  left[0] -= 0.0f;
+  left[0] -= 0.0f;
+  left[0] -= 0.0f;
+  }
+
   if (!isRightBoundary[0]) {
+    if ((cellLeft[0] > EPS) || (cellRight[0] > EPS)){
     right[0] += edgeFluxes[0]/cellVolumes1[0];
     right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0];
     right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0];
+
+    }else{
+    right[0] += 0.0f;
+    right[1] += 0.0f;
+    right[2] += 0.0f;
+    }
   }
 }
-#define VECTORIZE
+//#define VECTORIZE
 #ifdef VECTORIZE
 //user function -- modified for vectorisation
-void SpaceDiscretization_vec( float left[*][SIMD_VEC], float right[*][SIMD_VEC], const float *edgeFluxes, const float *bathySource, const float *edgeNormals, const int *isRightBoundary, const float cellVolumes0[*][SIMD_VEC], const float cellVolumes1[*][SIMD_VEC], int idx ) {
+void SpaceDiscretization_vec( float left[*][SIMD_VEC], float right[*][SIMD_VEC], const float cellLeft[*][SIMD_VEC], const float cellRight[*][SIMD_VEC], const float *edgeFluxes, const float *bathySource, const float *edgeNormals, const int *isRightBoundary, const float cellVolumes0[*][SIMD_VEC], const float cellVolumes1[*][SIMD_VEC], int idx ) {
+
+  if ((cellLeft[0][idx] > EPS) || (cellRight[0][idx] > EPS)){
   left[0][idx] -= (edgeFluxes[0])/cellVolumes0[0][idx];
   left[1][idx] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0][idx];
   left[2][idx] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0][idx];
 
+  }else{
+  left[0][idx] -= 0.0f;
+  left[0][idx] -= 0.0f;
+  left[0][idx] -= 0.0f;
+  }
+
   if (!isRightBoundary[0]) {
+    if ((cellLeft[0][idx] > EPS) || (cellRight[0][idx] > EPS)){
     right[0][idx] += edgeFluxes[0]/cellVolumes1[0][idx];
     right[1][idx] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0][idx];
     right[2][idx] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0][idx];
+
+    }else{
+    right[0][idx] += 0.0f;
+    right[1][idx] += 0.0f;
+    right[2][idx] += 0.0f;
+    }
   }
 }
 #endif
@@ -47,10 +77,12 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 10;
+  op_arg args[10];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -60,6 +92,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
   //create aligned pointers for dats
   ALIGNED_float       float * __restrict__ ptr0 = (float *) arg0.data;
   __assume_aligned(ptr0,float_ALIGN);
@@ -71,27 +105,31 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   __assume_aligned(ptr3,float_ALIGN);
   ALIGNED_float const float * __restrict__ ptr4 = (float *) arg4.data;
   __assume_aligned(ptr4,float_ALIGN);
-  ALIGNED_int const int * __restrict__ ptr5 = (int *) arg5.data;
-  __assume_aligned(ptr5,int_ALIGN);
+  ALIGNED_float const float * __restrict__ ptr5 = (float *) arg5.data;
+  __assume_aligned(ptr5,float_ALIGN);
   ALIGNED_float const float * __restrict__ ptr6 = (float *) arg6.data;
   __assume_aligned(ptr6,float_ALIGN);
-  ALIGNED_float const float * __restrict__ ptr7 = (float *) arg7.data;
-  __assume_aligned(ptr7,float_ALIGN);
+  ALIGNED_int const int * __restrict__ ptr7 = (int *) arg7.data;
+  __assume_aligned(ptr7,int_ALIGN);
+  ALIGNED_float const float * __restrict__ ptr8 = (float *) arg8.data;
+  __assume_aligned(ptr8,float_ALIGN);
+  ALIGNED_float const float * __restrict__ ptr9 = (float *) arg9.data;
+  __assume_aligned(ptr9,float_ALIGN);
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(9);
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 2;
-  int  inds[8] = {0,0,-1,-1,-1,-1,1,1};
+  int  ninds   = 3;
+  int  inds[10] = {0,0,1,1,-1,-1,-1,-1,2,2};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: SpaceDiscretization\n");
   }
 
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_9
+    int part_size = OP_PART_SIZE_9;
   #else
     int part_size = OP_part_size;
   #endif
@@ -126,12 +164,14 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
           SpaceDiscretization(
             &(ptr0)[4 * map0idx],
             &(ptr1)[4 * map1idx],
-            &(ptr2)[3 * n],
-            &(ptr3)[2 * n],
-            &(ptr4)[2 * n],
-            &(ptr5)[1 * n],
-            &(ptr6)[1 * map0idx],
-            &(ptr7)[1 * map1idx]);
+            &(ptr2)[4 * map0idx],
+            &(ptr3)[4 * map1idx],
+            &(ptr4)[3 * n],
+            &(ptr5)[4 * n],
+            &(ptr6)[2 * n],
+            &(ptr7)[1 * n],
+            &(ptr8)[1 * map0idx],
+            &(ptr9)[1 * map1idx]);
         }
         #pragma novector
         for ( int n=((offset_b-1)/SIMD_VEC+1)*SIMD_VEC; n<((offset_b+nelem)/SIMD_VEC)*SIMD_VEC; n+=SIMD_VEC ){
@@ -140,12 +180,16 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
           }
           ALIGNED_float float dat0[4][SIMD_VEC];
           ALIGNED_float float dat1[4][SIMD_VEC];
-          ALIGNED_float float dat6[1][SIMD_VEC];
-          ALIGNED_float float dat7[1][SIMD_VEC];
-          #pragma omp simd aligned(ptr0,ptr1,ptr2,ptr3,ptr4,ptr5,ptr6,ptr7)
+          ALIGNED_float float dat2[4][SIMD_VEC];
+          ALIGNED_float float dat3[4][SIMD_VEC];
+          ALIGNED_float float dat8[1][SIMD_VEC];
+          ALIGNED_float float dat9[1][SIMD_VEC];
+          #pragma omp simd aligned(ptr0,ptr1,ptr2,ptr3,ptr4,ptr5,ptr6,ptr7,ptr8,ptr9)
           for ( int i=0; i<SIMD_VEC; i++ ){
-            int idx6_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 0];
-            int idx7_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 1];
+            int idx2_4 = 4 * arg0.map_data[(n+i) * arg0.map->dim + 0];
+            int idx3_4 = 4 * arg0.map_data[(n+i) * arg0.map->dim + 1];
+            int idx8_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 0];
+            int idx9_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 1];
 
             dat0[0][i] = 0.0;
             dat0[1][i] = 0.0;
@@ -157,22 +201,34 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
             dat1[2][i] = 0.0;
             dat1[3][i] = 0.0;
 
-            dat6[0][i] = (ptr6)[idx6_1 + 0];
+            dat2[0][i] = (ptr2)[idx2_4 + 0];
+            dat2[1][i] = (ptr2)[idx2_4 + 1];
+            dat2[2][i] = (ptr2)[idx2_4 + 2];
+            dat2[3][i] = (ptr2)[idx2_4 + 3];
 
-            dat7[0][i] = (ptr7)[idx7_1 + 0];
+            dat3[0][i] = (ptr3)[idx3_4 + 0];
+            dat3[1][i] = (ptr3)[idx3_4 + 1];
+            dat3[2][i] = (ptr3)[idx3_4 + 2];
+            dat3[3][i] = (ptr3)[idx3_4 + 3];
+
+            dat8[0][i] = (ptr8)[idx8_1 + 0];
+
+            dat9[0][i] = (ptr9)[idx9_1 + 0];
 
           }
-          #pragma omp simd aligned(ptr0,ptr1,ptr2,ptr3,ptr4,ptr5,ptr6,ptr7)
+          #pragma omp simd aligned(ptr0,ptr1,ptr2,ptr3,ptr4,ptr5,ptr6,ptr7,ptr8,ptr9)
           for ( int i=0; i<SIMD_VEC; i++ ){
             SpaceDiscretization_vec(
               dat0,
               dat1,
-              &(ptr2)[3 * (n+i)],
-              &(ptr3)[2 * (n+i)],
-              &(ptr4)[2 * (n+i)],
-              &(ptr5)[1 * (n+i)],
-              dat6,
-              dat7,
+              dat2,
+              dat3,
+              &(ptr4)[3 * (n+i)],
+              &(ptr5)[4 * (n+i)],
+              &(ptr6)[2 * (n+i)],
+              &(ptr7)[1 * (n+i)],
+              dat8,
+              dat9,
               i);
           }
           for ( int i=0; i<SIMD_VEC; i++ ){
@@ -203,12 +259,14 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
           SpaceDiscretization(
             &(ptr0)[4 * map0idx],
             &(ptr1)[4 * map1idx],
-            &(ptr2)[3 * n],
-            &(ptr3)[2 * n],
-            &(ptr4)[2 * n],
-            &(ptr5)[1 * n],
-            &(ptr6)[1 * map0idx],
-            &(ptr7)[1 * map1idx]);
+            &(ptr2)[4 * map0idx],
+            &(ptr3)[4 * map1idx],
+            &(ptr4)[3 * n],
+            &(ptr5)[4 * n],
+            &(ptr6)[2 * n],
+            &(ptr7)[1 * n],
+            &(ptr8)[1 * map0idx],
+            &(ptr9)[1 * map1idx]);
         }
       }
       block_offset += nblocks;
@@ -223,15 +281,16 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
-  OP_kernels[5].time     += wall_t2 - wall_t1;
-  OP_kernels[5].transfer += (float)set->size * arg0.size * 2.0f;
-  OP_kernels[5].transfer += (float)set->size * arg6.size;
-  OP_kernels[5].transfer += (float)set->size * arg2.size;
-  OP_kernels[5].transfer += (float)set->size * arg3.size;
-  OP_kernels[5].transfer += (float)set->size * arg4.size;
-  OP_kernels[5].transfer += (float)set->size * arg5.size;
-  OP_kernels[5].transfer += (float)set->size * arg0.map->dim * 4.0f;
+  OP_kernels[9].name      = name;
+  OP_kernels[9].count    += 1;
+  OP_kernels[9].time     += wall_t2 - wall_t1;
+  OP_kernels[9].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[9].transfer += (float)set->size * arg2.size;
+  OP_kernels[9].transfer += (float)set->size * arg8.size;
+  OP_kernels[9].transfer += (float)set->size * arg4.size;
+  OP_kernels[9].transfer += (float)set->size * arg5.size;
+  OP_kernels[9].transfer += (float)set->size * arg6.size;
+  OP_kernels[9].transfer += (float)set->size * arg7.size;
+  OP_kernels[9].transfer += (float)set->size * arg0.map->dim * 4.0f;
 }
 #undef VECTORIZE

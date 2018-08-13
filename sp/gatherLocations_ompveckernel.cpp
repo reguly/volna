@@ -39,7 +39,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(9);
+  op_timing_realloc(13);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 1;
@@ -49,8 +49,8 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
     printf(" kernel routine with indirection: gatherLocations\n");
   }
 
-  #ifdef OP_PART_SIZE_9
-    int part_size = OP_PART_SIZE_9;
+  #ifdef OP_PART_SIZE_13
+    int part_size = OP_PART_SIZE_13;
   #else
     int part_size = OP_part_size;
   #endif
@@ -138,11 +138,11 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[9].name      = name;
-  OP_kernels[9].count    += 1;
-  OP_kernels[9].time     += wall_t2 - wall_t1;
-  OP_kernels[9].transfer += (float)set->size * arg0.size;
-  OP_kernels[9].transfer += (float)set->size * arg1.size;
-  OP_kernels[9].transfer += (float)set->size * arg0.map->dim * 4.0f;
+  OP_kernels[13].name      = name;
+  OP_kernels[13].count    += 1;
+  OP_kernels[13].time     += wall_t2 - wall_t1;
+  OP_kernels[13].transfer += (float)set->size * arg0.size;
+  OP_kernels[13].transfer += (float)set->size * arg1.size;
+  OP_kernels[13].transfer += (float)set->size * arg0.map->dim * 4.0f;
 }
 #undef VECTORIZE

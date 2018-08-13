@@ -1,7 +1,11 @@
-Volna- OP2
+Volna- OP2- Second Order Extension Trial.
 =====
 
-This is an OP2 port of the original Volna code.
+
+Differences to VOLNA-OP2 is the addition of sp/computeGradient.h
+and sp/limiter.h, implementation is the same.
+
+This is an extension to the OP2 port of the original Volna code.
 
 ## Installation
 You need to install OP2 (source in [this](https://github.com/OP2/OP2-Common) GitHub repository)
@@ -17,8 +21,9 @@ Check out the Volna-OP2 code from [this](https://github.com/reguly/Volna) GitHub
   * make volna_mpi builds the sequential MPI version with a single thread executing on each MPI process
   * make volna_mpi_openmp builds the MPI+OpenMP version
   * make volna_mpi_cuda builds the MPI+CUDA version
-		
+
 ## Use
+For all details and configuration options please see the documentation.
 To use volna-OP2 with the *.vln configuration files, first you have to use volna2hdf5, e.g.
  * ./volna2hdf5 gaussian_landslide.vln which will output a gaussian_landslide.h5 file
 Afterwards, call volna-op2 with the above input file, e.g.:

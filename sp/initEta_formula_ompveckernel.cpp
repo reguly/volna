@@ -7,10 +7,10 @@ inline void initEta_formula(const float *coords, float *values, const double *ti
   float x = coords[0];
   float y = coords[1];
   float t = *time;
-  float val = 1.5f*exp(-0.000001f*(x+9990.0f)*(x+9990.0f));;
+  float val =   0.1f*(0.9756f/(1.f-0.2195f) -1.0f - ((x-2.f)*(x-2.f) +(y-2.f)*(y-2.f))/(1.f) *
+   (0.9518f/((1.0f - 0.2195f)*(1.0f - 0.2195f))   -1.0f) )    ;;
   values[0] += val;
 }
-
 // host stub function
 void op_par_loop_initEta_formula(char const *name, op_set set,
   op_arg arg0,
@@ -31,7 +31,7 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(11);
+  op_timing_realloc(15);
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -73,10 +73,10 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].name      = name;
-  OP_kernels[11].count    += 1;
-  OP_kernels[11].time     += wall_t2 - wall_t1;
-  OP_kernels[11].transfer += (float)set->size * arg0.size;
-  OP_kernels[11].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[15].name      = name;
+  OP_kernels[15].count    += 1;
+  OP_kernels[15].time     += wall_t2 - wall_t1;
+  OP_kernels[15].transfer += (float)set->size * arg0.size;
+  OP_kernels[15].transfer += (float)set->size * arg1.size * 2.0f;
 }
 #undef VECTORIZE

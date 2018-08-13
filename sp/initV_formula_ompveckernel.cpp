@@ -4,15 +4,12 @@
 
 //user function
 inline void initV_formula(const float *coords, float *values, const double *time) {
-//UNCOMMENT THE ONES USED
-  // float x = coords[0];
-  // float y = coords[1];
-  // float t = *time;
-  //insert user formula here
-  float val = /*...*/0.0;
+  float x = coords[0];
+  float y = coords[1];
+  float t = *time;
+  float val =     0.0f  ;;
   values[2] += val;
 }
-
 // host stub function
 void op_par_loop_initV_formula(char const *name, op_set set,
   op_arg arg0,
@@ -33,7 +30,7 @@ void op_par_loop_initV_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(13);
+  op_timing_realloc(17);
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -75,10 +72,10 @@ void op_par_loop_initV_formula(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[13].name      = name;
-  OP_kernels[13].count    += 1;
-  OP_kernels[13].time     += wall_t2 - wall_t1;
-  OP_kernels[13].transfer += (float)set->size * arg0.size;
-  OP_kernels[13].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[17].name      = name;
+  OP_kernels[17].count    += 1;
+  OP_kernels[17].time     += wall_t2 - wall_t1;
+  OP_kernels[17].transfer += (float)set->size * arg0.size;
+  OP_kernels[17].transfer += (float)set->size * arg1.size * 2.0f;
 }
 #undef VECTORIZE
