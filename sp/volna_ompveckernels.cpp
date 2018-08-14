@@ -9,7 +9,7 @@
 #define int_ALIGN 64
 #define VECTORIZE
 #ifdef VECTORIZE
-#define SIMD_VEC 16
+#define SIMD_VEC 4
 #define ALIGNED_double __attribute__((aligned(double_ALIGN)))
 #define ALIGNED_float __attribute__((aligned(float_ALIGN)))
 #define ALIGNED_int __attribute__((aligned(int_ALIGN)))

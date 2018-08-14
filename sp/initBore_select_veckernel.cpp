@@ -68,13 +68,13 @@ void op_par_loop_initBore_select(char const *name, op_set set,
         initBore_select(
           &(ptr0)[4 * (n+i)],
           &(ptr1)[2 * (n+i)],
-          &dat2[i],
-          &dat3[i],
-          &dat4[i],
-          &dat5[i],
-          &dat6[i],
-          &dat7[i],
-          &dat8[i]);
+          (float*)arg2.data,
+          (float*)arg3.data,
+          (float*)arg4.data,
+          (float*)arg5.data,
+          (float*)arg6.data,
+          (float*)arg7.data,
+          (float*)arg8.data);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

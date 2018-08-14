@@ -54,7 +54,7 @@ void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
       #pragma simd
       for ( int i=0; i<SIMD_VEC; i++ ){
         EvolveValuesRK3_2(
-          &dat0[i],
+          (float*)arg0.data,
           &(ptr1)[4 * (n+i)],
           &(ptr2)[4 * (n+i)]);
       }

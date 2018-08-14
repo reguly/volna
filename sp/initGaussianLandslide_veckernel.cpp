@@ -61,12 +61,12 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
         initGaussianLandslide(
           &(ptr0)[2 * (n+i)],
           &(ptr1)[4 * (n+i)],
-          &dat2[i],
-          &dat3[i],
-          &dat4[i],
-          &dat5[i],
-          &dat6[i],
-          &dat7[i]);
+          (float*)arg2.data,
+          (float*)arg3.data,
+          (double*)arg4.data,
+          (float*)arg5.data,
+          (float*)arg6.data,
+          (float*)arg7.data);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

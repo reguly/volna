@@ -37,7 +37,7 @@ inline void SpaceDiscretization(float *left, //OP_INC
     }
   }
 }
-//#define VECTORIZE
+#define VECTORIZE
 #ifdef VECTORIZE
 //user function -- modified for vectorisation
 void SpaceDiscretization_vec( float left[*][SIMD_VEC], float right[*][SIMD_VEC], const float cellLeft[*][SIMD_VEC], const float cellRight[*][SIMD_VEC], const float *edgeFluxes, const float *bathySource, const float *edgeNormals, const int *isRightBoundary, const float cellVolumes0[*][SIMD_VEC], const float cellVolumes1[*][SIMD_VEC], int idx ) {

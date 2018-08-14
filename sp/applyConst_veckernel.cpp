@@ -62,7 +62,7 @@ void op_par_loop_applyConst(char const *name, op_set set,
         applyConst(
           &(ptr0)[1 * (n+i)],
           &(ptr1)[4 * (n+i)],
-          &dat2[i]);
+          (int*)arg2.data);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

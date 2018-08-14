@@ -51,7 +51,7 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
         initEta_formula(
           &(ptr0)[2 * (n+i)],
           &(ptr1)[4 * (n+i)],
-          &dat2[i]);
+          (double*)arg2.data);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }
