@@ -17,6 +17,8 @@ __device__ void SpaceDiscretization_gpu( float *left,
   left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
 
+  left[1] += (bathySource[2] *edgeNormals[0])/cellVolumes0[0];
+  left[2] += (bathySource[2] *edgeNormals[1])/cellVolumes0[0];
   }else{
   left[0] -= 0.0f;
   left[0] -= 0.0f;
@@ -29,6 +31,8 @@ __device__ void SpaceDiscretization_gpu( float *left,
     right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0];
     right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0];
 
+    right[1] -= (bathySource[3] *edgeNormals[0])/cellVolumes1[0];
+    right[2] -= (bathySource[3] *edgeNormals[1])/cellVolumes1[0];
     }else{
     right[0] += 0.0f;
     right[1] += 0.0f;

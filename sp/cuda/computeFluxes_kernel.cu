@@ -52,19 +52,7 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
   }
 
 
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
-  bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
-  bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
 
-  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  hL = hL > 0.0f? hL : 0.0f;
-  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  hR = hR > 0.0f ? hR : 0.0f;
-  bathySource[0] -= .5f * g * (hL * hL);
-  bathySource[1] -= .5f * g * (hR * hR);
-
-  bathySource[0] *= *edgeLength;
-  bathySource[1] *= *edgeLength;
 
   if (!*isRightBoundary) {
   leftCellValues[0] +=  alphaleft[0] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
@@ -74,11 +62,6 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
 
   leftCellValues[3] += alphaleft[3] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
   rightCellValues[3] += alpharight[3] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
-  leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
-  rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
 
   leftCellValues[1] += alphaleft[1] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
   leftCellValues[2] += alphaleft[2] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
@@ -86,6 +69,28 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
   rightCellValues[1] += alpharight[1] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
   rightCellValues[2] += alpharight[2] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
   }
+
+  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
+  bathySource[0] =.5f * g * (leftCellValues[0]*leftCellValues[0]);
+  bathySource[1] =.5f * g * (rightCellValues[0]*rightCellValues[0]);
+
+  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
+  hL = hL > 0.0f? hL : 0.0f;
+  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
+  hR = hR > 0.0f ? hR : 0.0f;
+
+  bathySource[0] -= .5f * g * (hL * hL);
+  bathySource[1] -= .5f * g * (hR * hR);
+
+  bathySource[2] = -.5f * g *(leftCellValues[0] + cellLeft[0])*(leftCellValues[3] - cellLeft[3]);
+  bathySource[3] = -.5f * g *(rightCellValues[0] + cellRight[0])*(rightCellValues[3] - cellRight[3]);
+  bathySource[0] *= *edgeLength;
+  bathySource[1] *= *edgeLength;
+  bathySource[2] *= *edgeLength;
+  bathySource[3] *= *edgeLength;
+
+  leftCellValues[0] = hL;
+  rightCellValues[0] = hR;
 
 
 
@@ -106,6 +111,16 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
           (rightCellValues[0]*(uRn - sR) - leftCellValues[0]*(uLn - sL));
 
 
+  if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
+      sL = uRn - 2.0f*cR;
+      sR = uRn + cR;
+      sStar = sL;
+  }
+  if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
+      sR = uLn + 2.0f*cL;
+      sL =  uLn - cL;
+      sStar = sR;
+  }
 
   float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
