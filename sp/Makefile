@@ -56,7 +56,7 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -vec-report -xMIC-AVX512 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -L/usr/local/Cluster-Apps/intel/2018.0/compilers_and_libraries_2018.0.128/linux/compiler/lib/intel64/ -lsvml
+	CPPFLAGS = -O3 -vec-report -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX -L/usr/local/Cluster-Apps/intel/2018.0/compilers_and_libraries_2018.0.128/linux/compiler/lib/intel64/ -lsvml
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
@@ -137,7 +137,7 @@ volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_openmp
 
 volna_mpi_vec: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
-	$(MPICPP) $(VAR) -DVECTORIZE $(CPPFLAGS) $(OP2_INC) $(HDF5_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
+	$(MPICPP) $(VAR) -DVDECTORIZE $(CPPFLAGS) $(OP2_INC) $(HDF5_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) \
 	volna_op.cpp volna_init_op.cpp volna_event.cpp volna_veckernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_vec
 

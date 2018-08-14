@@ -56,7 +56,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
           &(ptr0)[2 * (n+i)],
           &(ptr1)[4 * (n+i)],
           &(ptr2)[1 * (n+i)],
-          (double*)arg3.data);
+          &dat3[i]);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

@@ -25,10 +25,10 @@ inline void limiter(const float *q, float *q2,
     for(j=0;j<4;j++){
       for(i =0 ; i<3; i++){
         facevalue[i] = value[j] + ((gradient[2*j]*dx[i]) + (gradient[2*j + 1]*dy[i]));
-        if(facevalue[i] > value[j]) {
+        if(facevalue[i] > q[2*j+1]) {
           y = (q[2*j + 1] - value[j]) / (facevalue[i] - value[j]);
           edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
-        } else if (facevalue[i] < value[j]){
+        } else if (facevalue[i] < q[2*j]){
           y = (q[2*j] - value[j]) / (facevalue[i] - value[j]);
           edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
         } else{
@@ -39,11 +39,12 @@ inline void limiter(const float *q, float *q2,
       q2[j] = q2[j] < edgealpha[2] ? q2[j]: edgealpha[2];
       q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
       q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
+      q2[j] = q2[j] / 3.0f;
     }
   } else {
-    q2[8] = 0.0f;
-    q2[9] = 0.0f;
-    q2[10] = 0.0f;
-    q2[11] = 0.0f;
+    q2[0] = 0.0f;
+    q2[1] = 0.0f;
+    q2[2] = 0.0f;
+    q2[3] = 0.0f;
   }
 }

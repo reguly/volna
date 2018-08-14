@@ -58,7 +58,7 @@ void op_par_loop_incConst(char const *name, op_set set,
         incConst(
           &(ptr0)[1 * (n+i)],
           &(ptr1)[4 * (n+i)],
-          (int*)arg2.data);
+          &dat2[i]);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

@@ -7,9 +7,8 @@
 #define double_ALIGN 128
 #define float_ALIGN 64
 #define int_ALIGN 64
-#define VECTORIZE
 #ifdef VECTORIZE
-#define SIMD_VEC 16
+#define SIMD_VEC 8
 #define ALIGNED_double __attribute__((aligned(double_ALIGN)))
 #define ALIGNED_float __attribute__((aligned(float_ALIGN)))
 #define ALIGNED_int __attribute__((aligned(int_ALIGN)))
@@ -23,20 +22,18 @@
 extern float CFL;
 extern float EPS;
 extern float g;
-
+// user kernel files
 #include "EvolveValuesRK3_1_veckernel.cpp"
 #include "EvolveValuesRK3_2_veckernel.cpp"
 #include "EvolveValuesRK3_3_veckernel.cpp"
 #include "EvolveValuesRK3_4_veckernel.cpp"
-
+#include "simulation_1_veckernel.cpp"
 #include "computeGradient_veckernel.cpp"
 #include "limiter_veckernel.cpp"
 #include "computeFluxes_veckernel.cpp"
 #include "NumericalFluxes_veckernel.cpp"
-#undef VECTORIZE
-// user kernel files
 #include "SpaceDiscretization_veckernel.cpp"
-#include "simulation_1_veckernel.cpp"
+#undef VECTORIZE
 #include "getTotalVol_veckernel.cpp"
 #include "getMaxElevation_veckernel.cpp"
 #include "getMaxSpeed_veckernel.cpp"

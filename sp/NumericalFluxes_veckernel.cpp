@@ -23,7 +23,6 @@ inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
 
   *minTimeStep = MIN(*minTimeStep, 2.0f * cellVolumes[0] / local);
 }
-//#undef VECTORIZE
 #ifdef VECTORIZE
 //user function -- modified for vectorisation
 void NumericalFluxes_vec( const float maxEdgeEigenvalues0[*][SIMD_VEC], const float maxEdgeEigenvalues1[*][SIMD_VEC], const float maxEdgeEigenvalues2[*][SIMD_VEC], const float EdgeVolumes0[*][SIMD_VEC], const float EdgeVolumes1[*][SIMD_VEC], const float EdgeVolumes2[*][SIMD_VEC], const float *cellVolumes, float *zeroInit, float *minTimeStep, int idx ) {
@@ -36,7 +35,6 @@ void NumericalFluxes_vec( const float maxEdgeEigenvalues0[*][SIMD_VEC], const fl
   zeroInit[2] = 0.0f;
   zeroInit[3] = 0.0f;
 
-  //minTimeStep[idx] = MIN(minTimeStep[idx], 2.0f * cellVolumes[0] / local);
   *minTimeStep = MIN(*minTimeStep, 2.0f * cellVolumes[0] / local);
 }
 #endif
@@ -97,7 +95,9 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   if (exec_size >0) {
 
     #ifdef VECTORIZE
-    float dat8[SIMD_VEC] = {-INFINITY};
+    float dat8[SIMD_VEC];
+    for (int i = 0; i < SIMD_VEC; i++)
+    dat8[i] = INFINITY;
     #pragma novector
     for ( int n=0; n<(exec_size/SIMD_VEC)*SIMD_VEC; n+=SIMD_VEC ){
       if (n+SIMD_VEC >= set->core_size) {
@@ -109,11 +109,14 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       ALIGNED_float float dat3[1][SIMD_VEC];
       ALIGNED_float float dat4[1][SIMD_VEC];
       ALIGNED_float float dat5[1][SIMD_VEC];
-      #pragma novector //simd
+      #pragma simd
       for ( int i=0; i<SIMD_VEC; i++ ){
         int idx0_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 0];
         int idx1_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 1];
         int idx2_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 2];
+        int idx3_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 0];
+        int idx4_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 1];
+        int idx5_1 = 1 * arg0.map_data[(n+i) * arg0.map->dim + 2];
 
         dat0[0][i] = (ptr0)[idx0_1 + 0];
 
@@ -121,42 +124,30 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
         dat2[0][i] = (ptr2)[idx2_1 + 0];
 
-        dat3[0][i] = (ptr3)[idx0_1 + 0];
+        dat3[0][i] = (ptr3)[idx3_1 + 0];
 
-        dat4[0][i] = (ptr4)[idx1_1 + 0];
+        dat4[0][i] = (ptr4)[idx4_1 + 0];
 
-        dat5[0][i] = (ptr5)[idx2_1 + 0];
+        dat5[0][i] = (ptr5)[idx5_1 + 0];
 
       }
-      #pragma novector //simd
+      #pragma simd
       for ( int i=0; i<SIMD_VEC; i++ ){
-        float local = 0.0f;
-        local += dat0[0][i] * dat3[0][i];
-        local += dat1[0][i] * dat4[0][i];
-        local += dat2[0][i] * dat5[0][i];
-        ptr7[(n+i)*4+0] = 0.0f;
-        ptr7[(n+i)*4+1] = 0.0f;
-        ptr7[(n+i)*4+2] = 0.0f;
-        ptr7[(n+i)*4+3] = 0.0f;
-
-        //minTimeStep[idx] = MIN(minTimeStep[idx], 2.0f * cellVolumes[0] / local);
-        dat8[i] = MIN(dat8[i], 2.0f * ptr6[n+i] / local);
-/*        NumericalFluxes_vec(
-            dat0,
-            dat1,
-            dat2,
-            dat3,
-            dat4,
-            dat5,
-            &(ptr6)[1 * (n+i)],
-            &(ptr7)[4 * (n+i)],
-            &dat8[i],
-            i);*/
+        NumericalFluxes_vec(
+          dat0,
+          dat1,
+          dat2,
+          dat3,
+          dat4,
+          dat5,
+          &(ptr6)[1 * (n+i)],
+          &(ptr7)[4 * (n+i)],
+          dat8,
+          i);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
 
       }
-    #pragma novector
       for ( int i=0; i<SIMD_VEC; i++ ){
         *(float*)arg8.data = MIN(*(float*)arg8.data,dat8[i]);
       }

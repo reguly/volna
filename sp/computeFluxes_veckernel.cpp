@@ -78,7 +78,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   // ------------------------------------------------------------------------------------
   // Audusse Reconstruction(2004) Source Discretization
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
+  /*InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
   bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
 
@@ -91,7 +91,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   bathySource[0] *= *edgeLength;
   bathySource[1] *= *edgeLength;
-
+  */
   // Second order Reconstruction
   if (!isRightBoundary[0]) {
   leftCellValues[0] +=  alphaleft[0] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
@@ -101,18 +101,41 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   leftCellValues[3] += alphaleft[3] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
   rightCellValues[3] += alpharight[3] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
+  /*InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
   leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
   rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
   rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
-
+  */
   leftCellValues[1] += alphaleft[1] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
   leftCellValues[2] += alphaleft[2] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
 
   rightCellValues[1] += alpharight[1] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
   rightCellValues[2] += alpharight[2] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
   }
+
+  // Audusse Reconstruction(2004) 1st order Source Discretization
+  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
+  bathySource[0] =.5f * g * (leftCellValues[0]*leftCellValues[0]);
+  bathySource[1] =.5f * g * (rightCellValues[0]*rightCellValues[0]);
+
+  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
+  hL = hL > 0.0f? hL : 0.0f;
+  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
+  hR = hR > 0.0f ? hR : 0.0f;
+
+  bathySource[0] -= .5f * g * (hL * hL);
+  bathySource[1] -= .5f * g * (hR * hR);
+  // Audusse Reconstruction(2005) 2nd order Centered term
+  bathySource[2] = -.5f * g *(leftCellValues[0] + cellLeft[0])*(leftCellValues[3] - cellLeft[3]);
+  bathySource[3] = -.5f * g *(rightCellValues[0] + cellRight[0])*(rightCellValues[3] - cellRight[3]);
+  bathySource[0] *= *edgeLength;
+  bathySource[1] *= *edgeLength;
+  bathySource[2] *= *edgeLength;
+  bathySource[3] *= *edgeLength;
+
+  leftCellValues[0] = hL;
+  rightCellValues[0] = hR;
 
   // ------------------------------------------------------------------------------------
   // HLL Riemann Solver
@@ -138,7 +161,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   /*if ( (leftCellValues[0] <= EPS) && (rightCellValues[0] <= EPS)) {
       sL = 0.0f;
       sR = 0.0f;
-  }
+  }*/
   if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
       sL = uRn - 2.0f*cR;
       sR = uRn + cR;
@@ -148,7 +171,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
       sR = uLn + 2.0f*cL;
       sL =  uLn - cL;
       sStar = sR;
-  }*/
+  }
 
   float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
@@ -285,19 +308,7 @@ void computeFluxes_vec( const float cellLeft[*][SIMD_VEC], const float cellRight
   }
 
 
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
-  bathySource[0] = .5f * g * (leftCellValues[0]*leftCellValues[0]);
-  bathySource[1] = .5f * g * (rightCellValues[0]*rightCellValues[0]);
 
-  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  hL = hL > 0.0f? hL : 0.0f;
-  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  hR = hR > 0.0f ? hR : 0.0f;
-  bathySource[0] -= .5f * g * (hL * hL);
-  bathySource[1] -= .5f * g * (hR * hR);
-
-  bathySource[0] *= *edgeLength;
-  bathySource[1] *= *edgeLength;
 
   if (!isRightBoundary[0]) {
   leftCellValues[0] +=  alphaleft[0][idx] * ((dxl * leftGradient[0][idx])+(dyl * leftGradient[1][idx]));
@@ -307,11 +318,6 @@ void computeFluxes_vec( const float cellLeft[*][SIMD_VEC], const float cellRight
 
   leftCellValues[3] += alphaleft[3][idx] * ((dxl * leftGradient[6][idx])+(dyl * leftGradient[7][idx]));
   rightCellValues[3] += alpharight[3][idx] * ((dxr * rightGradient[6][idx])+(dyr * rightGradient[7][idx]));
-  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
-  leftCellValues[0] = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
-  leftCellValues[0] = leftCellValues[0] > 0.0f ? leftCellValues[0] : 0.0f;
-  rightCellValues[0] = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
-  rightCellValues[0] = rightCellValues[0] > 0.0f ? rightCellValues[0] : 0.0f;
 
   leftCellValues[1] += alphaleft[1][idx] * ((dxl * leftGradient[2][idx])+(dyl * leftGradient[3][idx]));
   leftCellValues[2] += alphaleft[2][idx] * ((dxl * leftGradient[4][idx])+(dyl * leftGradient[5][idx]));
@@ -319,6 +325,28 @@ void computeFluxes_vec( const float cellLeft[*][SIMD_VEC], const float cellRight
   rightCellValues[1] += alpharight[1][idx] * ((dxr * rightGradient[2][idx])+(dyr * rightGradient[3][idx]));
   rightCellValues[2] += alpharight[2][idx] * ((dxr * rightGradient[4][idx])+(dyr * rightGradient[5][idx]));
   }
+
+  InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
+  bathySource[0] =.5f * g * (leftCellValues[0]*leftCellValues[0]);
+  bathySource[1] =.5f * g * (rightCellValues[0]*rightCellValues[0]);
+
+  float hL = (leftCellValues[0] + leftCellValues[3] - InterfaceBathy);
+  hL = hL > 0.0f? hL : 0.0f;
+  float hR = (rightCellValues[0] + rightCellValues[3] - InterfaceBathy);
+  hR = hR > 0.0f ? hR : 0.0f;
+
+  bathySource[0] -= .5f * g * (hL * hL);
+  bathySource[1] -= .5f * g * (hR * hR);
+
+  bathySource[2] = -.5f * g *(leftCellValues[0] + cellLeft[0][idx])*(leftCellValues[3] - cellLeft[3][idx]);
+  bathySource[3] = -.5f * g *(rightCellValues[0] + cellRight[0][idx])*(rightCellValues[3] - cellRight[3][idx]);
+  bathySource[0] *= *edgeLength;
+  bathySource[1] *= *edgeLength;
+  bathySource[2] *= *edgeLength;
+  bathySource[3] *= *edgeLength;
+
+  leftCellValues[0] = hL;
+  rightCellValues[0] = hR;
 
 
 
@@ -339,6 +367,16 @@ void computeFluxes_vec( const float cellLeft[*][SIMD_VEC], const float cellRight
           (rightCellValues[0]*(uRn - sR) - leftCellValues[0]*(uLn - sL));
 
 
+  if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
+      sL = uRn - 2.0f*cR;
+      sR = uRn + cR;
+      sStar = sL;
+  }
+  if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
+      sR = uLn + 2.0f*cL;
+      sL =  uLn - cL;
+      sStar = sR;
+  }
 
   float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;

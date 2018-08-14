@@ -61,10 +61,10 @@ void op_par_loop_values_operation2(char const *name, op_set set,
       for ( int i=0; i<SIMD_VEC; i++ ){
         values_operation2(
           &(ptr0)[4 * (n+i)],
-          (int*)arg1.data,
-          (int*)arg2.data,
-          (int*)arg3.data,
-          (int*)arg4.data);
+          &dat1[i],
+          &dat2[i],
+          &dat3[i],
+          &dat4[i]);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

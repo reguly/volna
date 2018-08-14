@@ -51,7 +51,7 @@ inline void initBathymetry_large(float *values, const float *cellCenter,
     values[3] += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
   }
 }
-//#define DVECTORIZE
+#define VECTORIZE
 #ifdef VECTORIZE
 //user function -- modified for vectorisation
 void initBathymetry_large_vec( float values[*][SIMD_VEC], const float cellCenter[*][SIMD_VEC], const float node0[*][SIMD_VEC], const float node1[*][SIMD_VEC], const float node2[*][SIMD_VEC], const float bathy0[*][SIMD_VEC], const float bathy1[*][SIMD_VEC], const float bathy2[*][SIMD_VEC], int idx ) {

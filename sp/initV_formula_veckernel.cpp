@@ -50,7 +50,7 @@ void op_par_loop_initV_formula(char const *name, op_set set,
         initV_formula(
           &(ptr0)[2 * (n+i)],
           &(ptr1)[4 * (n+i)],
-          (double*)arg2.data);
+          &dat2[i]);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }

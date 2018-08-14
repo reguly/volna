@@ -15,7 +15,7 @@ inline void computeGradient(const float *center,
 {
   // Only reconstruct if the cell is not a touching the edge
   // Least-Squares Gradient Reconstruction
-  if( cellCenter[0] != nb3Center[0] && cellCenter[1] != nb3Center[1]){
+  if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];
@@ -157,7 +157,7 @@ inline void computeGradient(const float *center,
 void computeGradient_vec( const float *center, const float neighbour1[*][SIMD_VEC], const float neighbour2[*][SIMD_VEC], const float neighbour3[*][SIMD_VEC], const float *cellCenter, const float nb1Center[*][SIMD_VEC], const float nb2Center[*][SIMD_VEC], const float nb3Center[*][SIMD_VEC], float *q, float *out, int idx ) {
 
 
-  if( cellCenter[0] != nb3Center[0][idx] && cellCenter[1] != nb3Center[1][idx]){
+  if( (cellCenter[0] != nb3Center[0][idx]) && (cellCenter[1] != nb3Center[1][idx])){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];

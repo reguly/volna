@@ -45,7 +45,7 @@ void op_par_loop_initBathymetry_update(char const *name, op_set set,
       for ( int i=0; i<SIMD_VEC; i++ ){
         initBathymetry_update(
           &(ptr0)[4 * (n+i)],
-          (int*)arg1.data);
+          &dat1[i]);
       }
       for ( int i=0; i<SIMD_VEC; i++ ){
       }
