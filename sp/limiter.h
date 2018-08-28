@@ -34,17 +34,22 @@ inline void limiter(const float *q, float *q2,
         } else{
           edgealpha[i] = 1.0f;
         }
+        edgealpha[i] = edgealpha[i] < 1.0f ? edgealpha[i] : 1.0f;
       }
       q2[j] = edgealpha[0] < edgealpha[1] ? q2[j] : edgealpha[1];
       q2[j] = q2[j] < edgealpha[2] ? q2[j]: edgealpha[2];
-      q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
-      q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
-      q2[j] = q2[j] / 3.0f;
+      //q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
+      //q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
+      //q2[j] = q2[j] / 3.0f;
     }
+  // Reduced limiter - taking the minimum of the calculated limiters. 
+  q2[0] = q2[0] < q2[1] ? q2[0]: q2[1];
+  q2[0] = q2[0] < q2[2] ? q2[0]: q2[2];
+  q2[0] = q2[0] < q2[3] ? q2[0]: q2[3];
   } else {
     q2[0] = 0.0f;
-    q2[1] = 0.0f;
-    q2[2] = 0.0f;
-    q2[3] = 0.0f;
+    //q2[1] = 0.0f;
+    //q2[2] = 0.0f;
+    //q2[3] = 0.0f;
   }
 }
