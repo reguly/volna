@@ -30,12 +30,10 @@ inline void computeGradient(const float *center,
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
-   // op_printf("Weights %g %g %g \n", weights[0], weights[1], weights[2]);
     total = weights[0] + weights[1] + weights[2];
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
     weights[2] = total/ weights[2];
-    //op_printf("Weights %g %g %g \n", weights[0], weights[1], weights[2]);
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
@@ -105,35 +103,6 @@ inline void computeGradient(const float *center,
     out[7] = (inverse[1][0] * Rhs[6]) + (inverse[1][1] * Rhs[7]);
  }else {
     // Gradients for the edge cells are set to zero.
-    /*
-    float dh[2], dz[2], du[2], dv[2], delta[2][2];
-    float x = cellCenter[0];
-    float y = cellCenter[1];
-    delta[0][0] =  (nb1Center[0] - x);
-    delta[0][1] =  (nb1Center[1] - y);
-
-    delta[1][0] =  (nb2Center[0] - x);
-    delta[1][1] =  (nb2Center[1] - y);
-
-    dh[0] = neighbour1[0] - center[0];
-    dh[1] = neighbour2[0] - center[0];
-    du[0] = neighbour1[1] - center[1];
-    du[1] = neighbour2[1] - center[1];
-    dv[0] = neighbour1[2] - center[2];
-    dv[1] = neighbour2[2] - center[2];
-    dz[0] = neighbour1[3] - center[3];
-    dz[1] = neighbour2[3] - center[3];
-    float det = ((delta[0][0] * delta[1][1]) - (delta[0][1] * delta[1][0]));
-    out[0] = ((delta[1][1] * dh[0]) - (delta[0][1] * dh[1]))/ det ;
-    out[1] = ((delta[0][0] * dh[1]) - (delta[1][0] * dh[0]))/ det ;
-    out[2] = ((delta[1][1] * du[0]) - (delta[0][1] * du[1]))/ det ;
-    out[3] = ((delta[0][0] * du[1]) - (delta[1][0] * du[0]))/ det ;
-    out[4] = ((delta[1][1] * dv[0]) - (delta[0][1] * dv[1]))/ det ;
-    out[5] = ((delta[0][0] * dv[1]) - (delta[1][0] * dv[0]))/ det ;
-    out[6] = ((delta[1][1] * dz[0]) - (delta[0][1] * dz[1]))/ det ;
-    out[7] = ((delta[0][0] * dz[1]) - (delta[1][0] * dz[0]))/ det ;
-    */
-
     out[0] = 0.0f;
     out[1] = 0.0f;
     out[2] = 0.0f;
