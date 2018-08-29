@@ -17,8 +17,8 @@ inline void SpaceDiscretization(float *left, //OP_INC
   left[2] += (bathySource[2] *edgeNormals[1])/cellVolumes0[0];
   }else{
   left[0] -= 0.0f;
-  left[0] -= 0.0f;
-  left[0] -= 0.0f;
+  left[1] -= 0.0f;
+  left[2] -= 0.0f;
   }
 
   if (!*isRightBoundary) {
@@ -30,9 +30,9 @@ inline void SpaceDiscretization(float *left, //OP_INC
     right[1] -= (bathySource[3] *edgeNormals[0])/cellVolumes1[0];
     right[2] -= (bathySource[3] *edgeNormals[1])/cellVolumes1[0];
     }else{
-    right[0] += 0.0f;
-    right[1] += 0.0f;
-    right[2] += 0.0f;
+      right[0] += 0.0f;
+      right[1] += 0.0f;
+      right[2] += 0.0f;
     }
   }
 }
