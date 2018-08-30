@@ -30,12 +30,10 @@ inline void computeGradient(const float *center,
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
-
     total = weights[0] + weights[1] + weights[2];
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
     weights[2] = total/ weights[2];
-
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
