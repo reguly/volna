@@ -15,7 +15,8 @@ inline void limiter(const float *q, float *lim,
   dx[2] = (edgecenter3[0] - cellcenter[0]);
   dy[2] = (edgecenter3[1] - cellcenter[1]);
   // If the cell is not on the wet/dry boundary
-  if((value[0] > EPS) && (q[0]> EPS)){
+  //if((value[0] > EPS) && (q[0]> EPS)){
+  if((value[0] > 100.0f*EPS) && (q[0]> 100.0f*EPS)){
   // The limiter is calculated for all physical variables using the
   // Barth-Jesperson formula and then the minimum limiter is used.
   // q[0] - Hmin , q[1] - Hmax , q[8] - Halpha
@@ -33,14 +34,14 @@ inline void limiter(const float *q, float *lim,
       edgealpha[i] = 1.0f;
      }
     max[i] = edgealpha[i] < 1.0f ? edgealpha[i] : 1.0f;
-   } 
+   }
    lim[j] = max[0] < max[1] ? max[0] : max[1];
    lim[j] = lim[j] < max[2] ? lim[j]: max[2];
   }
-  lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
-  lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
-  lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
-  
+  //lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
+  //lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
+  //lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
+
   } else {
     lim[0] = 0.0f;
     lim[1] = 0.0f;
