@@ -7,8 +7,8 @@ __device__ void initEta_formula_gpu( const float *coords, float *values, const d
   float x = coords[0];
   float y = coords[1];
   float t = *time;
-  float val =   0.1f*(0.9756f/(1.f-0.2195f) -1.0f - ((x-2.f)*(x-2.f) +(y-2.f)*(y-2.f))/(1.f) *
-   (0.9518f/((1.0f - 0.2195f)*(1.0f - 0.2195f))   -1.0f) )    ;;
+  float val = 0.0f;
+
   values[0] += val;
 }
 
@@ -47,10 +47,10 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(11);
+  op_timing_realloc(6);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[11].name      = name;
-  OP_kernels[11].count    += 1;
+  OP_kernels[6].name      = name;
+  OP_kernels[6].count    += 1;
 
 
   if (OP_diags>2) {
@@ -74,8 +74,8 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_11
-      int nthread = OP_BLOCK_SIZE_11;
+    #ifdef OP_BLOCK_SIZE_6
+      int nthread = OP_BLOCK_SIZE_6;
     #else
       int nthread = OP_block_size;
     //  int nthread = 128;
@@ -93,7 +93,7 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].time     += wall_t2 - wall_t1;
-  OP_kernels[11].transfer += (float)set->size * arg0.size;
-  OP_kernels[11].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[6].time     += wall_t2 - wall_t1;
+  OP_kernels[6].transfer += (float)set->size * arg0.size;
+  OP_kernels[6].transfer += (float)set->size * arg1.size * 2.0f;
 }

@@ -3,29 +3,31 @@
 //
 
 //user function
-#include "../incConst.h"
+#include "../EvolveValuesRK3_4.h"
 
 // host stub function
-void op_par_loop_incConst(char const *name, op_set set,
+void op_par_loop_EvolveValuesRK3_4(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
-  op_arg arg2){
+  op_arg arg2,
+  op_arg arg3){
 
-  int nargs = 3;
-  op_arg args[3];
+  int nargs = 4;
+  op_arg args[4];
 
   args[0] = arg0;
   args[1] = arg1;
   args[2] = arg2;
+  args[3] = arg3;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(3);
   op_timers_core(&cpu_t1, &wall_t1);
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  incConst");
+    printf(" kernel routine w/o indirection:  EvolveValuesRK3_4");
   }
 
   op_mpi_halo_exchanges(set, nargs, args);
@@ -44,10 +46,11 @@ void op_par_loop_incConst(char const *name, op_set set,
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
       for ( int n=start; n<finish; n++ ){
-        incConst(
-          &((float*)arg0.data)[1*n],
+        EvolveValuesRK3_4(
+          (float*)arg0.data,
           &((float*)arg1.data)[4*n],
-          (int*)arg2.data);
+          &((float*)arg2.data)[4*n],
+          &((float*)arg3.data)[4*n]);
       }
     }
   }
@@ -57,9 +60,10 @@ void op_par_loop_incConst(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
-  OP_kernels[5].time     += wall_t2 - wall_t1;
-  OP_kernels[5].transfer += (float)set->size * arg0.size;
-  OP_kernels[5].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[3].name      = name;
+  OP_kernels[3].count    += 1;
+  OP_kernels[3].time     += wall_t2 - wall_t1;
+  OP_kernels[3].transfer += (float)set->size * arg1.size;
+  OP_kernels[3].transfer += (float)set->size * arg2.size;
+  OP_kernels[3].transfer += (float)set->size * arg3.size * 2.0f;
 }

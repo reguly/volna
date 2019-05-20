@@ -3,14 +3,14 @@
 //
 
 //user function
-__device__ void limiter_gpu( const float *q, float *q2,
-  const float *value, const float *gradient,
-  const float *edgecenter1, const float *edgecenter2,
-  const float *edgecenter3, const float *cellcenter) {
+__device__ void limiter_gpu( const float *q, float *lim,
+                    const float *value, const float *gradient,
+                    const float *edgecenter1, const float *edgecenter2,
+                    const float *edgecenter3, const float *cellcenter) {
 
-  float facevalue[3], dx[3], dy[3], y;
+  float facevalue[3], dx[3], dy[3];
   int i, j;
-  float edgealpha[3];
+  float max[3], edgealpha[3];
 
   dx[0] = (edgecenter1[0] - cellcenter[0]);
   dy[0] = (edgecenter1[1] - cellcenter[1]);
@@ -26,30 +26,30 @@ __device__ void limiter_gpu( const float *q, float *q2,
 
 
 
-    for(j=0;j<4;j++){
-      for(i =0 ; i<3; i++){
-        facevalue[i] = value[j] + ((gradient[2*j]*dx[i]) + (gradient[2*j + 1]*dy[i]));
-        if(facevalue[i] > q[2*j+1]) {
-          y = (q[2*j + 1] - value[j]) / (facevalue[i] - value[j]);
-          edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
-        } else if (facevalue[i] < q[2*j]){
-          y = (q[2*j] - value[j]) / (facevalue[i] - value[j]);
-          edgealpha[i] = (y*y + 2.0f*y) / (y*y + y + 2.0f);
-        } else{
-          edgealpha[i] = 1.0f;
-        }
-      }
-      q2[j] = edgealpha[0] < edgealpha[1] ? q2[j] : edgealpha[1];
-      q2[j] = q2[j] < edgealpha[2] ? q2[j]: edgealpha[2];
-      q2[j] = q2[j] < 1.0f ? q2[j] : 1.0f;
-      q2[j] = q2[j] > 0.0f ? q2[j] : 0.0f;
-      q2[j] = q2[j] / 3.0f;
-    }
+  for(j=0;j<4;j++){
+   for(i =0 ; i<3; i++){
+    facevalue[i] = value[j] + ((gradient[2*j]*dx[i]) + (gradient[2*j + 1]*dy[i]));
+     if(facevalue[i] > value[j]) {
+      edgealpha[i] = (q[2*j + 1] - value[j]) / (facevalue[i] - value[j]);
+     } else if (facevalue[i] < value[j]){
+      edgealpha[i] = (q[2*j] - value[j]) / (facevalue[i] - value[j]);
+     } else{
+      edgealpha[i] = 1.0f;
+     }
+    max[i] = edgealpha[i] < 1.0f ? edgealpha[i] : 1.0f;
+   }
+   lim[j] = max[0] < max[1] ? max[0] : max[1];
+   lim[j] = lim[j] < max[2] ? lim[j]: max[2];
+  }
+  lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
+  lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
+  lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
+
   } else {
-    q2[0] = 0.0f;
-    q2[1] = 0.0f;
-    q2[2] = 0.0f;
-    q2[3] = 0.0f;
+    lim[0] = 0.0f;
+    lim[1] = 0.0f;
+    lim[2] = 0.0f;
+    lim[3] = 0.0f;
   }
 }
 
@@ -137,10 +137,10 @@ void op_par_loop_limiter(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(6);
+  op_timing_realloc(22);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[6].name      = name;
-  OP_kernels[6].count    += 1;
+  OP_kernels[22].name      = name;
+  OP_kernels[22].count    += 1;
 
 
   int    ninds   = 1;
@@ -151,8 +151,8 @@ void op_par_loop_limiter(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_6
-    int part_size = OP_PART_SIZE_6;
+  #ifdef OP_PART_SIZE_22
+    int part_size = OP_PART_SIZE_22;
   #else
     int part_size = OP_part_size;
   #endif
@@ -169,8 +169,8 @@ void op_par_loop_limiter(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_6
-      int nthread = OP_BLOCK_SIZE_6;
+      #ifdef OP_BLOCK_SIZE_22
+      int nthread = OP_BLOCK_SIZE_22;
       #else
       int nthread = OP_block_size;
       #endif
@@ -198,12 +198,12 @@ void op_par_loop_limiter(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[6].transfer  += Plan->transfer;
-    OP_kernels[6].transfer2 += Plan->transfer2;
+    OP_kernels[22].transfer  += Plan->transfer;
+    OP_kernels[22].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[6].time     += wall_t2 - wall_t1;
+  OP_kernels[22].time     += wall_t2 - wall_t1;
 }

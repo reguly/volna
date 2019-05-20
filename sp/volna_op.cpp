@@ -389,9 +389,10 @@ int main(int argc, char **argv) {
   op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
   op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4
 
-  // Compressed qmin, qmax and alpha into q - to parallelize.
-  op_dat q1 = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q1"); //temp - edges - dim 1
-  op_dat q2 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "q2");
+  // q contains the max and min values of the physical variables surrounding each cell
+  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
+  // lim is the limiter value for each physical variable defined on each cell
+  op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
@@ -409,7 +410,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
-          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 0);
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0);
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n  \n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
 #endif
@@ -428,7 +429,7 @@ int main(int argc, char **argv) {
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
-          cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 1);
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1);
 
 
       op_par_loop_EvolveValuesRK3_2("EvolveValuesRK3_2",cells,
@@ -448,7 +449,7 @@ int main(int argc, char **argv) {
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
-          cellsToCells, edgeCenters, cellCenters, GradientatCell, q1,q2, 2);
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2);
 
       op_par_loop_EvolveValuesRK3_4("EvolveValuesRK3_4",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
@@ -603,10 +604,10 @@ int main(int argc, char **argv) {
   if (op_free_dat_temp(maxEdgeEigenvalues) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",maxEdgeEigenvalues->name);
 
-  if (op_free_dat_temp(q1)< 0)
-    op_printf("Error: temporary op_dat %s cannot be removed\n",q1->name);
-  if (op_free_dat_temp(q2)< 0)
-    op_printf("Error: temporary op_dat %s cannot be removed\n",q2->name);
+  if (op_free_dat_temp(q)< 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",q->name);
+  if (op_free_dat_temp(lim)< 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",lim->name);
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);

@@ -34,12 +34,10 @@ __device__ void computeGradient_gpu( const float *center,
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
-
     total = weights[0] + weights[1] + weights[2];
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
     weights[2] = total/ weights[2];
-
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
@@ -242,10 +240,10 @@ void op_par_loop_computeGradient(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(5);
+  op_timing_realloc(21);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[5].name      = name;
-  OP_kernels[5].count    += 1;
+  OP_kernels[21].name      = name;
+  OP_kernels[21].count    += 1;
 
 
   int    ninds   = 2;
@@ -256,8 +254,8 @@ void op_par_loop_computeGradient(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_5
-    int part_size = OP_PART_SIZE_5;
+  #ifdef OP_PART_SIZE_21
+    int part_size = OP_PART_SIZE_21;
   #else
     int part_size = OP_part_size;
   #endif
@@ -274,8 +272,8 @@ void op_par_loop_computeGradient(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_5
-      int nthread = OP_BLOCK_SIZE_5;
+      #ifdef OP_BLOCK_SIZE_21
+      int nthread = OP_BLOCK_SIZE_21;
       #else
       int nthread = OP_block_size;
       #endif
@@ -303,12 +301,12 @@ void op_par_loop_computeGradient(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[5].transfer  += Plan->transfer;
-    OP_kernels[5].transfer2 += Plan->transfer2;
+    OP_kernels[21].transfer  += Plan->transfer;
+    OP_kernels[21].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[5].time     += wall_t2 - wall_t1;
+  OP_kernels[21].time     += wall_t2 - wall_t1;
 }
