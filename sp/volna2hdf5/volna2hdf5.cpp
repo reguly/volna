@@ -236,6 +236,8 @@ int main(int argc, char **argv) {
       << "'" << std::endl;
   std::cerr << "Bathymetry formula is : '"
       << sim.InitFormulas.bathymetry << "'" << std::endl;
+  std::cerr << "Bathymetry_HDF formula is : '"
+      << sim.InitFormulas.bathymetry_hdf << "'" << std::endl;
   std::cerr << "BathyRelative formula is : '"
       << sim.InitFormulas.bathyrelative << "'" << std::endl;
   std::cerr << "Horizontal velocity formula is : '"
@@ -328,7 +330,9 @@ int main(int argc, char **argv) {
         fp = fopen("../initBathymetry_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
         fp = fopen("../initBathyRelative_formula.h", "w");
-      } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
+      } else if (strcmp(e_p.className.c_str(), "InitBathymetry_HDF") == 0) {
+        fp = fopen("../initBathymetry_formula.h", "w");
+      }else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fp = fopen("../initU_formula.h", "w");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
         fp = fopen("../initV_formula.h", "w");
@@ -343,6 +347,8 @@ int main(int argc, char **argv) {
         fprintf(fp, "Bathymetry");
       } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
         fprintf(fp, "BathyRelative");
+      } else if (strcmp(e_p.className.c_str(), "InitBathymetryHDF") == 0) {
+        fprintf(fp, "Bathymetry");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fprintf(fp, "U");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -359,6 +365,8 @@ int main(int argc, char **argv) {
         fprintf(fp, "  values[3] = val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) {
         fprintf(fp, "  values[3] = *bathy0 + val;\n}");
+      } else if (strcmp(e_p.className.c_str(), "InitBathymetry_HDF") == 0) {
+        fprintf(fp, "  values[3] = val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitU") == 0) {
         fprintf(fp, "  values[1] += val;\n}");
       } else if (strcmp(e_p.className.c_str(), "InitV") == 0) {
@@ -663,6 +671,76 @@ int main(int argc, char **argv) {
             }
           }
         }
+      } else if(strcmp(event_className[i].c_str(), "InitBathymetryHDF") == 0) {
+
+          initBathymetry = (float**) malloc(sizeof(float*));
+          initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
+
+
+          // reading specfem3d output
+          int                 h5err;
+          hid_t               file_id, group_id, dspace_id, dset_id;
+          hid_t               data_type;
+          hid_t               memspace;
+
+          H5T_class_t         dset_class;
+          H5T_order_t         order;
+
+          int                 rank;
+          int                 status_n;
+          hsize_t             dims_out[3];
+          hsize_t             dim_memspace;
+
+
+          // hyperslap selection
+          hsize_t             offset[3];
+          hsize_t             count[3];
+
+
+          const char          filename[30] = "displacement.h5";
+          const char          groupname[20] = "data";
+          const char          dset_name[20] = "dset";
+
+          file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT); 
+          group_id = H5Gopen1(file_id, groupname);
+          dset_id = H5Dopen2(group_id, dset_name, H5P_DEFAULT);
+          data_type = H5Dget_type(dset_id);
+          dset_class  = H5Tget_class(data_type);
+          
+          order     = H5Tget_order(data_type);
+          if(dset_class == H5T_FLOAT){
+            printf("Reading the correct data type: Float\n");
+          } else {
+            printf("Hit wrong data type:%d but should be %ld\n", dset_class, H5T_STD_I32LE);
+          }
+
+
+          dspace_id = H5Dget_space(dset_id);
+          rank      = H5Sget_simple_extent_ndims(dspace_id);
+          status_n  = H5Sget_simple_extent_dims(dspace_id, dims_out, NULL);
+
+          dim_memspace = dims_out[2];
+          memspace  = H5Screate_simple(1,&dim_memspace,NULL);
+
+          n_initBathymetry = dims_out[1];          
+          for (int i = 0; i < n_initBathymetry; i++){
+            offset[0] = 1;
+            offset[1] = i;
+            offset[2] = 0;
+
+            count[0] = 1;
+            count[1] = 1;
+            count[2] = dims_out[2];
+
+            initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
+            h5err = H5Sselect_hyperslab(dspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);
+            h5err = H5Dread(dset_id, H5T_IEEE_F32LE, memspace, dspace_id , H5P_DEFAULT, initBathymetry[i]);
+          }  
+
+          H5Dclose(dset_id);
+          H5Sclose(dspace_id);
+          H5Gclose(group_id);
+          H5Fclose(file_id);  
       }
     }
   }

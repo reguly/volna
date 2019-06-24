@@ -37,9 +37,10 @@ struct InitExpression {
   std::string U;
   std::string V;
   std::string bathymetry;
+  std::string bathymetry_hdf;
   std::string bathyrelative;
   InitExpression():
-    eta(""), U(""), V(""), bathymetry(""), bathyrelative("") {}
+    eta(""), U(""), V(""), bathymetry(""), bathyrelative(""), bathymetry_hdf("") {}
 };
 
 class Simulation {
@@ -65,6 +66,7 @@ public:
   std::string InitFormula;
   ScalarValue Bathymetry;
   ScalarValue BathyRelative;
+  ScalarValue Bathymetry_HDF;
   //yac::controller mathParser;
   Simulation();
   Simulation( istream &is );
@@ -133,7 +135,8 @@ void Simulation::init() {
 			InitFormulas.U.begin() != InitFormulas.U.end() ||
 			InitFormulas.V.begin() != InitFormulas.V.end() ||
       InitFormulas.bathyrelative.begin() != InitFormulas.bathyrelative.end() ||
-			InitFormulas.bathymetry.begin() != InitFormulas.bathymetry.end()) {
+			InitFormulas.bathymetry.begin() != InitFormulas.bathymetry.end() ||
+      InitFormulas.bathymetry_hdf.begin() != InitFormulas.bathymetry_hdf.end()) {
 		printf("Unsupported method of specifiying initial values: please use Init events\n");
 		exit(-1);
 	}

@@ -108,6 +108,20 @@ private:
   Simulation &simulation;
 };
 
+struct assign_string_bathymetry_hdf
+{
+public:
+  assign_string_bathymetry_hdf( Simulation &s ):
+    simulation( s ) {}
+  template <typename ItT>
+  void operator() ( ItT first, ItT last ) const
+  {
+    simulation.InitFormulas.bathymetry_hdf = string(first, last);
+  }
+private:
+  Simulation &simulation;
+};
+
 struct assign_string_bathyrelative
 {
 public:
@@ -214,6 +228,12 @@ public:
       ptr = boost::shared_ptr<Event>
 	( new InitBathymetry( simulation.InitFormula, 
 			      simulation.InitFilename, timer ) );
+    }
+
+    else if ( simulation.InitVar == "BathyHDF" ) {
+      ptr = boost::shared_ptr<Event>
+  ( new InitBathymetry_HDF( simulation.InitFormula, 
+            simulation.InitFilename, timer ) );
     }
 
     else if ( simulation.InitVar == "BathyRelative" ) {
@@ -400,7 +420,7 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 	    >> *(timer_option) 
 	    >> ch_p('}')
 	    >>
-	    (str_p("Bathymetry")|str_p("BathyRelative")|str_p("Eta")|str_p("U")|str_p("V"))
+	    (str_p("Bathymetry")|str_p("BathyRelative")| str_p("BathyHDF") |str_p("Eta")|str_p("U")|str_p("V"))
 	    [ assign_a( self.sim.InitVar ) ]
 	    >> 
 	    (
@@ -478,7 +498,10 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
             ) |
           ( str_p("Bathymetry") >> ch_p("{")
             >> math_expression[ assign_string_bathymetry( self.sim ) ]
-            ) ) >> ch_p('}');
+            ) |
+          ( str_p("BathyHDF") >> ch_p("{")
+            >> math_expression[ assign_string_bathymetry_hdf( self.sim ) ]
+            )) >> ch_p('}');
 
       math_expression = lexeme_d[*(anychar_p - str_p('}'))];
 
@@ -506,7 +529,7 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
     rule_t simulation_objects_list, simulation_object;
     rule_t param_options, num_param_options;
     rule_t time, time_options;
-    rule_t mesh, initial_value, event, bathymetry, bathyrelative, physical_params;
+    rule_t mesh, initial_value, event, bathymetry, bathyrelative, bathymetry_hdf, physical_params;
     rule_t boundary_condition;
     rule_t numerical_params;
     rule_t meshfilename, event_filename;
@@ -538,6 +561,7 @@ public:
     parse_info_t info = spirit::parse( first, last,
 				       volna_grammar( s ),
 				       skipper );
+    std::cout << "stopped at: \n" << std::string(info.stop, last) << std::endl;
 
     if (info.full) {
       cerr << "Parsing succeeded." << endl;

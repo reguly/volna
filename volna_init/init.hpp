@@ -109,6 +109,28 @@ void InitBathymetry::dump(EventParams &p) {
   p.post_update = post_update;
 }
 
+class InitBathymetry_HDF : public Init {
+public:
+  InitBathymetry_HDF( std::string &, std::string &, const Timer & );
+  virtual void init( Simulation * );
+
+  virtual void dump(EventParams &p);
+};
+
+InitBathymetry_HDF::InitBathymetry_HDF( std::string &formula_, std::string
+        &streamName_, const Timer &timer ):
+  Init( formula_, streamName_, timer ) {};
+
+void InitBathymetry_HDF::init( Simulation *sim ) {
+}
+
+void InitBathymetry_HDF::dump(EventParams &p) {
+  p.className = "InitBathymetryHDF";
+  p.formula = formula;
+  p.streamName = streamName;
+  p.post_update = post_update;
+}
+
 class InitBathyRelative : public Init {
 public:
   InitBathyRelative( std::string &, std::string &, const Timer & );
