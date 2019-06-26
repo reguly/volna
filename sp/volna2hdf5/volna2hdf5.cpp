@@ -673,10 +673,8 @@ int main(int argc, char **argv) {
         }
       } else if(strcmp(event_className[i].c_str(), "InitBathymetryHDF") == 0) {
 
-          initBathymetry = (float**) malloc(sizeof(float*));
-          initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
-
-
+          free(initBathymetry[0]);
+          free(initBathymetry);
           // reading specfem3d output
           int                 h5err;
           hid_t               file_id, group_id, dspace_id, dset_id;
@@ -719,18 +717,23 @@ int main(int argc, char **argv) {
           rank      = H5Sget_simple_extent_ndims(dspace_id);
           status_n  = H5Sget_simple_extent_dims(dspace_id, dims_out, NULL);
 
-          dim_memspace = dims_out[2];
-          memspace  = H5Screate_simple(1,&dim_memspace,NULL);
+          dim_memspace = dims_out[1];
+          if(dim_memspace != ncell){
+            printf("Number of cells and number of initialisation in bathymetry_hdf are not same!\n");
+          }
 
-          n_initBathymetry = dims_out[1];          
+          memspace  = H5Screate_simple(1,&dim_memspace,NULL);
+          n_initBathymetry = dims_out[2];       
+
+          initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
           for (int i = 0; i < n_initBathymetry; i++){
             offset[0] = 1;
             offset[1] = i;
             offset[2] = 0;
 
             count[0] = 1;
-            count[1] = 1;
-            count[2] = dims_out[2];
+            count[1] = dims_out[1];
+            count[2] = 1;
 
             initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
             h5err = H5Sselect_hyperslab(dspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);
@@ -1109,6 +1112,12 @@ int main(int argc, char **argv) {
   for (unsigned int i = 0; i < event_className.size(); i++) {
     memset(buffer, 0, 22);
     sprintf(buffer, "event_className%d", i);
+
+    // afterward this InitBathymetryHDF and InitBathymetry are the same
+    if(strcmp(event_className[i].c_str(), "InitBathymetryHDF") == 0){
+      event_className[i].assign("InitBathymetry");
+    }
+
     check_hdf5_error(
         H5LTmake_dataset_string(h5file, buffer, event_className[i].c_str()));
     length = strlen(event_className[i].c_str())+1;
