@@ -695,7 +695,7 @@ int main(int argc, char **argv) {
           hsize_t             count[2];
 
 
-          const char          filename[30] = "displacement.h5";
+          const char          filename[30] = "all_seismograms.h5";
           const char          groupname[20] = "data";
           const char          dset_name[20] = "dset";
 
