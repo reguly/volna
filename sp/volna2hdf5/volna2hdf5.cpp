@@ -680,6 +680,7 @@ int main(int argc, char **argv) {
           hid_t               file_id, group_id, dspace_id, dset_id;
           hid_t               data_type;
           hid_t               memspace;
+          hid_t               dapl;
 
           H5T_class_t         dset_class;
           H5T_order_t         order;
@@ -696,12 +697,17 @@ int main(int argc, char **argv) {
 
 
           const char          filename[30] = "all_seismograms.h5";
-          const char          groupname[20] = "data";
+          const char          groupname[20] = "displacement";
           const char          dset_name[20] = "dset";
 
           file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT); 
           group_id = H5Gopen1(file_id, groupname);
-          dset_id = H5Dopen2(group_id, dset_name, H5P_DEFAULT);
+
+          dapl = H5Pcreate(H5P_DATASET_ACCESS);
+          H5Pset_chunk_cache(dapl, 60001, 64*1024*1024, /*H5D_CHUNK_CACHE_W0_DEFAULT&*/ 1);
+          dset_id = H5Dopen(group_id, dset_name, dapl);
+
+
           data_type = H5Dget_type(dset_id);
           dset_class  = H5Tget_class(data_type);
           
@@ -717,21 +723,27 @@ int main(int argc, char **argv) {
           rank      = H5Sget_simple_extent_ndims(dspace_id);
           status_n  = H5Sget_simple_extent_dims(dspace_id, dims_out, NULL);
 
+          printf("dimension is %d %d\n", dims_out[0], dims_out[1]);
           dim_memspace = dims_out[1];
           if(dim_memspace != ncell){
             printf("Number of cells and number of initialisation in bathymetry_hdf are not same!\n");
           }
 
           memspace  = H5Screate_simple(1,&dim_memspace,NULL);
-          n_initBathymetry = dims_out[2];       
+          n_initBathymetry = dims_out[0];       
 
           initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
+
+          
+          
+
           for (int i = 0; i < n_initBathymetry; i++){
+            printf(" currently at time step: %d\n", i);
             offset[0] = i;
             offset[1] = 0;
 
-            count[0] = dims_out[1];
-            count[1] = 1;
+            count[0] = 1;
+            count[1] = dims_out[1];
 
             initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
             h5err = H5Sselect_hyperslab(dspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);
