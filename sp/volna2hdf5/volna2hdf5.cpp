@@ -686,13 +686,13 @@ int main(int argc, char **argv) {
 
           int                 rank;
           int                 status_n;
-          hsize_t             dims_out[3];
+          hsize_t             dims_out[2];
           hsize_t             dim_memspace;
 
 
           // hyperslap selection
-          hsize_t             offset[3];
-          hsize_t             count[3];
+          hsize_t             offset[2];
+          hsize_t             count[2];
 
 
           const char          filename[30] = "displacement.h5";
@@ -727,13 +727,11 @@ int main(int argc, char **argv) {
 
           initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
           for (int i = 0; i < n_initBathymetry; i++){
-            offset[0] = 1;
-            offset[1] = i;
-            offset[2] = 0;
+            offset[0] = i;
+            offset[1] = 0;
 
-            count[0] = 1;
-            count[1] = dims_out[1];
-            count[2] = 1;
+            count[0] = dims_out[1];
+            count[1] = 1;
 
             initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
             h5err = H5Sselect_hyperslab(dspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);
