@@ -704,7 +704,7 @@ int main(int argc, char **argv) {
           group_id = H5Gopen1(file_id, groupname);
 
           dapl = H5Pcreate(H5P_DATASET_ACCESS);
-          H5Pset_chunk_cache(dapl, 60001, 64*1024*1024, /*H5D_CHUNK_CACHE_W0_DEFAULT&*/ 1);
+          H5Pset_chunk_cache(dapl, 5177800, 256*1024*1024, /*H5D_CHUNK_CACHE_W0_DEFAULT&*/ 1);
           dset_id = H5Dopen(group_id, dset_name, dapl);
 
 
@@ -724,7 +724,9 @@ int main(int argc, char **argv) {
           status_n  = H5Sget_simple_extent_dims(dspace_id, dims_out, NULL);
 
           printf("dimension is %d %d\n", dims_out[0], dims_out[1]);
-          dim_memspace = dims_out[1];
+
+
+          dim_memspace = dims_out[0];
           if(dim_memspace != ncell){
             printf("Number of cells and number of initialisation in bathymetry_hdf are not same!\n");
           }
@@ -732,23 +734,44 @@ int main(int argc, char **argv) {
           memspace  = H5Screate_simple(1,&dim_memspace,NULL);
           n_initBathymetry = dims_out[0];       
 
-          initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
-
-          
           
 
-          for (int i = 0; i < n_initBathymetry; i++){
-            printf(" currently at time step: %d\n", i);
-            offset[0] = i;
-            offset[1] = 0;
+          
+          double t1,t2,c1,c2;
+          op_timers(&c1,&t1);
 
-            count[0] = 1;
-            count[1] = dims_out[1];
+          float** grid = (float**) malloc(dims_out[1]*sizeof(float*));
+          for (int i = 0; i < dims_out[1]; i++){
+            offset[0] = 0;
+            offset[1] = i;
 
-            initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
+            count[0] = dims_out[0];
+            count[1] = 1;
+
+            grid[i] = (float*) malloc( dims_out[0] * sizeof(float));
             h5err = H5Sselect_hyperslab(dspace_id, H5S_SELECT_SET, offset, NULL, count, NULL);
-            h5err = H5Dread(dset_id, H5T_IEEE_F32LE, memspace, dspace_id , H5P_DEFAULT, initBathymetry[i]);
+            h5err = H5Dread(dset_id, H5T_IEEE_F32LE, memspace, dspace_id , H5P_DEFAULT, grid[i]);
+          }
+          
+
+          initBathymetry = (float**) malloc(n_initBathymetry*sizeof(float*));
+          for (int i = 0; i < n_initBathymetry; i++){
+            initBathymetry[i] = (float*) malloc( ncell * sizeof(float));
           }  
+
+          for (int i = 0; i < dims_out[1]; i++){
+            for (int j = 0; j < dims_out[0]; j++){
+              initBathymetry[j][i] = grid[i][j];
+            }
+          }
+          op_timers(&c2,&t2);
+          printf("Reading InitBathymetry read done in %g sec\n",t2-t1);
+
+
+          for (int i = 0; i < dims_out[1]; i++){
+            free(grid[i]);
+          }
+          free(grid);
 
           H5Dclose(dset_id);
           H5Sclose(dspace_id);
