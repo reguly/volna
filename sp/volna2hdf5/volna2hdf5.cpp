@@ -700,7 +700,7 @@ int main(int argc, char **argv) {
           const char          groupname[20] = "displacement";
           const char          dset_name[20] = "dset";
 
-          file_id = H5Fopen(filename, H5F_ACC_RDONLY, H5P_DEFAULT); 
+          file_id = H5Fopen(event_streamName[i].c_str(), H5F_ACC_RDONLY, H5P_DEFAULT); 
           group_id = H5Gopen1(file_id, groupname);
 
           dapl = H5Pcreate(H5P_DATASET_ACCESS);
@@ -727,7 +727,7 @@ int main(int argc, char **argv) {
 
 
           dim_memspace = dims_out[0];
-          if(dim_memspace != ncell){
+          if(dims_out[1] != ncell){
             printf("Number of cells and number of initialisation in bathymetry_hdf are not same!\n");
           }
 

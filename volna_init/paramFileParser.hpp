@@ -416,11 +416,18 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 
       init_var
 	= ( str_p("Init")
-	    >> ch_p('{') 
-	    >> *(timer_option) 
-	    >> ch_p('}')
-	    >>
-	    (str_p("Bathymetry")|str_p("BathyRelative")| str_p("BathyHDF") |str_p("Eta")|str_p("U")|str_p("V"))
+	    >> 
+      (
+        (ch_p('{') 
+  	    >> *(timer_option) 
+  	    >> ch_p('}')
+  	    >>
+  	    (str_p("Bathymetry")|str_p("BathyRelative") |str_p("Eta")|str_p("U")|str_p("V"))) 
+
+        |
+
+        (str_p("BathyHDF"))
+      )
 	    [ assign_a( self.sim.InitVar ) ]
 	    >> 
 	    (
