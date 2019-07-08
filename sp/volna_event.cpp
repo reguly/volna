@@ -195,7 +195,10 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         InitU(cells, cellCenters, values);
       } else if (strcmp((*events)[i].className.c_str(), "InitV") == 0) {
         InitV(cells, cellCenters, values);
-      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 /*||
+      } else if (strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 ||
+        strcmp((*events)[i].className.c_str(), "InitBathymetryHDF") == 0 
+
+        /*||
                  strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0*/) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
@@ -208,7 +211,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           // Handle the case when InitBathymetry files are out for further bathymetry initalization: remove the event
-          if(strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 && k<n_initBathymetry) {
+          if((strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 || strcmp((*events)[i].className.c_str(), "InitBathymetryHDF") == 0) && k<n_initBathymetry) {
             InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb);
           }
         }
