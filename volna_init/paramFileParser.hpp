@@ -415,31 +415,26 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
       init = init_var | init_bore | init_gaussian_landslide;
 
       init_var
-	= ( str_p("Init")
-	    >> 
+= ( str_p("Init")
+      >> ( ( 
+        ch_p('{') 
+        >> *(timer_option) 
+        >> ch_p('}')
+        >>
+        (str_p("Bathymetry") |str_p("BathyRelative")|str_p("Eta")|str_p("U")|str_p("V")) 
+         [ assign_a( self.sim.InitVar ) ] ) | ( (str_p("BathyHDF")) [ assign_a( self.sim.InitVar ) ] ) )
+      >> 
       (
-        (ch_p('{') 
-  	    >> *(timer_option) 
-  	    >> ch_p('}')
-  	    >>
-  	    (str_p("Bathymetry")|str_p("BathyRelative") |str_p("Eta")|str_p("U")|str_p("V"))) 
-
-        |
-
-        (str_p("BathyHDF"))
+       ( ch_p('{') >> math_expression
+         [ assign_a( self.sim.InitFormula ) ]
+         >> ch_p('}') ) |
+       ( ch_p('"') >> data_filename
+        [ assign_a( self.sim.InitFilename ) ]
+        >> ch_p('"') )
+        )
       )
-	    [ assign_a( self.sim.InitVar ) ]
-	    >> 
-	    (
-	     ( ch_p('{') >> math_expression
-	       [ assign_a( self.sim.InitFormula ) ]
-	       >> ch_p('}') ) |
-	     ( ch_p('"') >> data_filename
-	      [ assign_a( self.sim.InitFilename ) ]
-	      >> ch_p('"') )
-	      )
-	    )
-	[ add_init_event( self.sim ) ];
+  [ add_init_event( self.sim ) ];
+
 
       init_bore
 	= ( str_p("Init")
