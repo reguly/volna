@@ -416,13 +416,12 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 
       init_var
 = ( str_p("Init")
-      >> ( ( 
-        ch_p('{') 
-        >> *(timer_option) 
-        >> ch_p('}')
-        >>
-        (str_p("Bathymetry") |str_p("BathyRelative")|str_p("Eta")|str_p("U")|str_p("V")) 
-         [ assign_a( self.sim.InitVar ) ] ) | ( (str_p("BathyHDF")) [ assign_a( self.sim.InitVar ) ] ) )
+      >> ch_p('{') 
+      >> *(timer_option) 
+      >> ch_p('}')
+      >>
+      (str_p("Bathymetry") | str_p("BathyHDF")|str_p("BathyRelative")|str_p("Eta")|str_p("U")|str_p("V"))
+      [ assign_a( self.sim.InitVar ) ]
       >> 
       (
        ( ch_p('{') >> math_expression
@@ -434,7 +433,6 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
         )
       )
   [ add_init_event( self.sim ) ];
-
 
       init_bore
 	= ( str_p("Init")
