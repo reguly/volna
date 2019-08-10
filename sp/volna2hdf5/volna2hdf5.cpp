@@ -1149,6 +1149,7 @@ int main(int argc, char **argv) {
     // afterward this InitBathymetryHDF and InitBathymetry are the same
     if(strcmp(event_className[i].c_str(), "InitBathymetryHDF") == 0){
       event_className[i].assign("InitBathymetry");
+      event_streamName[i].assign("bathy%i.txt");
     }
 
     check_hdf5_error(
