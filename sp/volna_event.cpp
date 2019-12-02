@@ -26,7 +26,7 @@ int timer_happens(TimerParams *p) {
 
 void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char *filename) {
   hid_t    file_id, dataset_id, dataspace_id; /* identifiers */
-  hid_t    plist_id; 
+  hid_t    plist_id;
 
   size_t   nelmts;
   unsigned flags, filter_info;
@@ -39,7 +39,7 @@ void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char 
   int      idx;
   int      i,j, numfilt;
 
-  /* Uncomment these variables to use SZIP compression 
+  /* Uncomment these variables to use SZIP compression
   unsigned szip_options_mask;
   unsigned szip_pixels_per_block;
   */
@@ -57,7 +57,7 @@ void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char 
   H5Dwrite(dataset_id, H5T_NATIVE_INT, H5S_ALL, dataspace_id, H5P_DEFAULT, (char*)dimensions);
   H5Dclose(dataset_id);
   H5Sclose(dataspace_id);
-  
+
   /* Create dataset "Compressed Data" in the group using absolute name.  */
   dims[0] = dim_cont*dim_stride;
   dataspace_id = H5Screate_simple (1, dims, NULL);
@@ -69,18 +69,18 @@ void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char 
   status = H5Pset_chunk (plist_id, 1, cdims);
 
   /* Set ZLIB / DEFLATE Compression using compression level 6.
-   * To use SZIP Compression comment out these lines. 
-  */ 
-  status = H5Pset_deflate (plist_id, 6); 
+   * To use SZIP Compression comment out these lines.
+  */
+  status = H5Pset_deflate (plist_id, 6);
 
   /* Uncomment these lines to set SZIP Compression 
   szip_options_mask = H5_SZIP_NN_OPTION_MASK;
   szip_pixels_per_block = 16;
   status = H5Pset_szip (plist_id, szip_options_mask, szip_pixels_per_block);
   */
-  
-  dataset_id = H5Dcreate2 (file_id, "gauges", H5T_IEEE_F32BE, 
-                          dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT); 
+
+  dataset_id = H5Dcreate2 (file_id, "gauges", H5T_IEEE_F32BE,
+                          dataspace_id, H5P_DEFAULT, plist_id, H5P_DEFAULT);
 
 
   status = H5Dwrite (dataset_id, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data);
@@ -164,7 +164,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
-									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedCellsToCells, op_dat bathy_xy, op_dat initial_zb, 
+									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedCellsToCells, op_dat bathy_xy, op_dat initial_zb,
                    op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
   //  op_printf("processEvents()... \n");

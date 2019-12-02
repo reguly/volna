@@ -1,7 +1,7 @@
 #
 # The following environment variables should be predefined:
 #
-#OP2_INSTALL_PATH = 
+#OP2_INSTALL_PATH =
 #HDF5_INSTALL_PATH =
 #MPI_INSTALL_PATH =
 #PARMETIS_INSTALL_PATH =
@@ -24,19 +24,6 @@ MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
 CUDA_INC	= -I$(CUDA_INSTALL_PATH)/include
 CUDA_LIB	= -L$(CUDA_INSTALL_PATH)/lib64
-
-ifdef PARMETIS_INSTALL_PATH
-PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
-PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
-PARMETIS_VER?=4
-ifeq ($(PARMETIS_VER),4)
-  PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/include -DHAVE_PARMETIS -DPARMETIS_VER_4
-  PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/lib -lparmetis -lmetis
-else
-  PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/ -DHAVE_PARMETIS
-  PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/ -lparmetis -lmetis
-endif
-endif
 
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
@@ -115,12 +102,12 @@ endif
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	toConserved.h EvolveValuesRK2_1.h EvolveValuesRK2_2.h EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
 	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK3_1_kernel.cu  cuda/EvolveValuesRK3_2_kernel.cu\
-	cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
-	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu  cuda/EvolveValuesRK3_1_kernel.cu\
+	cuda/EvolveValuesRK3_2_kernel.cu cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
+        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 
