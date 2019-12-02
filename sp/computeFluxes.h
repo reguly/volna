@@ -23,6 +23,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   dxr = (edgeCenters[0] - rightcellCenters[0]);
   dyr = (edgeCenters[1] - rightcellCenters[1]);
+
   if (!*isRightBoundary) {
     rightCellValues[0] = cellRight[0];
     rightCellValues[1] = cellRight[1];
@@ -41,6 +42,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     float outNormalVelocity = 0.0f;
     float outTangentVelocity = 0.0f;
 
+
     //Outflow
     rightCellValues[0] = leftCellValues[0];
     if(leftCellValues[3] < 0.0f){
@@ -57,6 +59,14 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
     rightCellValues[1] *= rightCellValues[0];
     rightCellValues[2] *= rightCellValues[0];
+    //WALL
+    rightCellValues[0] = cellLeft[0];
+    outNormalVelocity =  -1.0f*inNormalVelocity;
+    outTangentVelocity = inTangentVelocity;
+
+    rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
+    rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+
   }
 
   // ------------------------------------------------------------------------------------
@@ -99,6 +109,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   // Audusse Reconstruction(2005) 2nd order Centered term
   bathySource[2] = -.5f * g *(leftCellValues[0] + cellLeft[0])*(leftCellValues[3] - cellLeft[3]);
   bathySource[3] = -.5f * g *(rightCellValues[0] + cellRight[0])*(rightCellValues[3] - cellRight[3]);
+
   leftCellValues[0] = hL;
   rightCellValues[0] = hR;
 
@@ -117,6 +128,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   float uLn = uL * edgeNormals[0] + vL * edgeNormals[1];
   float uRn = uR * edgeNormals[0] + vR * edgeNormals[1];
+
 
   float unStar = 0.5f * (uLn + uRn) + (cL-cR);
   float cStar = 0.5f * (cL + cR) - 0.25f* (uRn-uLn);
@@ -220,7 +232,6 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     out[2] = RightFluxes_V;
   }*/
 
-
   out[0] =
   ( t1 * LeftFluxes_H ) +
   ( t2 * RightFluxes_H ) +
@@ -232,11 +243,13 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   ( t3 * ( (rightCellValues[1]) -
           (leftCellValues[1]) ) );
 
+
   out[2] =
   ( t1 * LeftFluxes_V ) +
   ( t2 * RightFluxes_V ) +
   ( t3 * ( (rightCellValues[2]) -
           (leftCellValues[2]) ) );
+
 
   out[0] *= *edgeLength;
   out[1] *= *edgeLength;
