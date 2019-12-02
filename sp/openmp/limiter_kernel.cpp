@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "../initBathymetry_large.h"
+#include "../limiter.h"
 
 // host stub function
-void op_par_loop_initBathymetry_large(char const *name, op_set set,
+void op_par_loop_limiter(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -30,19 +30,19 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(11);
+  op_timing_realloc(22);
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 4;
-  int  inds[8] = {0,1,2,2,2,3,3,3};
+  int  ninds   = 1;
+  int  inds[8] = {-1,-1,-1,-1,0,0,0,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: initBathymetry_large\n");
+    printf(" kernel routine with indirection: limiter\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_11
-    int part_size = OP_PART_SIZE_11;
+  #ifdef OP_PART_SIZE_22
+    int part_size = OP_PART_SIZE_22;
   #else
     int part_size = OP_part_size;
   #endif
@@ -67,28 +67,27 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
         int nelem    = Plan->nelems[blockId];
         int offset_b = Plan->offset[blockId];
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map0idx = arg0.map_data[n * arg0.map->dim + 0];
-          int map2idx = arg2.map_data[n * arg2.map->dim + 0];
-          int map3idx = arg2.map_data[n * arg2.map->dim + 1];
-          int map4idx = arg2.map_data[n * arg2.map->dim + 2];
+          int map4idx = arg4.map_data[n * arg4.map->dim + 0];
+          int map5idx = arg4.map_data[n * arg4.map->dim + 1];
+          int map6idx = arg4.map_data[n * arg4.map->dim + 2];
 
 
-          initBathymetry_large(
-            &((float*)arg0.data)[4 * map0idx],
-            &((float*)arg1.data)[2 * map0idx],
-            &((float*)arg2.data)[2 * map2idx],
-            &((float*)arg2.data)[2 * map3idx],
-            &((float*)arg2.data)[2 * map4idx],
-            &((float*)arg5.data)[1 * map2idx],
-            &((float*)arg5.data)[1 * map3idx],
-            &((float*)arg5.data)[1 * map4idx]);
+          limiter(
+            &((float*)arg0.data)[8 * n],
+            &((float*)arg1.data)[4 * n],
+            &((float*)arg2.data)[4 * n],
+            &((float*)arg3.data)[8 * n],
+            &((float*)arg4.data)[2 * map4idx],
+            &((float*)arg4.data)[2 * map5idx],
+            &((float*)arg4.data)[2 * map6idx],
+            &((float*)arg7.data)[2 * n]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[11].transfer  += Plan->transfer;
-    OP_kernels[11].transfer2 += Plan->transfer2;
+    OP_kernels[22].transfer  += Plan->transfer;
+    OP_kernels[22].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -99,7 +98,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].name      = name;
-  OP_kernels[11].count    += 1;
-  OP_kernels[11].time     += wall_t2 - wall_t1;
+  OP_kernels[22].name      = name;
+  OP_kernels[22].count    += 1;
+  OP_kernels[22].time     += wall_t2 - wall_t1;
 }

@@ -17,10 +17,12 @@ __device__ void SpaceDiscretization_gpu( float *left,
   left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
 
+  left[1] += (bathySource[2] *edgeNormals[0])/cellVolumes0[0];
+  left[2] += (bathySource[2] *edgeNormals[1])/cellVolumes0[0];
   }else{
   left[0] -= 0.0f;
-  left[0] -= 0.0f;
-  left[0] -= 0.0f;
+  left[1] -= 0.0f;
+  left[2] -= 0.0f;
   }
 
   if (!*isRightBoundary) {
@@ -29,10 +31,12 @@ __device__ void SpaceDiscretization_gpu( float *left,
     right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0];
     right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0];
 
+    right[1] -= (bathySource[3] *edgeNormals[0])/cellVolumes1[0];
+    right[2] -= (bathySource[3] *edgeNormals[1])/cellVolumes1[0];
     }else{
-    right[0] += 0.0f;
-    right[1] += 0.0f;
-    right[2] += 0.0f;
+      right[0] += 0.0f;
+      right[1] += 0.0f;
+      right[2] += 0.0f;
     }
   }
 }
@@ -167,10 +171,10 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(9);
+  op_timing_realloc(25);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[9].name      = name;
-  OP_kernels[9].count    += 1;
+  OP_kernels[25].name      = name;
+  OP_kernels[25].count    += 1;
 
 
   int    ninds   = 3;
@@ -181,8 +185,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_9
-    int part_size = OP_PART_SIZE_9;
+  #ifdef OP_PART_SIZE_25
+    int part_size = OP_PART_SIZE_25;
   #else
     int part_size = OP_part_size;
   #endif
@@ -199,8 +203,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       if (col==Plan->ncolors_core) {
         op_mpi_wait_all_cuda(nargs, args);
       }
-      #ifdef OP_BLOCK_SIZE_9
-      int nthread = OP_BLOCK_SIZE_9;
+      #ifdef OP_BLOCK_SIZE_25
+      int nthread = OP_BLOCK_SIZE_25;
       #else
       int nthread = OP_block_size;
       #endif
@@ -229,12 +233,12 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[9].transfer  += Plan->transfer;
-    OP_kernels[9].transfer2 += Plan->transfer2;
+    OP_kernels[25].transfer  += Plan->transfer;
+    OP_kernels[25].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[9].time     += wall_t2 - wall_t1;
+  OP_kernels[25].time     += wall_t2 - wall_t1;
 }

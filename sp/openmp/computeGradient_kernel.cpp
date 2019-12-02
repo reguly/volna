@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "../initBathymetry_large.h"
+#include "../computeGradient.h"
 
 // host stub function
-void op_par_loop_initBathymetry_large(char const *name, op_set set,
+void op_par_loop_computeGradient(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -14,10 +14,12 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 10;
+  op_arg args[10];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -27,22 +29,24 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(11);
+  op_timing_realloc(21);
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 4;
-  int  inds[8] = {0,1,2,2,2,3,3,3};
+  int  ninds   = 2;
+  int  inds[10] = {-1,0,0,0,-1,1,1,1,-1,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: initBathymetry_large\n");
+    printf(" kernel routine with indirection: computeGradient\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_11
-    int part_size = OP_PART_SIZE_11;
+  #ifdef OP_PART_SIZE_21
+    int part_size = OP_PART_SIZE_21;
   #else
     int part_size = OP_part_size;
   #endif
@@ -67,28 +71,29 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
         int nelem    = Plan->nelems[blockId];
         int offset_b = Plan->offset[blockId];
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map0idx = arg0.map_data[n * arg0.map->dim + 0];
-          int map2idx = arg2.map_data[n * arg2.map->dim + 0];
-          int map3idx = arg2.map_data[n * arg2.map->dim + 1];
-          int map4idx = arg2.map_data[n * arg2.map->dim + 2];
+          int map1idx = arg1.map_data[n * arg1.map->dim + 0];
+          int map2idx = arg1.map_data[n * arg1.map->dim + 1];
+          int map3idx = arg1.map_data[n * arg1.map->dim + 2];
 
 
-          initBathymetry_large(
-            &((float*)arg0.data)[4 * map0idx],
-            &((float*)arg1.data)[2 * map0idx],
-            &((float*)arg2.data)[2 * map2idx],
-            &((float*)arg2.data)[2 * map3idx],
-            &((float*)arg2.data)[2 * map4idx],
-            &((float*)arg5.data)[1 * map2idx],
-            &((float*)arg5.data)[1 * map3idx],
-            &((float*)arg5.data)[1 * map4idx]);
+          computeGradient(
+            &((float*)arg0.data)[4 * n],
+            &((float*)arg1.data)[4 * map1idx],
+            &((float*)arg1.data)[4 * map2idx],
+            &((float*)arg1.data)[4 * map3idx],
+            &((float*)arg4.data)[2 * n],
+            &((float*)arg5.data)[2 * map1idx],
+            &((float*)arg5.data)[2 * map2idx],
+            &((float*)arg5.data)[2 * map3idx],
+            &((float*)arg8.data)[8 * n],
+            &((float*)arg9.data)[8 * n]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[11].transfer  += Plan->transfer;
-    OP_kernels[11].transfer2 += Plan->transfer2;
+    OP_kernels[21].transfer  += Plan->transfer;
+    OP_kernels[21].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -99,7 +104,7 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].name      = name;
-  OP_kernels[11].count    += 1;
-  OP_kernels[11].time     += wall_t2 - wall_t1;
+  OP_kernels[21].name      = name;
+  OP_kernels[21].count    += 1;
+  OP_kernels[21].time     += wall_t2 - wall_t1;
 }

@@ -86,7 +86,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_par_loop(SpaceDiscretization, "SpaceDiscretization", edges,
                 op_arg_dat(data_out, 0, edgesToCells, 4, "float", OP_INC), //again, Zb is not needed
                 op_arg_dat(data_out, 1, edgesToCells, 4, "float", OP_INC),
-                op_arg_dat(data_in, 0, edgesToCells, 4, "float", OP_READ),
+                op_arg_dat(data_in, 0 , edgesToCells, 4, "float", OP_READ),
                 op_arg_dat(data_in, 1, edgesToCells, 4, "float", OP_READ),
                 op_arg_dat(edgeFluxes, -1, OP_ID, 3, "float", OP_READ),
                 op_arg_dat(bathySource, -1, OP_ID, 4, "float", OP_READ),

@@ -11,7 +11,8 @@ inline void computeGradient(const float *center,
   // Only reconstruct if the cell is not a touching the edge
   // Least-Squares Gradient Reconstruction
   if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
-    if(center[0]> 100.0f*EPS){
+   if(center[0]> 1.0f){
+
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];
@@ -31,10 +32,12 @@ inline void computeGradient(const float *center,
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
+
     total = weights[0] + weights[1] + weights[2];
+    
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
-    weights[2] = total/ weights[2];
+    weights[2] = total/weights[2];
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
