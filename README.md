@@ -1,10 +1,6 @@
 Volna- OP2- Second Order Version.
 =====
 
-
-Differences to VOLNA-OP2 is the addition of sp/computeGradient.h
-and sp/limiter.h, implementation is the same.
-
 This is an extension to the OP2 port of the original Volna code.
 
 ## Installation
