@@ -118,7 +118,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(q,-1,OP_ID,8,"float",OP_WRITE),
                   op_arg_dat(GradientatCell,-1,OP_ID,8,"float",OP_WRITE));
 
-    }
+
     *minTimestep = INFINITY;
     op_par_loop_limiter("limiter",cells,
                 op_arg_dat(q,-1,OP_ID,8,"float",OP_READ),
