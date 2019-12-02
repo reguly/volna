@@ -25,6 +25,19 @@ MPI_INC = -I$(MPI_INSTALL_PATH)/include
 CUDA_INC	= -I$(CUDA_INSTALL_PATH)/include
 CUDA_LIB	= -L$(CUDA_INSTALL_PATH)/lib64
 
+ifdef PARMETIS_INSTALL_PATH
+PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
+PARMETIS_LIB_PATH ?= $(PARMETIS_INSTALL_PATH)
+PARMETIS_VER?=4
+ifeq ($(PARMETIS_VER),4)
+  PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/include -DHAVE_PARMETIS -DPARMETIS_VER_4
+  PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/lib -lparmetis -lmetis
+else
+  PARMETIS_INC = -I$(PARMETIS_INCLUDE_PATH)/ -DHAVE_PARMETIS
+  PARMETIS_LIB = -L$(PARMETIS_LIB_PATH)/ -lparmetis -lmetis
+endif
+endif
+
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_INC   = -I$(PTSCOTCH_INSTALL_PATH)/include
@@ -138,4 +151,4 @@ cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
 #
 
 clean:
-	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o 
+	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o

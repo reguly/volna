@@ -403,22 +403,9 @@ int main(int argc, char **argv) {
   op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
-  //EvolveValuesRK34
-  /*op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
-  op_dat midPointConservative1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative1"); //temp - cells - dim 4
-  op_dat midPointConservative3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative3"); //temp - cells - dim 4
-  op_dat Conservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Conservative"); //temp - cells - dim 4
-  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
-  op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4
-<<<<<<< Updated upstream
 
   // q contains the max and min values of the physical variables surrounding each cell
-  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
-=======
-  */
-  // q contains the max and min values of the physical variables surrounding each cell
   op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8
->>>>>>> Stashed changes
   // lim is the limiter value for each physical variable defined on each cell
   op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   double timestep;
@@ -452,16 +439,7 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_WRITE),
                   op_arg_dat(midPoint,-1,OP_ID,4,"float",OP_WRITE));
 
-      /*
-      op_par_loop_EvolveValuesRK3_1("EvolveValuesRK3_1",cells,
-                  op_arg_gbl(&dT,1,"float",OP_READ),
-                  op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(values,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_WRITE),
-                  op_arg_dat(midPoint,-1,OP_ID,4,"float",OP_WRITE));
-      */
       float dummy = 0.0;
-      //printf("Return of EvolveValuesRK3_1 Conservative H %g HU %g HV %g Zb %g  \n \n", normcomp(Conservative, 0), normcomp(Conservative, 1),normcomp(Conservative, 2),normcomp(Conservative, 3));
 
       spaceDiscretization(midPointConservative, outConservative, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
@@ -476,38 +454,7 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(values,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(values_new,-1,OP_ID,4,"float",OP_WRITE));
-      /*
-      //printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g \n", normcomp(midPointConservative1, 0), normcomp(midPointConservative1, 1),normcomp(midPointConservative1, 2),normcomp(midPointConservative1, 3));
-      op_par_loop_EvolveValuesRK3_2("EvolveValuesRK3_2",cells,
-                  op_arg_gbl(&dT,1,"float",OP_READ),
-                  op_arg_dat(midPointConservative1,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_RW));
 
-
-      op_par_loop_EvolveValuesRK3_3("EvolveValuesRK3_3",cells,
-                  op_arg_gbl(&dT,1,"float",OP_READ),
-                  op_arg_dat(values,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_RW),
-                  op_arg_dat(midPoint3,-1,OP_ID,4,"float",OP_WRITE));
-
-      spaceDiscretization(Conservative, midPointConservative3, &dummy,
-          bathySource, edgeFluxes, maxEdgeEigenvalues,
-          edgeNormals, edgeLength, cellVolumes, isBoundary,
-          cells, edges, edgesToCells, cellsToEdges,
-          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2);
-<<<<<<< Updated upstream
-=======
-
-      //printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g \n", normcomp(midPointConservative3, 0), normcomp(midPointConservative3, 1),normcomp(midPointConservative3, 2),normcomp(midPointConservative3, 3));
->>>>>>> Stashed changes
-
-      op_par_loop_EvolveValuesRK3_4("EvolveValuesRK3_4",cells,
-                  op_arg_gbl(&dT,1,"float",OP_READ),
-                  op_arg_dat(midPointConservative3,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_READ),
-                  op_arg_dat(values_new,-1,OP_ID,4,"float",OP_WRITE));
-      */
       timestep=dT;
 
     }// End of EvolveRK3_4
