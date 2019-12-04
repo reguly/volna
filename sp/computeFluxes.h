@@ -34,7 +34,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     rightCellValues[3] = cellLeft[3];
     float nx = edgeNormals[0];
     float ny = edgeNormals[1];
-    float HL = leftCellValues[0] < EPS ? EPS : leftCellValues[0];
+    float HL = leftCellValues[0] > 1.0f ? leftCellValues[0] : 1.0f;
     uL = leftCellValues[1]/ HL;
     vL = leftCellValues[2]/ HL;
     float inNormalVelocity = uL * nx + vL * ny;
@@ -88,8 +88,8 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
   //float TruncatedHL = leftCellValues[0] < EPS ? EPS : leftCellValues[0];
   //float TruncatedHR = rightCellValues[0] < EPS ? EPS : rightCellValues[0];
-  float TruncatedHL = leftCellValues[0] < 1.0f ? 1.0f : leftCellValues[0];
-  float TruncatedHR = rightCellValues[0] < 1.0f ? 1.0f : rightCellValues[0];
+  float TruncatedHL = leftCellValues[0] > 1.0f ? leftCellValues[0] : 1.0f;
+  float TruncatedHR = rightCellValues[0] > 1.0f ? rightCellValues[0] : 1.0f;
   uL = leftCellValues[1]/TruncatedHL;
   vL = leftCellValues[2]/TruncatedHL;
 
