@@ -1,4 +1,4 @@
-Volna- OP2- Second Order Version.
+Volna-OP2
 =====
 
 This is an extension to the OP2 port of the original Volna code.
