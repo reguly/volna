@@ -49,6 +49,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
       rightCellValues[1] = uL;
       rightCellValues[2] = vL;
     } else {
+    // Wall
       outNormalVelocity =  -1.0f*inNormalVelocity;
       outTangentVelocity = inTangentVelocity;
       rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
@@ -59,13 +60,6 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
     rightCellValues[1] *= rightCellValues[0];
     rightCellValues[2] *= rightCellValues[0];
-    //WALL
-    rightCellValues[0] = cellLeft[0];
-    outNormalVelocity =  -1.0f*inNormalVelocity;
-    outTangentVelocity = inTangentVelocity;
-
-    rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
-    rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
 
   }
 
