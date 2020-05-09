@@ -271,3 +271,27 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
     } else i++;
   }
 }
+
+void processLastSimulation(std::vector<TimerParams> *timers, std::vector<EventParams> *events, op_set cells, op_dat values, op_dat cellVolumes,
+									 op_dat nodeCoords, op_map cellsToNodes, int writeOption) {
+  op_printf("processLastSimulation()\n");
+  int i = 0;
+  bool isSimFound = false;
+  while(i < (*timers).size()){
+    if (strcmp((*events)[i].className.c_str(), "OutputSimulation") == 0) {
+      // 0 - HDF5 output
+      // 1 - VTK ASCII output
+      // 2 - VTK Binary output
+      OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
+      isSimFound = true;
+      break;
+    } 
+    i++;
+  }
+
+  if(!isSimFound){
+    printf("No simulation found.\n");
+  }
+
+}
+

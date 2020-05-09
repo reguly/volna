@@ -35,6 +35,11 @@ extern "C" {
 #endif
 #endif
 
+#ifdef SLOPE
+#include "executor.h"
+#include "inspector.h"
+#endif 
+
 void op_par_loop_EvolveValuesRK3_1(char const *, op_set,
   op_arg,
   op_arg,
@@ -123,6 +128,10 @@ int main(int argc, char **argv) {
   const char *filename_h5 = argv[1];
   int writeOption = atoi(argv[2]); // 0 - HDF5, 1 - VTK ASCII, 2 - VTK Binary
 
+  #ifdef SLOPE
+  int tileSize = atoi(argv[3]);
+  #endif
+
   EPS = 1e-6; //machine epsilon, for doubles 1e-11
 
   hid_t file;
@@ -183,6 +192,58 @@ int main(int argc, char **argv) {
   op_map cellsToEdges = op_decl_map_hdf5(cells, edges, N_NODESPERCELL,
       filename_h5,
       "cellsToEdges");
+
+  #ifdef SLOPE
+
+  // sets
+  set_t* sl_nodes = set("sl_nodes", nodes->size);
+  set_t* sl_edges = set("sl_edges", edges->size); 
+  set_t* sl_cells = set("sl_cells", cells->size);
+
+  map_t* sl_cellsToCells = map("sl_cellsToCells", sl_cells, sl_cells, cellsToCells->map, sl_cells->size * N_NODESPERCELL);
+  map_t* sl_cellsToNodes = map("sl_cellsToNodes", sl_cells, sl_nodes, cellsToNodes->map, sl_cells->size * N_NODESPERCELL);
+  map_t* sl_edgesToCells = map("sl_edgesToCells", sl_edges, sl_cells, edgesToCells->map, sl_edges->size * N_CELLSPEREDGE);
+  map_t* sl_cellsToEdges = map("sl_cellsToEdges", sl_cells, sl_edges, cellsToEdges->map, sl_cells->size * N_NODESPERCELL);
+
+
+  desc_list computeGradientDesc ({desc(sl_cellsToCells, READ),
+                                    desc(DIRECT, READ),
+                                    desc(DIRECT, WRITE)});
+
+  desc_list limiterDesc ({desc(DIRECT, READ),
+                          desc(DIRECT, WRITE),
+                          desc(sl_cellsToEdges, READ)});
+  
+
+  desc_list computeFluxesDesc ({desc(sl_edgesToCells, READ),
+                          desc(DIRECT, READ),
+                          desc(DIRECT, WRITE)});
+
+  desc_list numericalFluxes1Desc ({desc(DIRECT, WRITE)});
+
+  desc_list spaceDiscretizationDesc ({desc(sl_edgesToCells, INC),
+                          desc(sl_edgesToCells, READ),
+                          desc(DIRECT, READ),
+                          desc(sl_edgesToCells, READ)});
+
+  map_list meshMaps ({sl_cellsToNodes});
+
+  inspector_t* insp = insp_init(tileSize, OMP, COL_DEFAULT, &meshMaps);
+
+  insp_add_parloop (insp, "computeGradient", sl_cells, &computeGradientDesc);
+  insp_add_parloop (insp, "limiter", sl_cells, &limiterDesc);
+  insp_add_parloop (insp, "computeFluxes", sl_edges, &computeFluxesDesc);
+  insp_add_parloop (insp, "numericalFluxes1", sl_cells, &numericalFluxes1Desc);
+  insp_add_parloop (insp, "spaceDiscretization", sl_edges, &spaceDiscretizationDesc);
+
+  insp_run (insp, 1);
+
+  insp_print (insp, LOW);
+
+  executor_t* exec = exec_init (insp);
+  int nColors = exec_num_colors (exec);
+
+  #endif
 
   // When using OutputLocation events we have already computed the cell
   // index of the points so we don't have to locate the cell every time
@@ -407,10 +468,18 @@ int main(int argc, char **argv) {
   // ----------------------------------------------------
     {
       float minTimestep = 0.0;
+      #ifdef SLOPE
+      spaceDiscretization(values, midPointConservative, &minTimestep,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0,
+          insp, exec, nColors);
+      #else
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0);
+      #endif
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g\n  \n", normcomp(midPointConservative, 0), normcomp(midPointConservative, 1),normcomp(midPointConservative, 2),normcomp(midPointConservative, 3));
 #endif
@@ -424,13 +493,20 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPoint,-1,OP_ID,4,"float",OP_WRITE));
 
       float dummy = 0.0;
-
+      #ifdef SLOPE
+      spaceDiscretization(midPoint, midPointConservative1, &dummy,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1,
+          insp, exec, nColors);
+      #else
       spaceDiscretization(midPoint, midPointConservative1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1);
-
+      #endif
 
       op_par_loop_EvolveValuesRK3_2("EvolveValuesRK3_2",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
@@ -444,12 +520,21 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(Conservative,-1,OP_ID,4,"float",OP_RW),
                   op_arg_dat(midPoint3,-1,OP_ID,4,"float",OP_WRITE));
-
+      #ifdef SLOPE
+      spaceDiscretization(midPoint3, midPointConservative3, &dummy,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2,
+          insp, exec, nColors);
+      #else
       spaceDiscretization(midPoint3, midPointConservative3, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2);
+      #endif
+
 
       op_par_loop_EvolveValuesRK3_4("EvolveValuesRK3_4",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
@@ -501,7 +586,10 @@ int main(int argc, char **argv) {
 
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
-  op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
+  op_printf("Main simulation runtime = %lf\n",wall_t2-wall_t1);
+  op_printf("Iteration count = %d\n",itercount);
+  processLastSimulation(&timers, &events, cells, values, cellVolumes, nodeCoords, cellsToNodes, 0);
+
   /*
    * Print last step results for validation
    */
@@ -610,7 +698,7 @@ int main(int argc, char **argv) {
     op_printf("Error: temporary op_dat %s cannot be removed\n",lim->name);
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
-  op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);
+  op_printf("Max total runtime = %lf\n",wall_t2-wall_t1);
 
   op_exit();
 

@@ -35,5 +35,6 @@ extern float g;
 #include "computeGradient_kernel.cpp"
 #include "limiter_kernel.cpp"
 #include "computeFluxes_kernel.cpp"
-#include "NumericalFluxes_kernel.cpp"
+#include "NumericalFluxes1_kernel.cpp"
 #include "SpaceDiscretization_kernel.cpp"
+#include "computeMinTimestep_kernel.cpp"
