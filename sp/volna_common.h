@@ -10,7 +10,6 @@
 #include "op_lib_cpp.h"
 
 #ifdef SLOPE
-#include "inspector.h"
 #include "executor.h"
 #endif
 
@@ -104,7 +103,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
     op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges, 
     op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most,
-    inspector_t* insp, executor_t* exec, int nColors);
+    executor_t* exec, int nColors);
 #else
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,

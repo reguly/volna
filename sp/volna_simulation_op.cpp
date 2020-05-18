@@ -103,7 +103,6 @@ void op_par_loop_computeMinTimestep(char const *, op_set,
 #include "computeMinTimestep.h"
 
 #ifdef SLOPE
-#include "inspector.h"
 #include "executor.h"
 #endif
 
@@ -113,7 +112,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
                          op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges,
                          op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most,
-                         inspector_t* insp, executor_t* exec, int nColors) {
+                         executor_t* exec, int nColors) {
 
 //for each colour
   for (int color = 0; color < nColors; color++) {
@@ -131,6 +130,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
       iterations_list& iterations_0 = tile_get_iterations (tile, 0);
       tileLoopSize = tile_loop_size (tile, 0);
 
+      #pragma omp simd
       for (int k = 0; k < tileLoopSize; k++) {
           computeGradient(
             (float*)(data_in->data + ((iterations_0[k] * 4) * sizeof(float))),
@@ -144,12 +144,13 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
             (float*)(q->data + ((iterations_0[k] * 8) * sizeof(float))),
             (float*)(GradientatCell->data + ((iterations_0[k] * 8) * sizeof(float))));
       }
-      *minTimestep = INFINITY;
+      // *minTimestep = INFINITY;
       // loop computeGradient
       iterations_list& lc2e_1 = tile_get_local_map (tile, 1, "sl_cellsToEdges");
       iterations_list& iterations_1 = tile_get_iterations (tile, 1);
       tileLoopSize = tile_loop_size (tile, 1);
 
+      #pragma omp simd
       for (int k = 0; k < tileLoopSize; k++) {
         limiter(
           (float*)(q->data + ((iterations_1[k] * 8) * sizeof(float))),
@@ -168,6 +169,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
       iterations_list& iterations_2 = tile_get_iterations (tile, 2);
       tileLoopSize = tile_loop_size (tile, 2);
 
+      #pragma omp simd
       for (int k = 0; k < tileLoopSize; k++) {
         computeFluxes(
           (float*)(data_in->data + ((le2c_2[k * N_CELLSPEREDGE + 0] * 4) * sizeof(float))),
@@ -191,7 +193,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
       // loop NumericalFluxes
       iterations_list& iterations_3 = tile_get_iterations (tile, 3);
       tileLoopSize = tile_loop_size (tile, 3);
-
+      #pragma omp simd
       for (int k = 0; k < tileLoopSize; k++) {
         NumericalFluxes1(
           (float*)(data_out->data + ((iterations_3[k] * 4) * sizeof(float)))
@@ -221,17 +223,17 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     }
 
   }
-  *minTimestep = INFINITY;
+  // *minTimestep = INFINITY;
 
-  op_par_loop_computeMinTimestep("computeMinTimestep",cells,
-              op_arg_dat(maxEdgeEigenvalues,0,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(maxEdgeEigenvalues,1,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(maxEdgeEigenvalues,2,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(edgeLength,0,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(edgeLength,1,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(edgeLength,2,cellsToEdges,1,"float",OP_READ),
-              op_arg_dat(cellVolumes,-1,OP_ID,1,"float",OP_READ),
-              op_arg_gbl(minTimestep,1,"float",OP_MIN));
+  // op_par_loop_computeMinTimestep("computeMinTimestep",cells,
+  //             op_arg_dat(maxEdgeEigenvalues,0,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(maxEdgeEigenvalues,1,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(maxEdgeEigenvalues,2,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(edgeLength,0,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(edgeLength,1,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(edgeLength,2,cellsToEdges,1,"float",OP_READ),
+  //             op_arg_dat(cellVolumes,-1,OP_ID,1,"float",OP_READ),
+  //             op_arg_gbl(minTimestep,1,"float",OP_MIN));
 
 }
 #else
@@ -254,7 +256,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(GradientatCell,-1,OP_ID,8,"float",OP_WRITE));
 
     }
-    *minTimestep = INFINITY;
+    // *minTimestep = INFINITY;
     op_par_loop_limiter("limiter",cells,
                 op_arg_dat(q,-1,OP_ID,8,"float",OP_READ),
                 op_arg_dat(lim,-1,OP_ID,4,"float",OP_WRITE),
@@ -302,15 +304,17 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(cellVolumes,0,edgesToCells,1,"float",OP_READ),
                 op_arg_dat(cellVolumes,1,edgesToCells,1,"float",OP_READ));
     }
-    op_par_loop_computeMinTimestep("computeMinTimestep",cells,
-                op_arg_dat(maxEdgeEigenvalues,0,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(maxEdgeEigenvalues,1,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(maxEdgeEigenvalues,2,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(edgeLength,0,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(edgeLength,1,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(edgeLength,2,cellsToEdges,1,"float",OP_READ),
-                op_arg_dat(cellVolumes,-1,OP_ID,1,"float",OP_READ),
-                op_arg_gbl(minTimestep,1,"float",OP_MIN));
+    // op_par_loop_computeMinTimestep("computeMinTimestep",cells,
+    //             op_arg_dat(maxEdgeEigenvalues,0,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(maxEdgeEigenvalues,1,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(maxEdgeEigenvalues,2,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(edgeLength,0,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(edgeLength,1,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(edgeLength,2,cellsToEdges,1,"float",OP_READ),
+    //             op_arg_dat(cellVolumes,-1,OP_ID,1,"float",OP_READ),
+    //             op_arg_gbl(minTimestep,1,"float",OP_MIN));
+
+    // printf("minTimeStep=%f\n", *minTimestep);
 
 }
 #endif
