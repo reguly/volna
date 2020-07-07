@@ -103,7 +103,10 @@ endif
 
 volna_slope: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 ifdef MPI_INSTALL_PATH
-	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp \
+	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE volna_op.cpp \
+	volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp \
+	volna_simulation_op.cpp volna_event.cpp \
+	slope/volna_kernels.cpp \
 	$(HDF5_INC) $(OP2_INC) $(SLOPE_INC) $(METIS_INC) $(HDF5_LIB) $(OP2_LIB) $(SLOPE_LIB) $(METIS_LIB) \
 	-lop2_openmp -lop2_hdf5 -lslope -lmetis -o volna_slope
 else
