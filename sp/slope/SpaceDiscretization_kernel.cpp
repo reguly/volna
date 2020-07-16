@@ -121,7 +121,9 @@ void op_par_loop_SpaceDiscretization_slope(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[25].name      = name;
-  OP_kernels[25].count    += 1;
-  OP_kernels[25].time     += wall_t2 - wall_t1;
+  if(omp_get_thread_num() == TID) {
+    OP_kernels[25].name      = name;
+    OP_kernels[25].count    += 1;
+    OP_kernels[25].time     += wall_t2 - wall_t1;
+  }
 }

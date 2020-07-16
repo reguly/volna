@@ -44,6 +44,8 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
     iterations_list& iterations_1 = tile_get_iterations (tile, 1);
     tileLoopSize = tile_loop_size (tile, 1);
 
+    //#pragma omp simd simdlen(SIMD_VEC)
+    //#pragma ivdep
     //#pragma omp simd
     for (int k = 0; k < tileLoopSize; k++) {
 
@@ -112,7 +114,9 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[22].name      = name;
-  OP_kernels[22].count    += 1;
-  OP_kernels[22].time     += wall_t2 - wall_t1;
+  if(omp_get_thread_num() == TID) {
+    OP_kernels[22].name      = name;
+    OP_kernels[22].count    += 1;
+    OP_kernels[22].time     += wall_t2 - wall_t1;
+  }
 }

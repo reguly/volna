@@ -9,6 +9,8 @@ extern float g;
 
 // header
 #include "op_lib_cpp.h"
+#define SIMD_VEC 16
+#define TID 20
 
 // user kernel files
 #include "../openmp/EvolveValuesRK3_1_kernel.cpp"

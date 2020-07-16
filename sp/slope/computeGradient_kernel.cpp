@@ -51,7 +51,8 @@ void op_par_loop_computeGradient_slope(char const *name, op_set set,
     iterations_list& iterations_0 = tile_get_iterations (tile, 0);
     tileLoopSize = tile_loop_size (tile, 0);
 
-    //#pragma omp simd
+    //#pragma omp simd simdlen(SIMD_VEC)
+    //#pragma ivdep
     for (int k = 0; k < tileLoopSize; k++) {
 
         int n = iterations_0[k];
@@ -119,7 +120,9 @@ void op_par_loop_computeGradient_slope(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[21].name      = name;
-  OP_kernels[21].count    += 1;
-  OP_kernels[21].time     += wall_t2 - wall_t1;
+  if(omp_get_thread_num() == TID) {
+    OP_kernels[21].name      = name;
+    OP_kernels[21].count    += 1;
+    OP_kernels[21].time     += wall_t2 - wall_t1;
+  }
 }

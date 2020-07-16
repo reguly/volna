@@ -38,7 +38,7 @@ extern "C" {
 #ifdef SLOPE
 #include "executor.h"
 #include "inspector.h"
-#endif 
+#endif
 
 void op_par_loop_EvolveValuesRK3_1(char const *, op_set,
   op_arg,
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
 
   // sets
   set_t* sl_nodes = set("sl_nodes", nodes->size);
-  set_t* sl_edges = set("sl_edges", edges->size); 
+  set_t* sl_edges = set("sl_edges", edges->size);
   set_t* sl_cells = set("sl_cells", cells->size);
 
   map_t* sl_cellsToCells = map("sl_cellsToCells", sl_cells, sl_cells, cellsToCells->map, sl_cells->size * N_NODESPERCELL);
@@ -223,7 +223,7 @@ int main(int argc, char **argv) {
   desc_list limiterDesc ({desc(DIRECT, READ),
                           desc(DIRECT, WRITE),
                           desc(sl_cellsToEdges, READ)});
-  
+
 
   desc_list computeFluxesDesc ({desc(sl_edgesToCells, READ),
                           desc(DIRECT, READ),
@@ -457,7 +457,7 @@ int main(int argc, char **argv) {
   op_dat midPoint3 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint3"); //temp - cells - dim 4
 
   // q contains the max and min values of the physical variables surrounding each cell
-  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
+  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8
   // lim is the limiter value for each physical variable defined on each cell
   op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   double timestep;
@@ -473,7 +473,7 @@ int main(int argc, char **argv) {
                   cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
  									temp_initEta, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
 									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
-    
+
 #ifdef DEBUG
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 #endif

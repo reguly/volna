@@ -173,7 +173,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most,
                          executor_t* exec, int nColors) {
 
-//for each colour
+  //for each colour
   for (int color = 0; color < nColors; color++) {
   // for all tiles of this color
     const int nTilesPerColor = exec_tiles_per_color (exec, color);
