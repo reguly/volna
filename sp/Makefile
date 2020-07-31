@@ -68,7 +68,7 @@ ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
 	#CPPFLAGS = -O3 -qopt-report -xHost -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
-        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel
+        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel -std=c++11 -qopt-zmm-usage=high
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx

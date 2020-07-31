@@ -29,8 +29,10 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
   args[7] = arg7;
 
   // initialise timers
+  name = "initBathymetry_large";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(11);
+  OP_kernels[11].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 4;
@@ -99,7 +101,6 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].name      = name;
   OP_kernels[11].count    += 1;
   OP_kernels[11].time     += wall_t2 - wall_t1;
 }

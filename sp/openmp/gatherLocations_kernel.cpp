@@ -17,8 +17,10 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
   args[1] = arg1;
 
   // initialise timers
+  name = "gatherLocations";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(20);
+  OP_kernels[20].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 1;
@@ -78,7 +80,6 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[20].name      = name;
   OP_kernels[20].count    += 1;
   OP_kernels[20].time     += wall_t2 - wall_t1;
 }

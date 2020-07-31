@@ -33,8 +33,10 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   args[9] = arg9;
 
   // initialise timers
+  name = "SpaceDiscretization";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(25);
+  OP_kernels[25].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 3;
@@ -103,7 +105,6 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[25].name      = name;
   OP_kernels[25].count    += 1;
   OP_kernels[25].time     += wall_t2 - wall_t1;
 }

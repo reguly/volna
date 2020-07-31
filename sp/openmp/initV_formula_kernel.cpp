@@ -19,8 +19,10 @@ void op_par_loop_initV_formula(char const *name, op_set set,
   args[2] = arg2;
 
   // initialise timers
+  name = "initV_formula";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(8);
+  OP_kernels[8].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -57,7 +59,6 @@ void op_par_loop_initV_formula(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[8].name      = name;
   OP_kernels[8].count    += 1;
   OP_kernels[8].time     += wall_t2 - wall_t1;
   OP_kernels[8].transfer += (float)set->size * arg0.size;

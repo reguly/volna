@@ -33,7 +33,8 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(22);
+  if(omp_get_thread_num() == TID)
+    op_timing_realloc(22);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -46,7 +47,7 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
 
     //#pragma omp simd simdlen(SIMD_VEC)
     //#pragma ivdep
-    //#pragma omp simd
+    #pragma omp simd
     for (int k = 0; k < tileLoopSize; k++) {
 
       int map4idx = lc2e_1[k * N_NODESPERCELL + 0];

@@ -31,7 +31,9 @@ void op_par_loop_computeMinTimestep(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  name = "computeMinTimestep";
   op_timing_realloc(26);
+  OP_kernels[26].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 2;
@@ -81,6 +83,7 @@ void op_par_loop_computeMinTimestep(char const *name, op_set set,
         int blockId  = Plan->blkmap[blockIdx + block_offset];
         int nelem    = Plan->nelems[blockId];
         int offset_b = Plan->offset[blockId];
+//#pragma omp simd
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
           int map0idx = arg0.map_data[n * arg0.map->dim + 0];
           int map1idx = arg0.map_data[n * arg0.map->dim + 1];
@@ -122,7 +125,6 @@ void op_par_loop_computeMinTimestep(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[26].name      = name;
   OP_kernels[26].count    += 1;
   OP_kernels[26].time     += wall_t2 - wall_t1;
 }

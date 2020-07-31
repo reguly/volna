@@ -16,8 +16,7 @@ void op_par_loop_computeGradient(char const *name, op_set set,
   op_arg arg6,
   op_arg arg7,
   op_arg arg8,
-  op_arg arg9
-  ){
+  op_arg arg9){
 
   int nargs = 10;
   op_arg args[10];
@@ -34,8 +33,10 @@ void op_par_loop_computeGradient(char const *name, op_set set,
   args[9] = arg9;
 
   // initialise timers
+  name = "computeGradient";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(21);
+  OP_kernels[21].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 2;
@@ -71,6 +72,7 @@ void op_par_loop_computeGradient(char const *name, op_set set,
         int blockId  = Plan->blkmap[blockIdx + block_offset];
         int nelem    = Plan->nelems[blockId];
         int offset_b = Plan->offset[blockId];
+#pragma omp simd
         for ( int n=offset_b; n<offset_b+nelem; n++ ){
           int map1idx = arg1.map_data[n * arg1.map->dim + 0];
           int map2idx = arg1.map_data[n * arg1.map->dim + 1];
@@ -105,7 +107,6 @@ void op_par_loop_computeGradient(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[21].name      = name;
   OP_kernels[21].count    += 1;
   OP_kernels[21].time     += wall_t2 - wall_t1;
 }

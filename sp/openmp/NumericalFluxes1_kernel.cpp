@@ -16,7 +16,9 @@ void op_par_loop_NumericalFluxes1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  name = "NumericalFluxes1";
   op_timing_realloc(24);
+  OP_kernels[24].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -39,6 +41,7 @@ void op_par_loop_NumericalFluxes1(char const *name, op_set set,
     for ( int thr=0; thr<nthreads; thr++ ){
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
+#pragma omp simd
       for ( int n=start; n<finish; n++ ){
         NumericalFluxes1(
           &((float*)arg0.data)[4*n]);
@@ -51,7 +54,6 @@ void op_par_loop_NumericalFluxes1(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[24].name      = name;
   OP_kernels[24].count    += 1;
   OP_kernels[24].time     += wall_t2 - wall_t1;
   OP_kernels[24].transfer += (float)set->size * arg0.size * 2.0f;

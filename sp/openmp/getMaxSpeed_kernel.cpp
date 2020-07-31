@@ -17,8 +17,10 @@ void op_par_loop_getMaxSpeed(char const *name, op_set set,
   args[1] = arg1;
 
   // initialise timers
+  name = "getMaxSpeed";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(19);
+  OP_kernels[19].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -54,7 +56,6 @@ void op_par_loop_getMaxSpeed(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[19].name      = name;
   OP_kernels[19].count    += 1;
   OP_kernels[19].time     += wall_t2 - wall_t1;
   OP_kernels[19].transfer += (float)set->size * arg0.size;

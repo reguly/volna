@@ -43,7 +43,8 @@ void op_par_loop_SpaceDiscretization_slope(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(25);
+  if(omp_get_thread_num() == TID)
+    op_timing_realloc(25);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);

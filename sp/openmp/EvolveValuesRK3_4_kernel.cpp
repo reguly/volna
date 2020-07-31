@@ -21,8 +21,10 @@ void op_par_loop_EvolveValuesRK3_4(char const *name, op_set set,
   args[3] = arg3;
 
   // initialise timers
+  name = "EvolveValuesRK3_4";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(3);
+  OP_kernels[3].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -60,7 +62,6 @@ void op_par_loop_EvolveValuesRK3_4(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[3].name      = name;
   OP_kernels[3].count    += 1;
   OP_kernels[3].time     += wall_t2 - wall_t1;
   OP_kernels[3].transfer += (float)set->size * arg1.size;

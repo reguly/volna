@@ -21,8 +21,10 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
   args[3] = arg3;
 
   // initialise timers
+  name = "initBathyRelative_formula";
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
   op_timing_realloc(12);
+  OP_kernels[12].name      = name;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -60,7 +62,6 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[12].name      = name;
   OP_kernels[12].count    += 1;
   OP_kernels[12].time     += wall_t2 - wall_t1;
   OP_kernels[12].transfer += (float)set->size * arg0.size;
