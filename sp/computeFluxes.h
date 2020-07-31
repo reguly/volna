@@ -60,7 +60,6 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
 
     rightCellValues[1] *= rightCellValues[0];
     rightCellValues[2] *= rightCellValues[0];
-
   }
 
   // ------------------------------------------------------------------------------------

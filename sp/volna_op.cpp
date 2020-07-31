@@ -403,7 +403,6 @@ int main(int argc, char **argv) {
   op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
-
   // q contains the max and min values of the physical variables surrounding each cell
   op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8
   // lim is the limiter value for each physical variable defined on each cell
@@ -439,7 +438,15 @@ int main(int argc, char **argv) {
                   op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_WRITE),
                   op_arg_dat(midPoint,-1,OP_ID,4,"float",OP_WRITE));
 
+      /* op_par_loop_EvolveValuesRK3_1("EvolveValuesRK3_1",cells,
+                  op_arg_gbl(&dT,1,"float",OP_READ),
+                  op_arg_dat(inConservative,-1,OP_ID,4,"float",OP_RW),
+                  op_arg_dat(values,-1,OP_ID,4,"float",OP_READ),
+                  op_arg_dat(midPointConservative,-1,OP_ID,4,"float",OP_WRITE),
+                  op_arg_dat(midPoint,-1,OP_ID,4,"float",OP_WRITE));
+      */
       float dummy = 0.0;
+      //printf("Return of EvolveValuesRK3_1 Conservative H %g HU %g HV %g Zb %g  \n \n", normcomp(Conservative, 0), normcomp(Conservative, 1),normcomp(Conservative, 2),normcomp(Conservative, 3));
 
       spaceDiscretization(midPointConservative, outConservative, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
