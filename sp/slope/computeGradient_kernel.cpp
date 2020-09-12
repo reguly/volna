@@ -6,9 +6,241 @@
 //user function
 #include "../computeGradient.h"
 
+void op_par_loop_computeGradient(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9
+  ){
+
+  int nargs = 10;
+  op_arg args[10];
+
+  args[0] = arg0;
+  args[1] = arg1;
+  args[2] = arg2;
+  args[3] = arg3;
+  args[4] = arg4;
+  args[5] = arg5;
+  args[6] = arg6;
+  args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
+
+  // initialise timers
+  double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  op_timing_realloc(21);
+  op_timers_core(&cpu_t1, &wall_t1);
+
+  int  ninds   = 2;
+  int  inds[10] = {-1,0,0,0,-1,1,1,1,-1,-1};
+
+  if (OP_diags>2) {
+    printf(" kernel routine with indirection: computeGradient\n");
+  }
+
+  // get plan
+  #ifdef OP_PART_SIZE_21
+    int part_size = OP_PART_SIZE_21;
+  #else
+    int part_size = OP_part_size;
+  #endif
+
+  int set_size = op_mpi_halo_exchanges(set, nargs, args);
+
+  if (set->size >0) {
+
+    op_plan *Plan = op_plan_get_stage_upload(name,set,part_size,nargs,args,ninds,inds,OP_STAGE_ALL,0);
+
+    // execute plan
+    int block_offset = 0;
+    for ( int col=0; col<Plan->ncolors; col++ ){
+      if (col==Plan->ncolors_core) {
+        op_mpi_wait_all(nargs, args);
+      }
+      int nblocks = Plan->ncolblk[col];
+
+      #pragma omp parallel for
+      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
+        int blockId  = Plan->blkmap[blockIdx + block_offset];
+        int nelem    = Plan->nelems[blockId];
+        int offset_b = Plan->offset[blockId];
+        for ( int n=offset_b; n<offset_b+nelem; n++ ){
+          int map1idx = arg1.map_data[n * arg1.map->dim + 0];
+          int map2idx = arg1.map_data[n * arg1.map->dim + 1];
+          int map3idx = arg1.map_data[n * arg1.map->dim + 2];
+
+
+          computeGradient(
+            &((float*)arg0.data)[4 * n],
+            &((float*)arg1.data)[4 * map1idx],
+            &((float*)arg1.data)[4 * map2idx],
+            &((float*)arg1.data)[4 * map3idx],
+            &((float*)arg4.data)[2 * n],
+            &((float*)arg5.data)[2 * map1idx],
+            &((float*)arg5.data)[2 * map2idx],
+            &((float*)arg5.data)[2 * map3idx],
+            &((float*)arg8.data)[8 * n],
+            &((float*)arg9.data)[8 * n]);
+        }
+      }
+
+      block_offset += nblocks;
+    }
+    OP_kernels[21].transfer  += Plan->transfer;
+    OP_kernels[21].transfer2 += Plan->transfer2;
+  }
+
+  if (set_size == 0 || set_size == set->core_size) {
+    op_mpi_wait_all(nargs, args);
+  }
+  // combine reduction data
+  op_mpi_set_dirtybit(nargs, args);
+
+  // update kernel record
+  op_timers_core(&cpu_t2, &wall_t2);
+  OP_kernels[21].name      = name;
+  OP_kernels[21].count    += 1;
+  OP_kernels[21].time     += wall_t2 - wall_t1;
+}
+
 
 // host stub function
 void op_par_loop_computeGradient_slope(char const *name, op_set set,
+  op_arg arg0,
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3,
+  op_arg arg4,
+  op_arg arg5,
+  op_arg arg6,
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9,
+  tile_t* tile){
+
+  int nargs = 10;
+  op_arg args[10];
+
+  args[0] = arg0;
+  args[1] = arg1;
+  args[2] = arg2;
+  args[3] = arg3;
+  args[4] = arg4;
+  args[5] = arg5;
+  args[6] = arg6;
+  args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
+
+  int tileLoopSize;
+
+  // initialise timers
+  // double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  // op_timing_realloc(21);
+  // op_timers_core(&cpu_t1, &wall_t1);
+  sl_timers_core(&(sl_kernels[0].cpu_t1[omp_get_thread_num()]), &(sl_kernels[0].wall_t1[omp_get_thread_num()]));
+
+
+  int set_size = op_mpi_halo_exchanges(set, nargs, args);
+
+  if (set->size >0) {
+
+    // loop computeGradient
+    iterations_list& lc2c_0 = tile_get_local_map (tile, 0, "sl_cellsToCells");
+    iterations_list& iterations_0 = tile_get_iterations (tile, 0);
+    tileLoopSize = tile_loop_size (tile, 0);
+
+    //#pragma omp simd simdlen(SIMD_VEC)
+    //#pragma ivdep
+    for (int k = 0; k < tileLoopSize; k++) {
+
+        int n = iterations_0[k];
+        int map1idx  = lc2c_0[k * N_NODESPERCELL + 0];
+        int map2idx  = lc2c_0[k * N_NODESPERCELL + 1];
+        int map3idx  = lc2c_0[k * N_NODESPERCELL + 2];
+
+        computeGradient(
+            &((float*)arg0.data)[4 * n],
+            &((float*)arg1.data)[4 * map1idx],
+            &((float*)arg1.data)[4 * map2idx],
+            &((float*)arg1.data)[4 * map3idx],
+            &((float*)arg4.data)[2 * n],
+            &((float*)arg5.data)[2 * map1idx],
+            &((float*)arg5.data)[2 * map2idx],
+            &((float*)arg5.data)[2 * map3idx],
+            &((float*)arg8.data)[8 * n],
+            &((float*)arg9.data)[8 * n]);
+    }
+
+    // execute plan
+    /*int block_offset = 0;
+    for ( int col=0; col<Plan->ncolors; col++ ){
+      if (col==Plan->ncolors_core) {
+        op_mpi_wait_all(nargs, args);
+      }
+      int nblocks = Plan->ncolblk[col];
+
+      #pragma omp parallel for
+      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
+        int blockId  = Plan->blkmap[blockIdx + block_offset];
+        int nelem    = Plan->nelems[blockId];
+        int offset_b = Plan->offset[blockId];
+        for ( int n=offset_b; n<offset_b+nelem; n++ ){
+          int map1idx = arg1.map_data[n * arg1.map->dim + 0];
+          int map2idx = arg1.map_data[n * arg1.map->dim + 1];
+          int map3idx = arg1.map_data[n * arg1.map->dim + 2];
+
+
+          computeGradient(
+            &((float*)arg0.data)[4 * n],
+            &((float*)arg1.data)[4 * map1idx],
+            &((float*)arg1.data)[4 * map2idx],
+            &((float*)arg1.data)[4 * map3idx],
+            &((float*)arg4.data)[2 * n],
+            &((float*)arg5.data)[2 * map1idx],
+            &((float*)arg5.data)[2 * map2idx],
+            &((float*)arg5.data)[2 * map3idx],
+            &((float*)arg8.data)[8 * n],
+            &((float*)arg9.data)[8 * n]);
+        }
+      }
+
+      block_offset += nblocks;
+    }
+    OP_kernels[21].transfer  += Plan->transfer;
+    OP_kernels[21].transfer2 += Plan->transfer2;*/
+  }
+
+  if (set_size == 0 || set_size == set->core_size) {
+    op_mpi_wait_all(nargs, args);
+  }
+  // combine reduction data
+  op_mpi_set_dirtybit(nargs, args);
+
+  sl_kernels[0].name      = name;
+  sl_timers_core(&(sl_kernels[0].cpu_t2[omp_get_thread_num()]), &(sl_kernels[0].wall_t2[omp_get_thread_num()]));
+  sl_kernels[0].counts[omp_get_thread_num()]    += 1;
+  sl_kernels[0].times[omp_get_thread_num()]     += sl_kernels[0].wall_t2[omp_get_thread_num()] - sl_kernels[0].wall_t1[omp_get_thread_num()];
+
+
+  // update kernel record
+  // op_timers_core(&cpu_t2, &wall_t2);
+  // if(omp_get_thread_num() == TID) {
+  //   OP_kernels[21].name      = name;
+  //   OP_kernels[21].count    += 1;
+  //   OP_kernels[21].time     += wall_t2 - wall_t1;
+  // }
+}
+
+// host stub function
+void op_par_loop_computeGradient_slope_1(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -126,3 +358,4 @@ void op_par_loop_computeGradient_slope(char const *name, op_set set,
     OP_kernels[21].time     += wall_t2 - wall_t1;
   }
 }
+

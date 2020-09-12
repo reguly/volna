@@ -38,6 +38,7 @@ extern "C" {
 #ifdef SLOPE
 #include "executor.h"
 #include "inspector.h"
+#include "timer.h"
 #endif
 
 void op_par_loop_EvolveValuesRK3_1(char const *, op_set,
@@ -246,12 +247,18 @@ int main(int argc, char **argv) {
   insp_add_parloop (insp, "numericalFluxes1", sl_cells, &numericalFluxes1Desc);
   insp_add_parloop (insp, "spaceDiscretization", sl_edges, &spaceDiscretizationDesc);
 
-  insp_run (insp, 1);
+  insp_run (insp, 0);
 
   insp_print (insp, VERY_LOW);
 
   executor_t* exec = exec_init (insp);
   int nColors = exec_num_colors (exec);
+
+  sl_timing_realloc_manytime(0, omp_get_max_threads());
+  sl_timing_realloc_manytime(1, omp_get_max_threads());
+  sl_timing_realloc_manytime(2, omp_get_max_threads());
+  sl_timing_realloc_manytime(3, omp_get_max_threads());
+  sl_timing_realloc_manytime(4, omp_get_max_threads());
 
   #endif
 
@@ -615,6 +622,8 @@ int main(int argc, char **argv) {
                 op_arg_dat(edgeLength,2,cellsToEdges,1,"float",OP_READ),
                 op_arg_dat(cellVolumes,-1,OP_ID,1,"float",OP_READ),
                 op_arg_gbl(&minTimestep,1,"float",OP_MIN));
+
+    // op_printf("computed time = %.10f\n",minTimestep);
   }
 
   op_timers(&cpu_t2, &wall_t2);
@@ -623,7 +632,6 @@ int main(int argc, char **argv) {
   op_printf("Space desc runtime = %lf\n", spaceDescTime);
   op_printf("Iteration count = %d\n",itercount);
   processLastSimulation(&timers, &events, cells, values, cellVolumes, nodeCoords, cellsToNodes, 0);
-
   /*
    * Print last step results for validation
    */
@@ -733,6 +741,10 @@ int main(int argc, char **argv) {
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = %lf\n",wall_t2-wall_t1);
+
+  #ifdef SLOPE
+  sl_timing_output_core();
+  #endif
 
   op_exit();
 
