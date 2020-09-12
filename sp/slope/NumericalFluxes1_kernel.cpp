@@ -79,30 +79,19 @@ void op_par_loop_NumericalFluxes1_slope(char const *name, op_set set,
 
   if (set->size >0) {
 
-  // loop NumericalFluxes
-  iterations_list& iterations_3 = tile_get_iterations (tile, 3);
-  tileLoopSize = tile_loop_size (tile, 3);
+    // loop NumericalFluxes
+    iterations_list& iterations_3 = tile_get_iterations (tile, 3);
+    tileLoopSize = tile_loop_size (tile, 3);
 
-  //#pragma omp simd simdlen(SIMD_VEC)
-  //#pragma ivdep
-  for (int k = 0; k < tileLoopSize; k++) {
+    //#pragma omp simd simdlen(SIMD_VEC)
+    //#pragma ivdep
+    for (int k = 0; k < tileLoopSize; k++) {
 
-    int n = iterations_3[k];
-    NumericalFluxes1(
-          &((float*)arg0.data)[4*n]);
+      int n = iterations_3[k];
+      NumericalFluxes1(
+            &((float*)arg0.data)[4*n]);
 
-  }
-
-   // execute plan
-   /*#pragma omp parallel for
-    for ( int thr=0; thr<nthreads; thr++ ){
-      int start  = (set->size* thr)/nthreads;
-      int finish = (set->size*(thr+1))/nthreads;
-      for ( int n=start; n<finish; n++ ){
-        NumericalFluxes1(
-          &((float*)arg0.data)[4*n]);
-      }
-    }*/
+    }
   }
 
   // combine reduction data
@@ -144,30 +133,19 @@ void op_par_loop_NumericalFluxes1_slope_1(char const *name, op_set set,
 
   if (set->size >0) {
 
-  // loop NumericalFluxes
-  iterations_list& iterations_3 = tile_get_iterations (tile, 3);
-  tileLoopSize = tile_loop_size (tile, 3);
+    // loop NumericalFluxes
+    iterations_list& iterations_3 = tile_get_iterations (tile, 3);
+    tileLoopSize = tile_loop_size (tile, 3);
 
-  //#pragma omp simd simdlen(SIMD_VEC)
-  //#pragma ivdep
-  for (int k = 0; k < tileLoopSize; k++) {
+    //#pragma omp simd simdlen(SIMD_VEC)
+    //#pragma ivdep
+    for (int k = 0; k < tileLoopSize; k++) {
 
-    int n = iterations_3[k];
-    NumericalFluxes1(
-          &((float*)arg0.data)[4*n]);
+      int n = iterations_3[k];
+      NumericalFluxes1(
+            &((float*)arg0.data)[4*n]);
 
-  }
-
-   // execute plan
-   /*#pragma omp parallel for
-    for ( int thr=0; thr<nthreads; thr++ ){
-      int start  = (set->size* thr)/nthreads;
-      int finish = (set->size*(thr+1))/nthreads;
-      for ( int n=start; n<finish; n++ ){
-        NumericalFluxes1(
-          &((float*)arg0.data)[4*n]);
-      }
-    }*/
+    }
   }
 
   // combine reduction data

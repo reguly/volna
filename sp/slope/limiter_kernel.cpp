@@ -165,45 +165,6 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
             &((float*)arg7.data)[2 * n]);
 
     }
-
-
-
-    // execute plan
-    /*int block_offset = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      if (col==Plan->ncolors_core) {
-        op_mpi_wait_all(nargs, args);
-      }
-      int nblocks = Plan->ncolblk[col];
-
-      #pragma omp parallel for
-      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
-        int blockId  = Plan->blkmap[blockIdx + block_offset];
-        int nelem    = Plan->nelems[blockId];
-        int offset_b = Plan->offset[blockId];
-        for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map4idx = arg4.map_data[n * arg4.map->dim + 0];
-          int map5idx = arg4.map_data[n * arg4.map->dim + 1];
-          int map6idx = arg4.map_data[n * arg4.map->dim + 2];
-
-
-          limiter(
-            &((float*)arg0.data)[8 * n],
-            &((float*)arg1.data)[4 * n],
-            &((float*)arg2.data)[4 * n],
-            &((float*)arg3.data)[8 * n],
-            &((float*)arg4.data)[2 * map4idx],
-            &((float*)arg4.data)[2 * map5idx],
-            &((float*)arg4.data)[2 * map6idx],
-            &((float*)arg7.data)[2 * n]);
-        }
-      }
-
-      block_offset += nblocks;
-    }
-    OP_kernels[22].transfer  += Plan->transfer;
-    OP_kernels[22].transfer2 += Plan->transfer2;
-    */
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -286,45 +247,6 @@ void op_par_loop_limiter_slope_1(char const *name, op_set set,
             &((float*)arg7.data)[2 * n]);
 
     }
-
-
-
-    // execute plan
-    /*int block_offset = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      if (col==Plan->ncolors_core) {
-        op_mpi_wait_all(nargs, args);
-      }
-      int nblocks = Plan->ncolblk[col];
-
-      #pragma omp parallel for
-      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
-        int blockId  = Plan->blkmap[blockIdx + block_offset];
-        int nelem    = Plan->nelems[blockId];
-        int offset_b = Plan->offset[blockId];
-        for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map4idx = arg4.map_data[n * arg4.map->dim + 0];
-          int map5idx = arg4.map_data[n * arg4.map->dim + 1];
-          int map6idx = arg4.map_data[n * arg4.map->dim + 2];
-
-
-          limiter(
-            &((float*)arg0.data)[8 * n],
-            &((float*)arg1.data)[4 * n],
-            &((float*)arg2.data)[4 * n],
-            &((float*)arg3.data)[8 * n],
-            &((float*)arg4.data)[2 * map4idx],
-            &((float*)arg4.data)[2 * map5idx],
-            &((float*)arg4.data)[2 * map6idx],
-            &((float*)arg7.data)[2 * n]);
-        }
-      }
-
-      block_offset += nblocks;
-    }
-    OP_kernels[22].transfer  += Plan->transfer;
-    OP_kernels[22].transfer2 += Plan->transfer2;
-    */
   }
 
   if (set_size == 0 || set_size == set->core_size) {

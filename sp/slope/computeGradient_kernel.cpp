@@ -178,44 +178,6 @@ void op_par_loop_computeGradient_slope(char const *name, op_set set,
             &((float*)arg8.data)[8 * n],
             &((float*)arg9.data)[8 * n]);
     }
-
-    // execute plan
-    /*int block_offset = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      if (col==Plan->ncolors_core) {
-        op_mpi_wait_all(nargs, args);
-      }
-      int nblocks = Plan->ncolblk[col];
-
-      #pragma omp parallel for
-      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
-        int blockId  = Plan->blkmap[blockIdx + block_offset];
-        int nelem    = Plan->nelems[blockId];
-        int offset_b = Plan->offset[blockId];
-        for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map1idx = arg1.map_data[n * arg1.map->dim + 0];
-          int map2idx = arg1.map_data[n * arg1.map->dim + 1];
-          int map3idx = arg1.map_data[n * arg1.map->dim + 2];
-
-
-          computeGradient(
-            &((float*)arg0.data)[4 * n],
-            &((float*)arg1.data)[4 * map1idx],
-            &((float*)arg1.data)[4 * map2idx],
-            &((float*)arg1.data)[4 * map3idx],
-            &((float*)arg4.data)[2 * n],
-            &((float*)arg5.data)[2 * map1idx],
-            &((float*)arg5.data)[2 * map2idx],
-            &((float*)arg5.data)[2 * map3idx],
-            &((float*)arg8.data)[8 * n],
-            &((float*)arg9.data)[8 * n]);
-        }
-      }
-
-      block_offset += nblocks;
-    }
-    OP_kernels[21].transfer  += Plan->transfer;
-    OP_kernels[21].transfer2 += Plan->transfer2;*/
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -304,44 +266,6 @@ void op_par_loop_computeGradient_slope_1(char const *name, op_set set,
             &((float*)arg8.data)[8 * n],
             &((float*)arg9.data)[8 * n]);
     }
-
-    // execute plan
-    /*int block_offset = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      if (col==Plan->ncolors_core) {
-        op_mpi_wait_all(nargs, args);
-      }
-      int nblocks = Plan->ncolblk[col];
-
-      #pragma omp parallel for
-      for ( int blockIdx=0; blockIdx<nblocks; blockIdx++ ){
-        int blockId  = Plan->blkmap[blockIdx + block_offset];
-        int nelem    = Plan->nelems[blockId];
-        int offset_b = Plan->offset[blockId];
-        for ( int n=offset_b; n<offset_b+nelem; n++ ){
-          int map1idx = arg1.map_data[n * arg1.map->dim + 0];
-          int map2idx = arg1.map_data[n * arg1.map->dim + 1];
-          int map3idx = arg1.map_data[n * arg1.map->dim + 2];
-
-
-          computeGradient(
-            &((float*)arg0.data)[4 * n],
-            &((float*)arg1.data)[4 * map1idx],
-            &((float*)arg1.data)[4 * map2idx],
-            &((float*)arg1.data)[4 * map3idx],
-            &((float*)arg4.data)[2 * n],
-            &((float*)arg5.data)[2 * map1idx],
-            &((float*)arg5.data)[2 * map2idx],
-            &((float*)arg5.data)[2 * map3idx],
-            &((float*)arg8.data)[8 * n],
-            &((float*)arg9.data)[8 * n]);
-        }
-      }
-
-      block_offset += nblocks;
-    }
-    OP_kernels[21].transfer  += Plan->transfer;
-    OP_kernels[21].transfer2 += Plan->transfer2;*/
   }
 
   if (set_size == 0 || set_size == set->core_size) {
