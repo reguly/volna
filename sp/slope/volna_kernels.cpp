@@ -44,6 +44,7 @@ extern float g;
 #include "SpaceDiscretization_kernel.cpp"
 #include "computeGradient_kernel.cpp"
 #include "limiter_kernel.cpp"
-#include "computeFluxes_kernel.cpp"
 #include "NumericalFluxes1_kernel.cpp"
+#include "computeFluxes1ComputeCellValues_kernel.cpp"
+#include "computeFluxes2ComputeFluxes_kernel.cpp"
 

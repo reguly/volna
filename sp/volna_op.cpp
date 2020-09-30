@@ -226,9 +226,13 @@ int main(int argc, char **argv) {
                           desc(sl_cellsToEdges, READ)});
 
 
-  desc_list computeFluxesDesc ({desc(sl_edgesToCells, READ),
+  desc_list computeFluxes1Desc ({desc(sl_edgesToCells, READ),
                           desc(DIRECT, READ),
                           desc(DIRECT, WRITE)});
+
+  desc_list computeFluxes2Desc ({desc(DIRECT, READ),
+                          desc(DIRECT, WRITE)});
+
 
   desc_list numericalFluxes1Desc ({desc(DIRECT, WRITE)});
 
@@ -243,11 +247,12 @@ int main(int argc, char **argv) {
 
   insp_add_parloop (insp, "computeGradient", sl_cells, &computeGradientDesc);
   insp_add_parloop (insp, "limiter", sl_cells, &limiterDesc);
-  insp_add_parloop (insp, "computeFluxes", sl_edges, &computeFluxesDesc);
+  insp_add_parloop (insp, "computeFluxes1", sl_edges, &computeFluxes1Desc);
+  insp_add_parloop (insp, "computeFluxes2", sl_edges, &computeFluxes2Desc);
   insp_add_parloop (insp, "numericalFluxes1", sl_cells, &numericalFluxes1Desc);
   insp_add_parloop (insp, "spaceDiscretization", sl_edges, &spaceDiscretizationDesc);
 
-  insp_run (insp, 0);
+  insp_run (insp, 1);
 
   insp_print (insp, VERY_LOW);
 
@@ -259,6 +264,7 @@ int main(int argc, char **argv) {
   sl_timing_realloc_manytime(2, omp_get_max_threads());
   sl_timing_realloc_manytime(3, omp_get_max_threads());
   sl_timing_realloc_manytime(4, omp_get_max_threads());
+  sl_timing_realloc_manytime(5, omp_get_max_threads());
 
   #endif
 
@@ -452,6 +458,11 @@ int main(int argc, char **argv) {
   //op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
   //SpaceDiscretization
   op_dat bathySource = op_decl_dat_temp(edges, 4, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
+
+  //bwlimted
+  op_dat leftCellValues = op_decl_dat_temp(edges, 4, "float", tmp_elem, "leftCellValues");
+  op_dat rightCellValues = op_decl_dat_temp(edges, 4, "float", tmp_elem, "rightCellValues");
+
   op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
@@ -492,12 +503,14 @@ int main(int argc, char **argv) {
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0,
           exec, nColors);
       #else
       spaceDiscretization(values, midPointConservative, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0);
       #endif
       op_timers(&cpu_t4, &wall_t4);
@@ -520,6 +533,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(midPoint, midPointConservative1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1,
           exec, nColors);
@@ -527,6 +541,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(midPoint, midPointConservative1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1);
       #endif
@@ -551,6 +566,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(midPoint3, midPointConservative3, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2,
           exec, nColors);
@@ -558,6 +574,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(midPoint3, midPointConservative3, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
+          leftCellValues, rightCellValues,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 2);
       #endif

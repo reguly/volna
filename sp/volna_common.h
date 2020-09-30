@@ -102,6 +102,7 @@ void dumpme(op_dat dat, int off);
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
     op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
+    op_dat leftCellValues, op_dat rightCellValues,
     op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges, 
     op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most,
     executor_t* exec, int nColors);
@@ -111,6 +112,7 @@ extern sl_kernel* sl_kernels;
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
     op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
+    op_dat leftCellValues, op_dat rightCellValues,
     op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges, 
     op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most);
 #endif

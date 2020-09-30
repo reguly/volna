@@ -15,7 +15,7 @@ void op_par_loop_NumericalFluxes1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(24);
+  op_timing_realloc(25);
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -50,10 +50,10 @@ void op_par_loop_NumericalFluxes1(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[24].name      = name;
-  OP_kernels[24].count    += 1;
-  OP_kernels[24].time     += wall_t2 - wall_t1;
-  OP_kernels[24].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[25].name      = name;
+  OP_kernels[25].count    += 1;
+  OP_kernels[25].time     += wall_t2 - wall_t1;
+  OP_kernels[25].transfer += (float)set->size * arg0.size * 2.0f;
 }
 
 
@@ -70,9 +70,9 @@ void op_par_loop_NumericalFluxes1_slope(char const *name, op_set set,
 
   // initialise timers
   // double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  // op_timing_realloc(24);
+  // op_timing_realloc(25);
   // op_timers_core(&cpu_t1, &wall_t1);
-  sl_timers_core(&(sl_kernels[3].cpu_t1[omp_get_thread_num()]), &(sl_kernels[3].wall_t1[omp_get_thread_num()]));
+  sl_timers_core(&(sl_kernels[4].cpu_t1[omp_get_thread_num()]), &(sl_kernels[4].wall_t1[omp_get_thread_num()]));
 
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -80,14 +80,14 @@ void op_par_loop_NumericalFluxes1_slope(char const *name, op_set set,
   if (set->size >0) {
 
     // loop NumericalFluxes
-    iterations_list& iterations_3 = tile_get_iterations (tile, 3);
-    tileLoopSize = tile_loop_size (tile, 3);
+    iterations_list& iterations_4 = tile_get_iterations (tile, 4);
+    tileLoopSize = tile_loop_size (tile, 4);
 
     //#pragma omp simd simdlen(SIMD_VEC)
     //#pragma ivdep
     for (int k = 0; k < tileLoopSize; k++) {
 
-      int n = iterations_3[k];
+      int n = iterations_4[k];
       NumericalFluxes1(
             &((float*)arg0.data)[4*n]);
 
@@ -97,19 +97,19 @@ void op_par_loop_NumericalFluxes1_slope(char const *name, op_set set,
   // combine reduction data
   op_mpi_set_dirtybit(nargs, args);
 
-  sl_kernels[3].name      = name;
-  sl_timers_core(&(sl_kernels[0].cpu_t2[omp_get_thread_num()]), &(sl_kernels[3].wall_t2[omp_get_thread_num()]));
-  sl_kernels[3].counts[omp_get_thread_num()]    += 1;
-  sl_kernels[3].times[omp_get_thread_num()]     += sl_kernels[3].wall_t2[omp_get_thread_num()] - sl_kernels[3].wall_t1[omp_get_thread_num()];
+  sl_kernels[4].name      = name;
+  sl_timers_core(&(sl_kernels[4].cpu_t2[omp_get_thread_num()]), &(sl_kernels[4].wall_t2[omp_get_thread_num()]));
+  sl_kernels[4].counts[omp_get_thread_num()]    += 1;
+  sl_kernels[4].times[omp_get_thread_num()]     += sl_kernels[4].wall_t2[omp_get_thread_num()] - sl_kernels[4].wall_t1[omp_get_thread_num()];
   
 
   // update kernel record
   // op_timers_core(&cpu_t2, &wall_t2);
   // if(omp_get_thread_num() == TID) {
-  //   OP_kernels[24].name      = name;
-  //   OP_kernels[24].count    += 1;
-  //   OP_kernels[24].time     += wall_t2 - wall_t1;
-  //   OP_kernels[24].transfer += (float)set->size * arg0.size * 2.0f;
+  //   OP_kernels[25].name      = name;
+  //   OP_kernels[25].count    += 1;
+  //   OP_kernels[25].time     += wall_t2 - wall_t1;
+  //   OP_kernels[25].transfer += (float)set->size * arg0.size * 2.0f;
   // }
 }
 
@@ -126,7 +126,7 @@ void op_par_loop_NumericalFluxes1_slope_1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(24);
+  op_timing_realloc(25);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -154,9 +154,9 @@ void op_par_loop_NumericalFluxes1_slope_1(char const *name, op_set set,
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
   if(omp_get_thread_num() == TID) {
-    OP_kernels[24].name      = name;
-    OP_kernels[24].count    += 1;
-    OP_kernels[24].time     += wall_t2 - wall_t1;
-    OP_kernels[24].transfer += (float)set->size * arg0.size * 2.0f;
+    OP_kernels[25].name      = name;
+    OP_kernels[25].count    += 1;
+    OP_kernels[25].time     += wall_t2 - wall_t1;
+    OP_kernels[25].transfer += (float)set->size * arg0.size * 2.0f;
   }
 }

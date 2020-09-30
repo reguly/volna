@@ -175,7 +175,7 @@ void op_par_loop_limiter_slope(char const *name, op_set set,
 
   // update kernel record
   sl_kernels[1].name      = name;
-  sl_timers_core(&(sl_kernels[0].cpu_t2[omp_get_thread_num()]), &(sl_kernels[1].wall_t2[omp_get_thread_num()]));
+  sl_timers_core(&(sl_kernels[1].cpu_t2[omp_get_thread_num()]), &(sl_kernels[1].wall_t2[omp_get_thread_num()]));
   sl_kernels[1].counts[omp_get_thread_num()]    += 1;
   sl_kernels[1].times[omp_get_thread_num()]     += sl_kernels[1].wall_t2[omp_get_thread_num()] - sl_kernels[1].wall_t1[omp_get_thread_num()];
  

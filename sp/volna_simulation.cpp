@@ -14,14 +14,16 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "volna_common.h"
 #include "computeGradient.h"
 #include "limiter.h"
-#include "computeFluxes.h"
-#include "NumericalFluxes.h"
+#include "computeFluxes1ComputeCellValues.h"
+#include "computeFluxes2ComputeFluxes.h"
+#include "NumericalFluxes1.h"
 #include "SpaceDiscretization.h"
 
 
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
                          op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
+                         op_dat leftCellValues, op_dat rightCellValues,
                          op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges,
                          op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most) {
   {
@@ -51,8 +53,8 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
 
 
     {
-
-    op_par_loop(computeFluxes, "computeFluxes", edges,
+    
+    op_par_loop(computeFluxes1ComputeCellValues, "computeFluxes1ComputeCellValues", edges,
                   op_arg_dat(data_in, 0, edgesToCells, 4, "float", OP_READ),
                   op_arg_dat(data_in, 1, edgesToCells, 4, "float", OP_READ),
                   op_arg_dat(lim, 0, edgesToCells,  4, "float", OP_READ),
@@ -66,21 +68,20 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(GradientatCell, 1, edgesToCells, 8, "float", OP_READ),
                   op_arg_dat(isBoundary, -1, OP_ID, 1, "int", OP_READ),
                   op_arg_dat(bathySource, -1, OP_ID, 4, "float", OP_WRITE),
+                  op_arg_dat(leftCellValues, -1, OP_ID, 4, "float", OP_WRITE),
+                  op_arg_dat(rightCellValues, -1, OP_ID, 4, "float", OP_WRITE));
+
+     op_par_loop(computeFluxes2ComputeFluxes, "computeFluxes2ComputeFluxes", edges,
+                  op_arg_dat(edgeLength, -1, OP_ID, 1, "float", OP_READ),
+                  op_arg_dat(edgeNormals, -1, OP_ID, 2, "float", OP_READ),
+                  op_arg_dat(leftCellValues, -1, OP_ID, 4, "float", OP_READ),
+                  op_arg_dat(rightCellValues, -1, OP_ID, 4, "float", OP_READ),
                   op_arg_dat(edgeFluxes, -1, OP_ID, 3, "float", OP_WRITE),
                   op_arg_dat(maxEdgeEigenvalues, -1, OP_ID, 1, "float", OP_WRITE));
-
     }
 
-    op_par_loop(NumericalFluxes, "NumericalFluxes", cells,
-                op_arg_dat(maxEdgeEigenvalues, 0, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(maxEdgeEigenvalues, 1, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(maxEdgeEigenvalues, 2, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(edgeLength, 0, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(edgeLength, 1, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(edgeLength, 2, cellsToEdges, 1, "float", OP_READ),
-                op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
-                op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
-                op_arg_gbl(minTimestep,1,"float", OP_MIN));
+    op_par_loop(NumericalFluxes1, "NumericalFluxes1", cells,
+                op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE));
 
     //end NumericalFluxes
     op_par_loop(SpaceDiscretization, "SpaceDiscretization", edges,

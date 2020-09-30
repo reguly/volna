@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "../computeFluxes.h"
+#include "../computeFluxes1ComputeCellValues.h"
 
 // host stub function
-void op_par_loop_computeFluxes(char const *name, op_set set,
+void op_par_loop_computeFluxes1ComputeCellValues(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -44,19 +44,19 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(2);
+  op_timing_realloc(23);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 4;
   int  inds[15] = {0,0,1,1,-1,-1,2,2,-1,3,3,-1,-1,-1,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: computeFluxes\n");
+    printf(" kernel routine with indirection: computeFluxes1ComputeCellValues\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_2
-    int part_size = OP_PART_SIZE_2;
+  #ifdef OP_PART_SIZE_23
+    int part_size = OP_PART_SIZE_23;
   #else
     int part_size = OP_part_size;
   #endif
@@ -85,7 +85,7 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
           int map1idx = arg0.map_data[n * arg0.map->dim + 1];
 
 
-          computeFluxes(
+          computeFluxes1ComputeCellValues(
             &((float*)arg0.data)[4 * map0idx],
             &((float*)arg0.data)[4 * map1idx],
             &((float*)arg2.data)[4 * map0idx],
@@ -99,15 +99,15 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
             &((float*)arg9.data)[8 * map1idx],
             &((int*)arg11.data)[1 * n],
             &((float*)arg12.data)[4 * n],
-            &((float*)arg13.data)[3 * n],
-            &((float*)arg14.data)[1 * n]);
+            &((float*)arg13.data)[4 * n],
+            &((float*)arg14.data)[4 * n]);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[2].transfer  += Plan->transfer;
-    OP_kernels[2].transfer2 += Plan->transfer2;
+    OP_kernels[23].transfer  += Plan->transfer;
+    OP_kernels[23].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -118,7 +118,7 @@ void op_par_loop_computeFluxes(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[2].name      = name;
-  OP_kernels[2].count    += 1;
-  OP_kernels[2].time     += wall_t2 - wall_t1;
+  OP_kernels[23].name      = name;
+  OP_kernels[23].count    += 1;
+  OP_kernels[23].time     += wall_t2 - wall_t1;
 }

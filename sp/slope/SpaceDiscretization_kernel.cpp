@@ -39,7 +39,7 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(25);
+  op_timing_realloc(26);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int  ninds   = 3;
@@ -50,8 +50,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_25
-    int part_size = OP_PART_SIZE_25;
+  #ifdef OP_PART_SIZE_26
+    int part_size = OP_PART_SIZE_26;
   #else
     int part_size = OP_part_size;
   #endif
@@ -96,8 +96,8 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
       block_offset += nblocks;
     }
-    OP_kernels[25].transfer  += Plan->transfer;
-    OP_kernels[25].transfer2 += Plan->transfer2;
+    OP_kernels[26].transfer  += Plan->transfer;
+    OP_kernels[26].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -108,9 +108,9 @@ void op_par_loop_SpaceDiscretization(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[25].name      = name;
-  OP_kernels[25].count    += 1;
-  OP_kernels[25].time     += wall_t2 - wall_t1;
+  OP_kernels[26].name      = name;
+  OP_kernels[26].count    += 1;
+  OP_kernels[26].time     += wall_t2 - wall_t1;
 }
 
 // host stub function
@@ -145,9 +145,9 @@ void op_par_loop_SpaceDiscretization_slope(char const *name, op_set set,
 
   // initialise timers
   // double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  // op_timing_realloc(25);
+  // op_timing_realloc(26);
   // op_timers_core(&cpu_t1, &wall_t1);
-   sl_timers_core(&(sl_kernels[4].cpu_t1[omp_get_thread_num()]), &(sl_kernels[4].wall_t1[omp_get_thread_num()]));
+   sl_timers_core(&(sl_kernels[5].cpu_t1[omp_get_thread_num()]), &(sl_kernels[5].wall_t1[omp_get_thread_num()]));
 
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -155,15 +155,15 @@ void op_par_loop_SpaceDiscretization_slope(char const *name, op_set set,
   if (set->size >0) {
 
     // loop SpaceDiscretization
-    iterations_list& le2c_4 = tile_get_local_map (tile, 4, "sl_edgesToCells");
-    iterations_list& iterations_4 = tile_get_iterations (tile, 4);
-    tileLoopSize = tile_loop_size (tile, 4);
+    iterations_list& le2c_5 = tile_get_local_map (tile, 5, "sl_edgesToCells");
+    iterations_list& iterations_5 = tile_get_iterations (tile, 5);
+    tileLoopSize = tile_loop_size (tile, 5);
 
     for (int k = 0; k < tileLoopSize; k++) {
 
-      int map0idx = le2c_4[k * N_CELLSPEREDGE + 0];
-      int map1idx = le2c_4[k * N_CELLSPEREDGE + 1];
-      int n = iterations_4[k];
+      int map0idx = le2c_5[k * N_CELLSPEREDGE + 0];
+      int map1idx = le2c_5[k * N_CELLSPEREDGE + 1];
+      int n = iterations_5[k];
 
       SpaceDiscretization(
             &((float*)arg0.data)[4 * map0idx],
@@ -186,18 +186,18 @@ void op_par_loop_SpaceDiscretization_slope(char const *name, op_set set,
   // combine reduction data
   op_mpi_set_dirtybit(nargs, args);
 
-  sl_kernels[4].name      = name;
-  sl_timers_core(&(sl_kernels[4].cpu_t2[omp_get_thread_num()]), &(sl_kernels[4].wall_t2[omp_get_thread_num()]));
-  sl_kernels[4].counts[omp_get_thread_num()]    += 1;
-  sl_kernels[4].times[omp_get_thread_num()]     += sl_kernels[4].wall_t2[omp_get_thread_num()] - sl_kernels[4].wall_t1[omp_get_thread_num()];
+  sl_kernels[5].name      = name;
+  sl_timers_core(&(sl_kernels[5].cpu_t2[omp_get_thread_num()]), &(sl_kernels[5].wall_t2[omp_get_thread_num()]));
+  sl_kernels[5].counts[omp_get_thread_num()]    += 1;
+  sl_kernels[5].times[omp_get_thread_num()]     += sl_kernels[5].wall_t2[omp_get_thread_num()] - sl_kernels[5].wall_t1[omp_get_thread_num()];
   
 
   // update kernel record
   // op_timers_core(&cpu_t2, &wall_t2);
   // if(omp_get_thread_num() == TID) {
-  //   OP_kernels[25].name      = name;
-  //   OP_kernels[25].count    += 1;
-  //   OP_kernels[25].time     += wall_t2 - wall_t1;
+  //   OP_kernels[26].name      = name;
+  //   OP_kernels[26].count    += 1;
+  //   OP_kernels[26].time     += wall_t2 - wall_t1;
   // }
 }
 
@@ -233,7 +233,7 @@ void op_par_loop_SpaceDiscretization_slope_1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(25);
+  op_timing_realloc(26);
   op_timers_core(&cpu_t1, &wall_t1);
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -275,8 +275,8 @@ void op_par_loop_SpaceDiscretization_slope_1(char const *name, op_set set,
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
   if(omp_get_thread_num() == TID) {
-    OP_kernels[25].name      = name;
-    OP_kernels[25].count    += 1;
-    OP_kernels[25].time     += wall_t2 - wall_t1;
+    OP_kernels[26].name      = name;
+    OP_kernels[26].count    += 1;
+    OP_kernels[26].time     += wall_t2 - wall_t1;
   }
 }

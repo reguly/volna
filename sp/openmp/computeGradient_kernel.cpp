@@ -16,8 +16,7 @@ void op_par_loop_computeGradient(char const *name, op_set set,
   op_arg arg6,
   op_arg arg7,
   op_arg arg8,
-  op_arg arg9
-  ){
+  op_arg arg9){
 
   int nargs = 10;
   op_arg args[10];
