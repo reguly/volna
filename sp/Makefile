@@ -68,7 +68,7 @@ ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
 	#CPPFLAGS = -O3 -qopt-report -xHost -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
-        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel
+        CPPFLAGS = -O3 -xHost -DMPICH_IGNORE_CXX_SEEK -qopt-report
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
@@ -102,16 +102,18 @@ else
 	$(CPP) $(CPPFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simulation.cpp volna_util.cpp volna_writeVTK.cpp $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_seq -lop2_hdf5 -o volna
 endif
 
-volna_slope: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+volna_slope: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp timer.cpp Makefile
 ifdef MPI_INSTALL_PATH
 	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE volna_op.cpp \
 	volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp \
 	volna_simulation_op.cpp volna_event.cpp \
 	slope/volna_kernels.cpp \
+	timer.cpp \
 	$(HDF5_INC) $(OP2_INC) $(SLOPE_INC) $(METIS_INC) $(HDF5_LIB) $(OP2_LIB) $(SLOPE_LIB) $(METIS_LIB) \
 	-lop2_openmp -lop2_hdf5 -lslope -lmetis -o volna_slope
 else
 	$(CPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp \
+		timer.cpp \
 	$(HDF5_INC) $(OP2_INC) $(SLOPE_INC) $(METIS_INC) $(HDF5_LIB) $(OP2_LIB) $(SLOPE_LIB) $(METIS_LIB) \
 	-lop2_openmp -lop2_hdf5 -lslope -lmetis -o volna_slope
 endif
