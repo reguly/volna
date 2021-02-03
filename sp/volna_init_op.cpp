@@ -146,9 +146,17 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
 #endif
 }
 
-void InitU(op_set cells, op_dat cellCenters, op_dat values) {
+void InitU(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile) {
   //TODO: document the fact that this actually adds to the value of U
   // i.e. user should only access values[1]
+  if(fromFile) {
+  int variable = 2;
+  op_par_loop_incConst("incConst",cells,
+              op_arg_dat(initValues,-1,OP_ID,1,"float",OP_READ),
+              op_arg_dat(values,-1,OP_ID,4,"float",OP_RW),
+              op_arg_gbl(&variable,1,"int",OP_READ));
+  } else {
+
 #ifdef DEBUG
   op_printf("InitU...");
 #endif
@@ -156,17 +164,28 @@ void InitU(op_set cells, op_dat cellCenters, op_dat values) {
               op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
               op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
               op_arg_gbl(&timestamp,1,"double",OP_READ));
+  }
 #ifdef DEBUG
   op_printf("done\n");
 #endif
 }
 
-void InitV(op_set cells, op_dat cellCenters, op_dat values) {
+  
+void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile) {
   //TODO: document the fact that this actually adds to the value of V
   // i.e. user should only access values[2]
 #ifdef DEBUG
   op_printf("InitV...");
 #endif
+ if(fromFile) {
+  op_printf(" From file V \n");
+  int variable = 4;
+  op_par_loop_incConst("incConst",cells,
+              op_arg_dat(initValues,-1,OP_ID,1,"float",OP_READ),
+              op_arg_dat(values,-1,OP_ID,4,"float",OP_RW),
+              op_arg_gbl(&variable,1,"int",OP_READ));
+
+ } else { 
   op_par_loop_initV_formula("initV_formula",cells,
               op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
               op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
@@ -175,7 +194,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
   op_printf("done\n");
 #endif
 }
-
+}
 //void OutputSimulation(op_set points, op_set cells, op_dat p_x, op_dat values) {
 //
 //

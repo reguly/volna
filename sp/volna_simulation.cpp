@@ -25,6 +25,8 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges,
                          op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most) {
   {
+
+    //op_printf("H %g HU %g HV %g Zb %g\n", normcomp(data_in, 0), normcomp(data_in, 1),normcomp(data_in, 2),normcomp(data_in, 3));
     { op_par_loop(computeGradient, "computeGradient", cells,
                   op_arg_dat(data_in, -1, OP_ID, 4, "float", OP_READ),
                   op_arg_dat(data_in , 0, cellsToCells, 4, "float", OP_READ),
@@ -36,7 +38,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(q, -1, OP_ID, 8, "float", OP_WRITE),
                   op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE));
-
+    //op_printf("H %g HU %g HV %g Zb %g\n", normcomp(GradientatCell, 0), normcomp(GradientatCell, 1),normcomp(GradientatCell, 2),normcomp(GradientatCell, 3));
     }
     *minTimestep = INFINITY;
     op_par_loop(limiter, "limiter", cells,
@@ -47,6 +49,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(edgeCenters, 0, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 1, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 2, cellsToEdges, 2, "float", OP_READ),
+                op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ));
 
 
@@ -71,6 +74,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
 
     }
 
+
     op_par_loop(NumericalFluxes, "NumericalFluxes", cells,
                 op_arg_dat(maxEdgeEigenvalues, 0, cellsToEdges, 1, "float", OP_READ),
                 op_arg_dat(maxEdgeEigenvalues, 1, cellsToEdges, 1, "float", OP_READ),
@@ -80,9 +84,11 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(edgeLength, 2, cellsToEdges, 1, "float", OP_READ),
                 op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
-                op_arg_gbl(minTimestep,1,"float", OP_MIN));
-
+               op_arg_gbl(minTimestep,1,"float", OP_MIN));
+    
     //end NumericalFluxes
+    //op_arg_dat(data_in, 0 , edgesToCells, 4, "float", OP_READ),
+    ////op_arg_dat(edgeCenters, -1, OP_ID, 2, "float", OP_READ),
     op_par_loop(SpaceDiscretization, "SpaceDiscretization", edges,
                 op_arg_dat(data_out, 0, edgesToCells, 4, "float", OP_INC), //again, Zb is not needed
                 op_arg_dat(data_out, 1, edgesToCells, 4, "float", OP_INC),

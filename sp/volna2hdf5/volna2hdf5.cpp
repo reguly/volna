@@ -402,6 +402,8 @@ int main(int argc, char **argv) {
   float *eleng = NULL; // Edge length
   int   *isbound = NULL;
   float *initEta = NULL;
+  float *initU = NULL;
+  float *initV = NULL;
   float **initBathymetry = NULL;
   float *x = NULL; // Node coordinates in 2D
   float *w = NULL; // Conservative variables
@@ -433,6 +435,8 @@ int main(int argc, char **argv) {
   eleng = (float*) malloc(nedge * sizeof(float));
   isbound = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
+  initU = (float*) malloc(ncell * sizeof(float));
+  initV = (float*) malloc(ncell * sizeof(float));
   initBathymetry = (float**) malloc(sizeof(float*));
   initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
@@ -542,6 +546,13 @@ int main(int argc, char **argv) {
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
         read_event_data(event_streamName[i].c_str(), initEta, ncell);
+      }
+      if(strncmp(event_className[i].c_str(), "InitU",7) == 0) {
+        op_printf("Checking read in of U %s", event_streamName[i].c_str());
+        read_event_data(event_streamName[i].c_str(), initU, ncell);
+      }
+      if(strncmp(event_className[i].c_str(), "InitV",7) == 0) {
+        read_event_data(event_streamName[i].c_str(), initV, ncell);
       }
       if(strcmp(event_className[i].c_str(), "InitBathymetry") == 0) {
         if(strcmp(event_streamName[i].c_str(), "") != 0) {
@@ -710,7 +721,8 @@ int main(int argc, char **argv) {
   }
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_dat initEtadat = op_decl_dat(cells, 1, "float", initEta, "initEta");
-
+  op_dat initUdat = op_decl_dat(cells, 1, "float", initU, "initU");
+  op_dat initVdat = op_decl_dat(cells, 1, "float", initV, "initV");
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
    * matrix bandwidth
@@ -744,7 +756,8 @@ int main(int argc, char **argv) {
       if (initial_zb)
         op_reorder_dat(initial_z,  cells_iperm, cells);
       op_reorder_dat(initEtadat,      cells_iperm, cells);
-
+      op_reorder_dat(initUdat,      cells_iperm, cells);
+      op_reorder_dat(initVdat,      cells_iperm, cells);
       op_printf("Reordering edges... \n");
       // Reorder edges
       // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
@@ -1067,6 +1080,8 @@ int main(int argc, char **argv) {
   free(eleng);
   free(isbound);
   free(initEta);
+  free(initU);
+  free(initV);
   free(initBathymetry);
   free(x);
   free(w);

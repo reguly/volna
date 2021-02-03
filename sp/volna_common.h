@@ -46,6 +46,7 @@ extern int itercount;
 extern float EPS, CFL, g;
 extern op_dat currentMaxElevation;
 extern op_dat currentMaxSpeed;
+extern op_dat currentLimiter;
 extern bool new_format;
 
 struct GaussianLandslideParams {
@@ -70,14 +71,14 @@ int timer_happens(TimerParams *p);
 void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation);
 void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char *filename);
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
- 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
-									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb,
+ 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat lim, op_dat cellVolumes,
+									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta,op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb,
                    op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption);
 
 void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile);
-void InitU(op_set cells, op_dat cellCenters, op_dat values);
-void InitV(op_set cells, op_dat cellCenters, op_dat values);
+void InitU(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile);
+void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile);
 void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb);
 void InitBore(op_set cells, op_dat cellCenters, op_dat values, BoreParams params);
 void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, GaussianLandslideParams params, int firstTime);
@@ -88,6 +89,7 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
 void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values);
 void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells);
 void OutputMaxSpeed(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells);
+void OutputLimiters(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat lim, op_set cells);
 float normcomp(op_dat dat, int off);
 void dumpme(op_dat dat, int off);
 

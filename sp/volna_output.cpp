@@ -31,6 +31,35 @@ void OutputTime(TimerParams *timer) {
   op_printf("Iteration: %d, time: %lf \n", (*timer).iter, (*timer).t);
 }
 
+void OutputLimiters(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat limiters, op_set cells) {
+  float *temp = NULL;
+  if (timer->iter == timer->istart || currentLimiter==NULL) {
+    currentLimiter= op_decl_dat_temp(cells, 4, "float",
+        temp,
+        "currentLimiter");
+
+    op_par_loop(simulation_1, "simulation_1", cells,
+        op_arg_dat(currentLimiter, -1, OP_ID, 4, "float", OP_WRITE),
+        op_arg_dat(limiters, -1, OP_ID, 4, "float", OP_READ));
+
+    if (timer->step == -1) {
+      strcpy((char*)currentLimiter->name,"limiters");
+      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentLimiter);
+      strcpy((char*)currentLimiter->name,"maxlimiters");
+    }
+  }
+  
+  op_par_loop(getMaxElevation, "getMaxElevation", cells,
+     op_arg_dat(limiters, -1, OP_ID, 4, "float", OP_READ),
+     op_arg_dat(currentLimiter, -1, OP_ID, 4, "float", OP_RW));
+
+  if (timer->step != -1) {
+    strcpy((char*)currentLimiter->name, "limiters");
+    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentLimiter);
+    strcpy((char*)currentLimiter->name,"maxlimiters");
+  }
+}
+
 void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values) {
   float totalVol = 0.0;
   op_par_loop(getTotalVol, "getTotalVol", cells,
@@ -143,7 +172,6 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
   char* pos;
   pos = strstr(filename, substituteIndexPattern);
   char substituteIndex[255];
-
   // 0 - write to HDF5 file
   if(writeOption == 0) {
     sprintf(substituteIndex, "%04d.h5", timer->iter);
