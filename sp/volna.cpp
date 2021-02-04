@@ -322,8 +322,6 @@ int main(int argc, char **argv) {
   if (num_outputLocation)
     outputLocation_dat = op_decl_dat_temp(outputLocation, 5, "float",
                                         tmp_elem,"outputLocation_dat");
-  
-  op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim");
 
   //Very first Init loop
   processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
