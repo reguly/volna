@@ -129,7 +129,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   }
   if ((cellRight[0] <= EPS) && (cellLeft[0] > EPS)) {
       sR = uLn + 2.0f*cL;
-      sL =  uLn - cL;
+      sL =  uLn - cL;*/
 
   float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
