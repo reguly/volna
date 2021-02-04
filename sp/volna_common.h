@@ -70,9 +70,7 @@ struct EventParams {
 int timer_happens(TimerParams *p);
 void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *timers, std::vector<EventParams> *events, int *num_outputLocation);
 void write_locations_hdf5(float *data, int dim_cont, int dim_stride, const char *filename);
-void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
- 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat lim, op_dat cellVolumes,
-									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta,op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb,
+void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values,  op_dat cellVolumes, op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta,op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb,
                    op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption);
 
@@ -97,7 +95,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
     op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
     op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges, 
-    op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, int most);
+    op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, double *timestamp);
 
 //
 //helper functions
