@@ -342,50 +342,38 @@ int main(int argc, char **argv) {
 	 */
   op_dat values_new = op_decl_dat_temp(cells, 4, "float",tmp_elem,"values_new"); //tmp - cells - dim 4
   op_dat GradientatCell = op_decl_dat_temp(cells, 8, "float", tmp_elem, "GradientatCell");
-  //EvolveValuesRK2
-  /*op_dat midPointConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPointConservative"); //temp - cells - dim 4
-  op_dat inConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "inConservative"); //temp - cells - dim 4
-  op_dat outConservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "outConservative"); //temp - cells - dim 4
-  op_dat midPoint = op_decl_dat_temp(cells, 4, "float", tmp_elem, "midPoint"); //temp - cells - dim 4
-  */
   //SpaceDiscretization
   op_dat bathySource = op_decl_dat_temp(edges, 4, "float", tmp_elem, "bathySource"); //temp - edges - dim 2 (left & right)
   op_dat edgeFluxes = op_decl_dat_temp(edges, 3, "float", tmp_elem, "edgeFluxes"); //temp - edges - dim 4
   //NumericalFluxes
   op_dat maxEdgeEigenvalues = op_decl_dat_temp(edges, 1, "float", tmp_elem, "maxEdgeEigenvalues"); //temp - edges - dim 1
-  //EvolveValuesRK34
+  //EvolveValuesRK22
   op_dat Lw_n = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Lw_n"); //temp - cells - dim 4
   op_dat Lw_1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Lw_1"); //temp - cells - dim 4
   op_dat Conservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Conservative"); //temp - cells - dim 4
-  
   // q contains the max and min values of the physical variables surrounding each cell
   op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
   // lim is the limiter value for each physical variable defined on each cell
-  //op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
+  op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   //printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 
   double timestep;
   while (timestamp < ftime) {
-		//process post_update==false events (usually Init events)
-    processEvents(&timers, &events, 0, 0, 0.0, 0, 0,
-                  cells, values, lim, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
- 									temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
-									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
-
-#ifdef DEBUG
+    //process post_update==false events (usually Init events)
+    processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, lim, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+    #ifdef DEBUG
     printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
-#endif
-  // ----------------------------------------------------
-    //printf("Call to EvolveValuesRK2 CellValues H %g HU %g HV %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
+    #endif
+    // ----------------------------------------------------
     {
       float minTimestep = 0.0;
       spaceDiscretization(values, Lw_n, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 0);
-#ifdef DEBUG
+      #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(Lw_n, 0), normcomp(Lw_n, 1),normcomp(Lw_n, 2),normcomp(Lw_n, 3));
-#endif
+      #endif
       float dT = CFL * minTimestep;
       dT= dT < dtmax ? dT : dtmax;
       
@@ -403,8 +391,6 @@ int main(int argc, char **argv) {
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, 1);
 
-
-  //    printf("Return of SpaceDiscretization #2 midPointConservative H %g U %g V %g Zb %g \n", normcomp(Lw_1, 0), normcomp(Lw_1, 1),normcomp(Lw_1, 2),normcomp(Lw_1, 3));
       op_par_loop(EvolveValuesRK2_2, "EvolveValuesRK2_2", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_1, -1, OP_ID, 4, "float", OP_READ),
@@ -414,44 +400,18 @@ int main(int argc, char **argv) {
 
       timestep=dT;
 
-    }// End of EvolveRK3_4
-   // ----------------------------------------------------
+    }// End of EvolveRK2_2
+    // ----------------------------------------------------
 
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
-    //printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
-#ifdef DEBUG
-//    if (itercount%50 == 0) {
-//      printf("itercount %d\n", itercount);
-//      dumpme(values,0);
-//      dumpme(values,1);
-//      dumpme(values,2);
-//      dumpme(values,3);
-//      if (itercount==300) exit(-1);
-//    }
-    //printf("New cell values %g %g %g %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
-    op_printf("timestep = %g\n", timestep);
-    {
-      int dim = values->dim;
-      float *data = (float *)(values->data);
-      float norm = 0.0;
-      for (int i = 0; i < values->set->size; i++) {
-        norm += (data[dim*i]+data[dim*i+3])*(data[dim*i]+data[dim*i+3]);
-      }
-      printf("H+Zb: %g\n", sqrt(norm));
-    }
-#endif
-//    if (itercount%1000==0) op_printf("timestep = %g\n", timestep);
-
+	  
     itercount++;
     timestamp += timestep;
 
 		//process post_update==true events (usually Output events)
-    processEvents(&timers, &events, 0, 1, timestep, 1, 1,
-                  cells, values, lim, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-									temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
-									gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+    processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, lim, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 
   op_timers(&cpu_t2, &wall_t2);
