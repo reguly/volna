@@ -15,8 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "EvolveValuesRK2_2.h"
 #include "simulation_1.h"
 #include "limits.h"
-#include "toConserved.h"
-#include "Generating_boundary.h"
+#include "Friction_manning.h"
 //
 // Sequential OP2 function declarations
 //
@@ -321,20 +320,11 @@ int main(int argc, char **argv) {
                                         tmp_elem,"outputLocation_dat");
 
   //Very first Init loop
-  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/,
-                     cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,
-                     temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,
-                     gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
 
-  op_par_loop(toConserved, "toConserved", cells,
-       op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW));
-  //Corresponding to CellValues and tmp in Simulation::run() (simulation.hpp)
-  //and in and out in EvolveValuesRK2() (timeStepper.hpp)
-
-
-	/*
-	 *  Declaring temporary dats
-	 */
+  /*
+   *  Declaring temporary dats
+  */
   op_dat values_new = op_decl_dat_temp(cells, 4, "float",tmp_elem,"values_new"); //tmp - cells - dim 4
   op_dat GradientatCell = op_decl_dat_temp(cells, 8, "float", tmp_elem, "GradientatCell");
   //SpaceDiscretization
@@ -345,7 +335,7 @@ int main(int argc, char **argv) {
   //EvolveValuesRK22
   op_dat Lw_n = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Lw_n"); //temp - cells - dim 4
   op_dat Lw_1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Lw_1"); //temp - cells - dim 4
-  op_dat Conservative = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Conservative"); //temp - cells - dim 4
+  op_dat w_1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "w_1"); //temp - cells - dim 4
   // q contains the max and min values of the physical variables surrounding each cell
   op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8
   // lim is the limiter value for each physical variable defined on each cell
@@ -375,11 +365,10 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_n, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_WRITE));
+          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_WRITE));
 
       float dummy = 0.0;
-
-      spaceDiscretization(Conservative, Lw_1, &dummy,
+      spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
@@ -390,21 +379,22 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_1, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(Conservative, -1, OP_ID, 4, "float", OP_READ),
+          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
 
       timestep=dT;
-
+      float Mn = 0.013f;
+      op_par_loop(Friction_manning, "Friction_manning", cells,
+          op_arg_gbl(&dT,1,"float", OP_READ),
+          op_arg_gbl(&Mn,1,"float", OP_READ),
+          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW));
     }
-   // ----------------------------------------------------
-
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
 
     itercount++;
     timestamp += timestep;
-
     processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,temp_initEta, temp_initU, temp_initV, bathy_nodes,    lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
   }
 
@@ -495,8 +485,8 @@ int main(int argc, char **argv) {
     op_printf("Error: temporary op_dat %s cannot be removed\n",Lw_n->name);
   if (op_free_dat_temp(Lw_1) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",Lw_1->name);
-  if (op_free_dat_temp(Conservative) < 0)
-    op_printf("Error: temporary op_dat %s cannot be removed\n",Conservative->name);
+  if (op_free_dat_temp(w_1) < 0)
+    op_printf("Error: temporary op_dat %s cannot be removed\n",w_1->name);
   //SpaceDiscretization
   if (op_free_dat_temp(bathySource) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",bathySource->name);

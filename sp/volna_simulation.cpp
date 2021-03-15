@@ -23,7 +23,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                          op_dat bathySource, op_dat edgeFluxes, op_dat maxEdgeEigenvalues,
                          op_dat edgeNormals, op_dat edgeLength, op_dat cellVolumes, op_dat isBoundary,
                          op_set cells, op_set edges, op_map edgesToCells, op_map cellsToEdges,
-                         op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, double *timestamp) {
+                         op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, const double *timestamp) {
   {
 
     { op_par_loop(computeGradient, "computeGradient", cells,
@@ -34,12 +34,13 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 0, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 1, cellsToCells , 2, "float", OP_READ),
-                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_READ),
+                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_RW),
                   op_arg_dat(q, -1, OP_ID, 8, "float", OP_WRITE),
                   op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE));
     }
     *minTimestep = INFINITY;
-    op_par_loop(limiter, "limiter", cells,
+
+   op_par_loop(limiter, "limiter", cells,
                 op_arg_dat(q, -1, OP_ID, 8, "float", OP_READ),
                 op_arg_dat(lim, -1, OP_ID, 4, "float", OP_WRITE),
                 op_arg_dat(data_in, -1, OP_ID, 4, "float", OP_READ),
@@ -47,11 +48,9 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(edgeCenters, 0, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 1, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 2, cellsToEdges, 2, "float", OP_READ),
-                op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ));
 
     {
-
     op_par_loop(computeFluxes, "computeFluxes", edges,
                   op_arg_dat(data_in, 0, edgesToCells, 4, "float", OP_READ),
                   op_arg_dat(data_in, 1, edgesToCells, 4, "float", OP_READ),
@@ -67,8 +66,7 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(isBoundary, -1, OP_ID, 1, "int", OP_READ),
                   op_arg_dat(bathySource, -1, OP_ID, 4, "float", OP_WRITE),
                   op_arg_dat(edgeFluxes, -1, OP_ID, 3, "float", OP_WRITE),
-                  op_arg_dat(maxEdgeEigenvalues, -1, OP_ID, 1, "float", OP_WRITE),
-                  op_arg_gbl(timestamp, 1,"double", OP_READ));
+                  op_arg_dat(maxEdgeEigenvalues, -1, OP_ID, 1, "float", OP_WRITE));
 
     }
 
@@ -83,10 +81,9 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(cellVolumes, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
                op_arg_gbl(minTimestep,1,"float", OP_MIN));
-    
-    //end NumericalFluxes
+
     op_par_loop(SpaceDiscretization, "SpaceDiscretization", edges,
-                op_arg_dat(data_out, 0, edgesToCells, 4, "float", OP_INC), //again, Zb is not needed
+                op_arg_dat(data_out, 0, edgesToCells, 4, "float", OP_INC),
                 op_arg_dat(data_out, 1, edgesToCells, 4, "float", OP_INC),
                 op_arg_dat(data_in, 0 , edgesToCells, 4, "float", OP_READ),
                 op_arg_dat(data_in, 1, edgesToCells, 4, "float", OP_READ),
@@ -97,5 +94,4 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(cellVolumes, 0, edgesToCells, 1, "float", OP_READ),
                 op_arg_dat(cellVolumes, 1, edgesToCells, 1, "float", OP_READ));
     }
-
 }

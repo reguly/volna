@@ -183,7 +183,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 }
 
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
- 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values,  op_dat lim, op_dat cellVolumes,
+ 									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedCellsToCells, op_dat bathy_xy, op_dat initial_zb, 
                    op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
@@ -258,11 +258,6 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
         OutputMaxElevation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
-      } else if (strcmp((*events)[i].className.c_str(), "OutputLimiters") == 0) {
-        // 0 - HDF5 output
-        //         // 1 - VTK ASCII output
-        //                 // 2 - VTK Binary output
-        OutputLimiters(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, lim, cells);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxSpeed") == 0) {
         // 0 - HDF5 output
         // 1 - VTK ASCII output

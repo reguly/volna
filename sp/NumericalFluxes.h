@@ -1,6 +1,6 @@
 inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
-          const float *maxEdgeEigenvalues1,
-          const float *maxEdgeEigenvalues2,
+          const float *maxEdgeEigenvalues1, 
+          const float *maxEdgeEigenvalues2, 
           const float *EdgeVolumes0,
           const float *EdgeVolumes1,
           const float *EdgeVolumes2,
@@ -15,6 +15,5 @@ inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
   zeroInit[1] = 0.0f;
   zeroInit[2] = 0.0f;
   zeroInit[3] = 0.0f;
-
   *minTimeStep = MIN(*minTimeStep, 2.0f * *cellVolumes / local);
 }

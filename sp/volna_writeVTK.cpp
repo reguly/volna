@@ -163,20 +163,6 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
 
   strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
 
-  strcpy(s, "SCALARS Visual float 1\nLOOKUP_TABLE default\n"); fwrite(s, sizeof(char), strlen(s), fp);
-  float hundred = 100.0;
-  for ( i=0; i<ncell; ++i ) {
-    if(values_data[i*N_STATEVAR] < 1e-3){
-      tmp_float = swapEndiannesFloat(hundred);
-      fwrite(&tmp_float, sizeof(float), 1, fp);
-    }
-    else {
-      tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR] + values_data[i*N_STATEVAR+3]);
-      fwrite(&tmp_float, sizeof(float), 1, fp);
-    }
-  }
-  strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
-
   if(fclose(fp) != 0) {
     op_printf("can't close file %s\n",filename);
     exit(-1);
@@ -251,17 +237,6 @@ void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i )
     fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+3]);
-  fprintf(fp, "\n");
-
-  fprintf(fp, "SCALARS Visual float 1\n"
-              "LOOKUP_TABLE default\n");
-
-  for ( i=0; i<ncell; ++i ) {
-    if(values_data[i*N_STATEVAR] < 1e-3)
-      fprintf(fp, "%10.20g\n", 100.0);
-    else
-      fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR] + values_data[i*N_STATEVAR+3]);
-  }
   fprintf(fp, "\n");
 
   if(fclose(fp) != 0) {
