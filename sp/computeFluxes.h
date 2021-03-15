@@ -145,9 +145,26 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   }
   if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
       sR = uLn + 2.0f*cL;
+<<<<<<< HEAD
       sL =  uLn - cL;
       sStar = sR;
   }
+=======
+      sL =  uLn - cL;*/
+
+  float sLMinus = sL < 0.0f ? sL : 0.0f;
+  float sRPlus = sR > 0.0f ? sR : 0.0f;
+  float sRMinussL = sRPlus - sLMinus;
+  sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
+  //-------------------------------------------------
+  float t1 = sRPlus / sRMinussL;
+  //assert( ( 0 <= t1 ) && ( t1 <= 1 ) );
+
+  float t2 = ( -1.0 * sLMinus ) / sRMinussL;
+  //assert( ( 0 <= t2 ) && ( t2 <= 1 ) );
+
+  float t3 = ( sRPlus * sLMinus ) / sRMinussL;
+>>>>>>> f3458fe80692915e2606c0894137ea70d6a9a08e
   // ------------------------------------------------------------------------------------
   // Velocities parallel to the interface (if using HLLC (Huang et al. 2013).
   //float uLp = leftCellValues[2]*edgeNormals[0] - leftCellValues[1]*edgeNormals[1];
