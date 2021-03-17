@@ -47,16 +47,25 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     float outTangentVelocity = 0.0f;
     rightCellValues[3] = leftCellValues[3];
     // Outflow at infinity
-    rightCellValues[0] = -1.0f*leftCellValues[3];
-    outTangentVelocity = inTangentVelocity;
-    rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
-    rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+    if (leftCellValues[3] < 0.0f){
+       rightCellValues[0] = -1.0f*leftCellValues[3];
+       outTangentVelocity = inTangentVelocity;
+       rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
+       rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+    } else {
+       rightCellValues[0] = leftCellValues[0];
+       outNormalVelocity =  inNormalVelocity;
+       outTangentVelocity = inTangentVelocity;
+       rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
+       rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+    }
     // Wall
     // rightCellValues[0] = leftCellValues[0];
     // outNormalVelocity =  -1.0f*inNormalVelocity;
     // outTangentVelocity = inTangentVelocity;
     // rightCellValues[1] = outNormalVelocity * nx - outTangentVelocity * ny;
     // rightCellValues[2] = outNormalVelocity * ny + outTangentVelocity * nx;
+
     // Special Generating boundary for Monai/Hilo
     //if ((edgeCenters[0] == 0.0f) && (*timestamp <= 22.5)){
     //if ((edgeCenters[1] >= 7122.0f ) && (leftCellValues[3]<-0.7f)){
