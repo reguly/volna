@@ -165,7 +165,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedCellsToCells, op_dat bathy_xy, op_dat initial_zb, 
-                   op_dat* temp_initBathymetry, int n_initBathymetry, BoreParams bore_params, GaussianLandslideParams gaussian_landslide_params, op_map outputLocation_map,
+                   op_dat* temp_initBathymetry, int n_initBathymetry, float *zmin, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
   //  op_printf("processEvents()... \n");
   int size = (*timers).size();
@@ -199,50 +199,46 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
                  strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0*/) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
-          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb);
+          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb,zmin);
         }
         // If initBathymetry is given by 1 file, run InitBathymetry for that particular file
         if(n_initBathymetry == 1 ) {
-          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb);
+          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
         // Else if initBathymetry is given by multiple files, run InitBathymetry for those files
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           // Handle the case when InitBathymetry files are out for further bathymetry initalization: remove the event
           if(strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 && k<n_initBathymetry) {
-            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb);
+            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
           }
         }
       } else if (strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
         //TODO: has to verify that firstTime happened already with plain bathymetry event
-        InitBathymetry(cells, cellCenters, values, NULL, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb);
-      } else if (strcmp((*events)[i].className.c_str(), "InitBore") == 0) {
-        InitBore(cells, cellCenters, values, bore_params);
-      } else if (strcmp((*events)[i].className.c_str(), "InitGaussianLandslide") == 0) {
-        InitGaussianLandslide(cells, cellCenters, values, gaussian_landslide_params, firstTime);
+        InitBathymetry(cells, cellCenters, values, NULL, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputTime") == 0) {
         OutputTime(&(*timers)[i]);
         //op_printf("Output iter: %d \n", (*timers)[i].iter);
       } else if (strcmp((*events)[i].className.c_str(), "OutputConservedQuantities") == 0) {
         OutputConservedQuantities(cells, cellVolumes, values);
       } else if (strcmp((*events)[i].className.c_str(), "OutputLocation") == 0) {
-        OutputLocation(&(*events)[i], j, &(*timers)[i], cells, nodeCoords, cellsToNodes, values, outputLocation_map, outputLocation_dat);
+        OutputLocation(&(*events)[i], j, &(*timers)[i], cells, nodeCoords, cellsToNodes, values, outputLocation_map, outputLocation_dat, zmin);
 				    j++;
       } else if (strcmp((*events)[i].className.c_str(), "OutputSimulation") == 0) {
         // Remove comment if needed:
         // 0 - HDF5 output
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
-        OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values);
+        OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {
         // 0 - HDF5 output
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
-        OutputMaxElevation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
+        OutputMaxElevation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxSpeed") == 0) {
         // 0 - HDF5 output
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
-        OutputMaxSpeed(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells);
+        OutputMaxSpeed(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells, zmin);
       } else {
         op_printf("Unrecognized event %s\n", (*events)[i].className.c_str());
         exit(-1);

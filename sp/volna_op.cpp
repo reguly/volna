@@ -20,6 +20,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "simulation_1.h"
 #include "limits.h"
 #include "Friction_manning.h"
+#include "zero_bathy.h"
 //
 // Sequential OP2 function declarations
 //
@@ -359,9 +360,9 @@ int main(int argc, char **argv) {
   if (num_outputLocation)
     outputLocation_dat = op_decl_dat_temp(outputLocation, 5, "float",
                                         tmp_elem,"outputLocation_dat");
-  
+  float zmin;
   //Very first Init loop
-  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params,gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
   
   /*
    *  Declaring temporary dats
@@ -381,11 +382,10 @@ int main(int argc, char **argv) {
   op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
   // lim is the limiter value for each physical variable defined on each cell
   op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
-
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
-    processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+    processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
 
 
 #ifdef DEBUG
@@ -408,7 +408,10 @@ int main(int argc, char **argv) {
                   op_arg_dat(Lw_n,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(values,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(w_1,-1,OP_ID,4,"float",OP_WRITE));
-      
+#ifdef DEBUG
+      printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(w_1, 0), normcomp(w_1, 1),normcomp(w_1, 2),normcomp(w_1, 3));
+#endif
+ 
       float dummy = 0.0;
       spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
@@ -424,8 +427,9 @@ int main(int argc, char **argv) {
                   op_arg_dat(w_1,-1,OP_ID,4,"float",OP_READ),
                   op_arg_dat(values_new,-1,OP_ID,4,"float",OP_WRITE));
 
+
       timestep=dT;
-      float Mn = 0.013f;
+      float Mn = 0.025f;
       op_par_loop_Friction_manning("Friction_manning",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
                   op_arg_gbl(&Mn,1,"float",OP_READ),
@@ -434,10 +438,11 @@ int main(int argc, char **argv) {
     op_par_loop_simulation_1("simulation_1",cells,
                 op_arg_dat(values,-1,OP_ID,4,"float",OP_WRITE),
                 op_arg_dat(values_new,-1,OP_ID,4,"float",OP_READ));
-    
+//         printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(values_new, 0), normcomp(values_new, 1),normcomp(values_new, 2),normcomp(values_new, 3));
+ 
     itercount++;
     timestamp += timestep;
-    processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,temp_initEta, temp_initU, temp_initV, bathy_nodes,    lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, bore_params, gaussian_landslide_params, outputLocation_map, outputLocation_dat, writeOption);
+    processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,temp_initEta, temp_initU, temp_initV, bathy_nodes,    lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
   }
 
   op_timers(&cpu_t2, &wall_t2);
@@ -459,14 +464,31 @@ int main(int argc, char **argv) {
       int len = locationData.time[0].size();
       int pts = locationData.n_points;
       int pts1 = locationData.n_points+1;
-      float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float));
+      //float *loc_data = (float*)malloc((locationData.n_points+1)*len*sizeof(float));
+      float *loc_data = (float*)malloc((pts1*3)*len*sizeof(float));
       for (int i = 0; i < len; i++) {
         loc_data[i*pts1] = locationData.time[0][i];
         for (int j = 0; j < pts; j++) {
           loc_data[i*pts1+1+j] = locationData.value[j][i];
         }
       }
+       /*loop for storing U*/
+      for (int i = 0; i < len; i++) {
+        loc_data[i*pts1+pts1*len] = locationData.time[0][i];
+        for (int j = 0; j < pts; j++) {
+          loc_data[i*pts1+pts1*len+1+j] = locationData.allvalues[j][4*i+1];
+        }
+      }   
+      	/*loop for storing V*/
+      for (int i = 0; i < len; i++) {
+        loc_data[i*pts1+2*pts1*len] = locationData.time[0][i];
+        for (int j = 0; j < pts; j++) {
+          loc_data[i*pts1+2*pts1*len+1+j] = locationData.allvalues[j][4*i+2];
+        }
+      } 
       write_locations_hdf5(loc_data, pts1,len, "gauges.h5");
+      write_locations_hdf5(loc_data+pts1*len, pts1,len, "gauges_U.h5");
+      write_locations_hdf5(loc_data+2*pts1*len, pts1,len, "gauges_V.h5");
     } else {
       for (int i = 0; i < locationData.n_points; i++) {
         FILE* fp;
@@ -487,19 +509,20 @@ int main(int argc, char **argv) {
     locationData.filename.clear();
     locationData.time.clear();
     locationData.value.clear();
+    locationData.allvalues.clear();
   }
 
   for (int i = 0; i < timers.size(); i++) {
     if (timers[i].step == -1 && strcmp(events[i].className.c_str(), "OutputMaxElevation") == 0) {
       strcpy((char*)currentMaxElevation->name, "values");
-      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxElevation);
+      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxElevation, &zmin);
       strcpy((char*)currentMaxElevation->name, "maxElevation");
     }
   }
   for (int i = 0; i < timers.size(); i++) {
     if (timers[i].step == -1 && strcmp(events[i].className.c_str(), "OutputMaxSpeed") == 0) {
       strcpy((char*)currentMaxSpeed->name, "values");
-      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxSpeed);
+      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxSpeed, &zmin);
       strcpy((char*)currentMaxSpeed->name, "maxSpeed");
     }
   }

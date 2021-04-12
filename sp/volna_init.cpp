@@ -21,6 +21,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "initU_formula.h"
 #include "initV_formula.h"
 #include "values_operation2.h"
+#include "zero_bathy.h"
 
 #include "op_seq.h"
 
@@ -81,7 +82,6 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
   op_printf("InitV...");
 #endif
  if(fromFile) {
-  op_printf(" From file V \n");
   int variable = 4;
   op_par_loop(incConst, "incConst", cells,
                 op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
@@ -103,7 +103,7 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
 //
 //}
 
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb) {
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb, float *zmin) {
   if (firstTime) {
     int result = 0;
     int leftOperand = 0;
@@ -157,8 +157,16 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                 op_arg_gbl(&timestamp, 1, "double", OP_READ));
     }
   }
+  if (firstTime) {
+    *zmin = 0.0f;
+    op_par_loop(zero_bathy, "zero_bathy", cells,
+             op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
+             op_arg_gbl(zmin, 1, "float", OP_MIN));
+    printf("zmin %f \n", *zmin);
+  }
   op_par_loop(initBathymetry_update, "initBathymetry_update", cells,
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+              op_arg_gbl(zmin, 1, "float", OP_READ),
               op_arg_gbl(&firstTime, 1, "int", OP_READ));
 #ifdef DEBUG
   printf("InitBathymetry executing H: %g Zb: %g\n", normcomp(values, 0), normcomp(values, 3));

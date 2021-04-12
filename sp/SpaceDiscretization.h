@@ -1,6 +1,5 @@
 inline void SpaceDiscretization(float *left, //OP_INC
               float *right, //OP_INC
-              const float *cellLeft, const float *cellRight,
               const float *edgeFluxes, //OP_READ
               const float *bathySource, //OP_READ
               const float *edgeNormals, const int *isRightBoundary,

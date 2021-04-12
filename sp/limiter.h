@@ -1,19 +1,22 @@
 inline void limiter(const float *q, float *lim,
                     const float *value, const float *gradient,
                     const float *edgecenter1, const float *edgecenter2,
-                    const float *edgecenter3,
+                    const float *edgecenter3, 
                     const float *cellcenter)
 {
 
   float facevalue[3], dx[3], dy[3];
   int i, j;
   float max[3], edgealpha[3];
+  
   dx[0] = (edgecenter1[0] - cellcenter[0]);
   dy[0] = (edgecenter1[1] - cellcenter[1]);
   dx[1] = (edgecenter2[0] - cellcenter[0]);
   dy[1] = (edgecenter2[1] - cellcenter[1]);
   dx[2] = (edgecenter3[0] - cellcenter[0]);
   dy[2] = (edgecenter3[1] - cellcenter[1]);
+  // If the cell is not on the wet/dry boundary
+  if(q[0] > EPS){
   // The limiter is calculated for all physical variables using the
   // Barth-Jesperson formula and then the minimum limiter is used.
   // q[0] - Hmin , q[1] - Hmax
@@ -31,8 +34,17 @@ inline void limiter(const float *q, float *lim,
       edgealpha[i] = 1.0f;
      }
     max[i] = edgealpha[i] < 1.0f ? edgealpha[i] : 1.0f;
-   }
+   } 
    lim[j] = max[0] < max[1] ? max[0] : max[1];
    lim[j] = lim[j] < max[2] ? lim[j]: max[2];
+  }
+  //lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
+  //lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
+  lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
+  } else {
+    lim[0] = 0.0f;
+    lim[1] = 0.0f;
+    lim[2] = 0.0f;
+    lim[3] = 0.0f;
   }
 }

@@ -1,6 +1,6 @@
 inline void NumericalFluxes(const float *maxEdgeEigenvalues0,
-          const float *maxEdgeEigenvalues1, 
-          const float *maxEdgeEigenvalues2, 
+          const float *maxEdgeEigenvalues1,
+          const float *maxEdgeEigenvalues2,
           const float *EdgeVolumes0,
           const float *EdgeVolumes1,
           const float *EdgeVolumes2,
