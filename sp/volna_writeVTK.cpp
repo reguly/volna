@@ -219,19 +219,19 @@ void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_
   for ( i=0; i<ncell; ++i )
     fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR] + (values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin));
   fprintf(fp, "\n");
-  
+
   fprintf(fp, "SCALARS U float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i )
     fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+1]/values_data[i*N_STATEVAR]);
   fprintf(fp, "\n");
-  
+
   fprintf(fp, "SCALARS V float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i )
     fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+2]/values_data[i*N_STATEVAR]);
   fprintf(fp, "\n");
-  
+
   fprintf(fp, "SCALARS Bathymetry float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i ) {

@@ -7,7 +7,6 @@ inline void Friction_manning(const float *dT,const float *M_n, //OP_RW, discard
   float u = values[1]/TruncatedH;
   float v = values[2]/TruncatedH;
   float speed = sqrt(u*u + v*v);
-  //float speed = sqrt(values[1]*values[1] + values[2]*values[2]);
   F = g* (*M_n * *M_n) *speed;
   F = F/(pow(TruncatedH,4.0f/3.0f));
   //float Fx = F*TruncatedH*values[1];

@@ -23,26 +23,29 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   dyl = (edgeCenters[1] - leftcellCenters[1]);
   dxr = (edgeCenters[0] - rightcellCenters[0]);
   dyr = (edgeCenters[1] - rightcellCenters[1]);
-
+  
   // Second order Reconstruction
   leftCellValues[0] += alphaleft[0] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
-  //leftCellValues[1] += alphaleft[0] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
-  //leftCellValues[2] += alphaleft[0] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
-  leftCellValues[3] += alphaleft[0] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
+  leftCellValues[1] += alphaleft[1] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
+  leftCellValues[2] += alphaleft[2] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
+  leftCellValues[3] += alphaleft[3] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
+
   float TruncatedHL = leftCellValues[0] > EPS ? leftCellValues[0] : EPS;
   uL = leftCellValues[1]/TruncatedHL;
   vL = leftCellValues[2]/TruncatedHL;
   zL = cellLeft[3] - cellLeft[0];
-
+  
   if (!*isRightBoundary) {
     rightCellValues[0] = cellRight[0];
     rightCellValues[1] = cellRight[1];
     rightCellValues[2] = cellRight[2];
     rightCellValues[3] = cellRight[3];
+    
+    // Second order Reconstruction
     rightCellValues[0] += alpharight[0] * ((dxr * rightGradient[0])+(dyr * rightGradient[1]));
-    //rightCellValues[1] += alpharight[0] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
-    //rightCellValues[2] += alpharight[0] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
-    rightCellValues[3] += alpharight[0] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
+    rightCellValues[1] += alpharight[1] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
+    rightCellValues[2] += alpharight[2] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
+    rightCellValues[3] += alpharight[3] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
     float TruncatedHR = rightCellValues[0] > EPS ? rightCellValues[0] : EPS;
     uR = rightCellValues[1]/TruncatedHR;
     vR = rightCellValues[2]/TruncatedHR;
@@ -54,30 +57,30 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     float outNormalVelocity = 0.0f;
     float outTangentVelocity = 0.0f;
     rightCellValues[3] = leftCellValues[3];
-    //Outflow
+    // Outflow
     rightCellValues[0] = leftCellValues[0];
+    outNormalVelocity = inNormalVelocity;
     outTangentVelocity = inTangentVelocity;
-    outNormalVelocity =  inNormalVelocity;
     uR = outNormalVelocity * nx - outTangentVelocity * ny;
     vR = outNormalVelocity * ny + outTangentVelocity * nx;
-   // // } else {
-   //     // Wall
-   //     rightCellValues[0] = leftCellValues[0];
-   //     outNormalVelocity =  -1.0f*inNormalVelocity;
-   //     outTangentVelocity = inTangentVelocity;
-   //     uR = outNormalVelocity * nx - outTangentVelocity * ny;
-   //     vR = outNormalVelocity * ny + outTangentVelocity * nx;
-   // // }
+
+    // Wall 
+    /*rightCellValues[0] = leftCellValues[0];
+    outNormalVelocity =  -1.0f*inNormalVelocity;
+    outTangentVelocity = inTangentVelocity;
+    uR = outNormalVelocity * nx - outTangentVelocity * ny;
+    vR = outNormalVelocity * ny + outTangentVelocity * nx;
+    */
 
     rightCellValues[1] = uR*rightCellValues[0];
     rightCellValues[2] = vR*rightCellValues[0];
   }
-  //zL = cellLeft[3] - cellLeft[0];
   zR = cellRight[3] - cellRight[0];
   rightCellValues[3] -= rightCellValues[0];
   leftCellValues[3] -= leftCellValues[0];
   // ------------------------------------------------------------------------------------
   // Audusse Reconstruction(2004) 1st order Source Discretization
+  // ------------------------------------------------------------------------------------
   InterfaceBathy = leftCellValues[3] > rightCellValues[3] ? leftCellValues[3] : rightCellValues[3];
   bathySource[0] =0.5f * g * (leftCellValues[0]*leftCellValues[0]);
   bathySource[1] =0.5f * g * (rightCellValues[0]*rightCellValues[0]);
@@ -92,11 +95,12 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   // Audusse Reconstruction(2005) 2nd order Centered term
   bathySource[2] = -.5f * g *(leftCellValues[0] + cellLeft[0])*(leftCellValues[3] - zL);
   bathySource[3] = -.5f * g *(rightCellValues[0] + cellRight[0])*(rightCellValues[3] - zR);
+  
   bathySource[0] *= *edgeLength;
   bathySource[1] *= *edgeLength;
   bathySource[2] *= *edgeLength;
   bathySource[3] *= *edgeLength;
-
+  
   // ------------------------------------------------------------------------------------
   // HLL Riemann Solver
   // Estimation of the wave speeds at the interface.
@@ -104,10 +108,10 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   cL = cL > 0.0f ? cL : 0.0f;
   float cR = sqrt(g * hR);
   cR = cR > 0.0f ? cR : 0.0f;
-
+  
   float uLn = uL * edgeNormals[0] + vL * edgeNormals[1];
   float uRn = uR * edgeNormals[0] + vR * edgeNormals[1];
-
+ 
   float unStar = 0.5f * (uLn + uRn) + (cL-cR);
   float cStar = 0.5f * (cL + cR) - 0.25f* (uRn-uLn);
   float sL = (uLn - cL) < (unStar - cStar) ? (uLn - cL) : (unStar - cStar);
@@ -117,7 +121,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   float sStar;
   sStar = (sL*hR*(uRn - sR) - sR*hL*(uLn - sL))/
           (hR*(uRn - sR) - hL*(uLn - sL));
-
+  
   if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
       sL = uRn - 2.0f*cR;
       sR = uRn + cR;
@@ -137,13 +141,13 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   //inlined ProjectedPhysicalFluxes(leftCellValues, Normals, params, LeftFluxes);
   float HuDotN = (leftCellValues[1]) * edgeNormals[0] +
   (leftCellValues[2]) * edgeNormals[1];
-
+  
   LeftFluxes_H = HuDotN;
   LeftFluxes_U = HuDotN * uL;
   LeftFluxes_V = HuDotN * vL;
   // Normal Momentum flux term
   LeftFluxes_N = HuDotN * uLn;
-
+  
   LeftFluxes_U += (.5f * g * edgeNormals[0] ) * ( hL * hL );
   LeftFluxes_V += (.5f * g * edgeNormals[1] ) * ( hL * hL );
   LeftFluxes_N += (.5f * g ) * ( hL * hL );
@@ -153,7 +157,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   //inlined ProjectedPhysicalFluxes(rightCellValues, Normals, params, RightFluxes);
   HuDotN = (rightCellValues[1]) * edgeNormals[0] +
   (rightCellValues[2]) * edgeNormals[1];
-
+  
   RightFluxes_H =   HuDotN;
   RightFluxes_U =   HuDotN * uR;
   RightFluxes_V =   HuDotN * vR;
@@ -217,7 +221,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   ( t2 * RightFluxes_V ) +
   ( t3 * ( (rightCellValues[2]) -
           (leftCellValues[2]) ) );
-
+    
   // ------------------------------------------------------------------------
   //     HLLC Flux Solver (Huang et al. 2013)
   //     "Well-balanced finite volume scheme for shallow water flooding and drying
@@ -265,7 +269,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   out[0] *= *edgeLength;
   out[1] *= *edgeLength;
   out[2] *= *edgeLength;
-
+  
   float maximum = fabs(uLn + cL);
   maximum = maximum > fabs(uLn - cL) ? maximum : fabs(uLn - cL);
   maximum = maximum > fabs(uRn + cR) ? maximum : fabs(uRn + cR);

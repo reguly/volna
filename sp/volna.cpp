@@ -388,7 +388,7 @@ int main(int argc, char **argv) {
 
 
       timestep=dT;
-      float Mn = 0.025f;
+      float Mn = 0.013f;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),

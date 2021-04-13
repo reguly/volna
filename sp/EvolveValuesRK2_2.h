@@ -10,15 +10,5 @@ inline void EvolveValuesRK2_2(const float *dT,const float *Lw_1, //OP_RW, discar
   out[3] = values[3]-values[0];
   float TruncatedH = out[0] < EPS ? EPS : out[0];
   out[0] = TruncatedH;
-  //out[1] = out[1] / TruncatedH;
-  //out[2] = out[2] / TruncatedH;
   out[3] += TruncatedH; 
-  /*if(out[0] <= EPS){
-    out[0] = EPS;
-    out[1] = 0.0f;
-    out[2] = 0.0f;
-    out[3] += EPS;
-  } else {
-    out[3] += out[0];
-  }*/
 }
