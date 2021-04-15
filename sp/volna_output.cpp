@@ -19,7 +19,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "getMaxSpeed.h"
 #include "gatherLocations.h"
 #include "simulation_1.h"
-
+#include "toOutputs.h"
 
 //
 // mpi header file - included by user for user level mpi
@@ -58,7 +58,7 @@ void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer,
 
     if (timer->step == -1) {
       strcpy((char*)currentMaxElevation->name,"values");
-      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation, zmin);
+      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation, cells, zmin);
       strcpy((char*)currentMaxElevation->name,"maxElevation");
     }
   }
@@ -69,7 +69,7 @@ void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer,
 
   if (timer->step != -1) {
     strcpy((char*)currentMaxElevation->name, "values");
-    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation, zmin);
+    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxElevation, cells, zmin);
     strcpy((char*)currentMaxElevation->name,"maxElevation");
   }
 }
@@ -91,7 +91,7 @@ void OutputMaxSpeed(int writeOption, EventParams *event, TimerParams* timer, op_
 
     if (timer->step == -1) {
       strcpy((char*)currentMaxSpeed->name,"values");
-      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed, zmin);
+      OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed, cells, zmin);
       strcpy((char*)currentMaxSpeed->name,"maxSpeed");
     }
   }
@@ -102,7 +102,7 @@ void OutputMaxSpeed(int writeOption, EventParams *event, TimerParams* timer, op_
 
   if (timer->step != -1) {
     strcpy((char*)currentMaxSpeed->name, "values");
-    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed, zmin);
+    OutputSimulation(writeOption, event, timer, nodeCoords, cellsToNodes, currentMaxSpeed, cells, zmin);
     strcpy((char*)currentMaxSpeed->name,"maxSpeed");
   }
 }
@@ -135,7 +135,7 @@ void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set 
 /*
  * Write output simulation either to binary or ASCII file
  */
-void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, float *zmin) {
+void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells,float *zmin) {
   char filename[255];
   strcpy(filename, event->streamName.c_str());
   int nnode = nodeCoords->set->size;
@@ -144,12 +144,24 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
   char* pos;
   pos = strstr(filename, substituteIndexPattern);
   char substituteIndex[255];
+
+  float *temp = NULL;
+  if (timer->iter == timer->istart && physical_vars==NULL) {
+    physical_vars = op_decl_dat_temp(cells, 5, "float", temp,"physical_vars");
+  }
+  
+
+  op_par_loop(toOutputs, "toOutputs", cells,
+      op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
+      op_arg_gbl(zmin, 1, "float", OP_READ),
+      op_arg_dat(physical_vars, -1, OP_ID, 5, "float", OP_WRITE));
+
   // 0 - write to HDF5 file
   if(writeOption == 0) {
     sprintf(substituteIndex, "%04d.h5", timer->iter);
     if (pos != NULL) strcpy(pos, substituteIndex);
-    op_printf("Writing %s to HDF5 file: %s \n",values->name, filename);
-    op_fetch_data_hdf5_file(values, filename);
+    //op_printf("Writing %s to HDF5 file: %s \n",values->name, filename);
+    op_fetch_data_hdf5_file(physical_vars, filename);
   }
   else if(writeOption > 0) {
     sprintf(substituteIndex, "%04d.vtk", timer->iter);
@@ -157,11 +169,11 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
     switch(writeOption) {
     // 1 - write to ASCII VTK file
     case 1:
-      WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, values, zmin);
+      WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, physical_vars);
       break;
       // 1 - write to Binary VTK file
     case 2:
-      WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, values, zmin);
+      WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, physical_vars);
       break;
     }
   }

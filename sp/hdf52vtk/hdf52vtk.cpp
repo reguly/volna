@@ -40,9 +40,7 @@ int main(int argc, char **argv) {
     print_info();
     exit(-1);
   }
-
   op_init(argc, argv, 2);
-
   hid_t file_geo;
   hid_t file_sim;
   const char *filename_geo_h5 = argv[1];
@@ -63,50 +61,12 @@ int main(int argc, char **argv) {
   op_dat nodeCoords = op_decl_dat_hdf5(nodes, MESH_DIM, "float",
   		filename_geo_h5,
   		"nodeCoords");
-  op_dat values = op_decl_dat_hdf5(cells, N_STATEVAR, "float",
+  op_dat physical_vars = op_decl_dat_hdf5(cells, N_STATEVAR+1, "float",
   		filename_sim_h5,
-  		"values");
+  		"physical_vars");
 
   int nnode = nodeCoords->set->size;
   int ncell = cellsToNodes->from->size;
-
-//	if(argc==4) {
-//	  if(argv[3] != NULL) {
-//	    const char *filename_sim_diff_h5 = argv[3];
-//	    hid_t file_sim_diff;
-//	    file_sim_diff = H5Fopen(filename_sim_diff_h5, H5F_ACC_RDONLY, H5P_DEFAULT);
-//	    op_dat values_diff = op_decl_dat_hdf5(cells, N_STATEVAR, "float",
-//	        filename_sim_diff_h5,
-//	        "values");
-//
-////     op_printf("  aaaaaaaaaaaaaaaaaaaaa = %d \n\n", values->set->size);
-////     op_printf("  aaaaaaaaaaaaaaaaaaaaa = %d \n\n", values_diff->set->size);
-//
-//	    if(values->set->size == values_diff->set->size) {
-//	      float sum[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-//	      int dim = 4;
-//	      float *val = (float*) values->data;
-//	      float *val_diff = (float*) values_diff->data;
-//
-//	      for(int i=0; i<values->set->size; i++){
-//	        sum[0] += fabs( val[i*dim  ] - val_diff[i*dim  ] );
-//	        sum[1] += fabs( val[i*dim+1] - val_diff[i*dim+1] );
-//	        sum[2] += fabs( val[i*dim+2] - val_diff[i*dim+2] );
-//	        sum[3] += fabs( val[i*dim+3] - val_diff[i*dim+3] );
-////	        op_printf("  H = %g %g %g \n", val[i*dim  ], val_diff[i*dim  ], fabs( val[i*dim  ] - val_diff[i*dim  ] ));
-//	      }
-//	      op_printf("Sum of absolute difference: \n");
-//	      op_printf("  diff H = %g \n", sum[0]);
-//	      op_printf("  diff U = %g \n", sum[1]);
-//	      op_printf("  diff V = %g \n", sum[2]);
-//	      op_printf("  diff Z = %g \n\n", sum[3]);
-//	    }
-//	    else {
-//	      op_printf("Dimension missmatch between the two simulation result files.\n");
-//	      exit(-1);
-//	    }
-//	  }
-//	}
 
 	// Set output filename
 	char filename[255];
@@ -121,15 +81,14 @@ int main(int argc, char **argv) {
 	  sprintf(substituteIndex, ".vtk");
 	  strcpy(pos, substituteIndex);
 	}
-
 	// Choose file type
 	if(argc == 4) {
 	  switch( atoi(argv[3]) ) {
 	  case 0:
-	    WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
+	    WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, physical_vars);
 	    break;
 	  case 1:
-	    WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
+	    WriteMeshToVTKBinary(filename, nodeCoords, nnode, cellsToNodes, ncell, physical_vars);
 	    break;
 	  default:
 	    print_info();
@@ -138,7 +97,7 @@ int main(int argc, char **argv) {
 	  }
 	}
 	else {
-	  WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, values);
+	  WriteMeshToVTKAscii(filename, nodeCoords, nnode, cellsToNodes, ncell, physical_vars);
 	}
 
   check_hdf5_error( H5Fclose(file_geo) );

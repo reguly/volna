@@ -34,7 +34,7 @@ bool new_format = true;
 // Store maximum elevation and speed in global variable, for the sake of max search
 op_dat currentMaxElevation = NULL;
 op_dat currentMaxSpeed = NULL;
-op_dat currentLimiter = NULL;
+op_dat physical_vars = NULL;
 //
 // Checks if error occured during hdf5 process and prints error message
 //
@@ -474,14 +474,14 @@ int main(int argc, char **argv) {
   for (int i = 0; i < timers.size(); i++) {
     if (timers[i].step == -1 && strcmp(events[i].className.c_str(), "OutputMaxElevation") == 0) {
       strcpy((char*)currentMaxElevation->name, "values");
-      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxElevation, &zmin);
+      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxElevation, cells, &zmin);
       strcpy((char*)currentMaxElevation->name, "maxElevation");
     }
   }
   for (int i = 0; i < timers.size(); i++) {
     if (timers[i].step == -1 && strcmp(events[i].className.c_str(), "OutputMaxSpeed") == 0) {
       strcpy((char*)currentMaxSpeed->name, "values");
-      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxSpeed, &zmin);
+      OutputSimulation(writeOption, &events[i], &timers[i], nodeCoords, cellsToNodes, currentMaxSpeed, cells, &zmin);
       strcpy((char*)currentMaxSpeed->name, "maxSpeed");
     }
   }

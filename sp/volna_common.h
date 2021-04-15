@@ -46,7 +46,7 @@ extern int itercount;
 extern float EPS, CFL, g;
 extern op_dat currentMaxElevation;
 extern op_dat currentMaxSpeed;
-extern op_dat currentLimiter;
+extern op_dat physical_vars;
 extern bool new_format;
 
 struct GaussianLandslideParams {
@@ -84,7 +84,7 @@ void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, Gaus
 void OutputTime(TimerParams *timer);
 void OutputConservedQuantities(op_set cells, op_dat cellVolumes, op_dat values);
 void OutputLocation(EventParams *event, int eventid, TimerParams* timer, op_set cells, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_map outputLocation_map, op_dat outputLocation_dat, float *zmin);
-void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, float *zmin);
+void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells, float *zmin);
 void OutputMaxElevation(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells, float *zmin);
 void OutputMaxSpeed(int writeOption, EventParams *event, TimerParams* timer, op_dat nodeCoords, op_map cellsToNodes, op_dat values, op_set cells, float *zmin);
 float normcomp(op_dat dat, int off);

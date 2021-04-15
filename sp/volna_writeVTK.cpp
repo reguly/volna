@@ -67,7 +67,7 @@ inline int swapEndiannesInt(int d) {
 /*
  * Write simulation output to binary file
  */
-void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values, const float *zmin) {
+void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
   op_printf("Writing OutputSimulation to binary file: %s \n",filename);
   FILE* fp;
   fp = fopen(filename, "w");
@@ -133,7 +133,8 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
                   ncell); fwrite(s, sizeof(char), strlen(s), fp);
 
   for ( i=0; i<ncell; ++i ) {
-    tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR] + (values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin));
+    tmp_float = swapEndiannesFloat(values_data[i*(N_STATEVAR+1)]);
+    //tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR] + (values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin));
     fwrite(&tmp_float, sizeof(float), 1, fp);
   }
 
@@ -141,7 +142,8 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
 
     strcpy(s, "SCALARS U float 1\nLOOKUP_TABLE default\n"); fwrite(s, sizeof(char), strlen(s), fp);
   for ( i=0; i<ncell; ++i ){
-    tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+1]/values_data[i*N_STATEVAR]);
+    tmp_float = swapEndiannesFloat(values_data[i*(N_STATEVAR+1)+1]);
+    //tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+1]/values_data[i*N_STATEVAR]);
     fwrite(&tmp_float, sizeof(float), 1, fp);
   }
   strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
@@ -149,7 +151,8 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
 
   strcpy(s, "SCALARS V float 1\nLOOKUP_TABLE default\n"); fwrite(s, sizeof(char), strlen(s), fp);
   for ( i=0; i<ncell; ++i ) {
-    tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+2]/values_data[i*N_STATEVAR]);
+    tmp_float = swapEndiannesFloat(values_data[i*(N_STATEVAR+1)+2]);
+    //tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+2]/values_data[i*N_STATEVAR]);
     fwrite(&tmp_float, sizeof(float), 1, fp);
   }
 
@@ -157,11 +160,20 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
 
   strcpy(s, "SCALARS Bathymetry float 1\nLOOKUP_TABLE default\n"); fwrite(s, sizeof(char), strlen(s), fp);
   for ( i=0; i<ncell; ++i ) {
-    tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin);
+    tmp_float = swapEndiannesFloat(values_data[i*(N_STATEVAR+1)+3]);
+    //tmp_float = swapEndiannesFloat(values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin);
     fwrite(&tmp_float, sizeof(float), 1, fp);
   }
 
   strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
+
+  strcpy(s, "SCALARS Inundated float 1\nLOOKUP_TABLE default\n"); fwrite(s, sizeof(char), strlen(s), fp);
+  for ( i=0; i<ncell; ++i ) {
+    tmp_float = swapEndiannesFloat(values_data[i*(N_STATEVAR+1)+4]);
+    fwrite(&tmp_float, sizeof(float), 1, fp);
+    }
+
+   strcpy(s, "\n"); fwrite(s, sizeof(char), strlen(s), fp);
 
   if(fclose(fp) != 0) {
     op_printf("can't close file %s\n",filename);
@@ -172,7 +184,7 @@ void WriteMeshToVTKBinary(const char* filename, op_dat nodeCoords, int nnode, op
 /*
  * Write simulation output to ASCII file
  */
-void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values,const float *zmin) {
+void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_map cellsToNodes, int ncell, op_dat values) {
   op_printf("Writing OutputSimulation to ASCII file: %s \n",filename);
   FILE* fp;
   fp = fopen(filename, "w");
@@ -217,25 +229,31 @@ void WriteMeshToVTKAscii(const char* filename, op_dat nodeCoords, int nnode, op_
               "LOOKUP_TABLE default\n",
               ncell);
   for ( i=0; i<ncell; ++i )
-    fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR] + (values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin));
+     fprintf(fp, "%10.20g\n", values_data[i*(N_STATEVAR+1)]);
   fprintf(fp, "\n");
 
   fprintf(fp, "SCALARS U float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i )
-    fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+1]/values_data[i*N_STATEVAR]);
+    fprintf(fp, "%10.20g\n", values_data[i*(N_STATEVAR+1)+1]);
   fprintf(fp, "\n");
 
   fprintf(fp, "SCALARS V float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i )
-    fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+2]/values_data[i*N_STATEVAR]);
+     fprintf(fp, "%10.20g\n", values_data[i*(N_STATEVAR+1)+2]);
   fprintf(fp, "\n");
 
   fprintf(fp, "SCALARS Bathymetry float 1\n"
               "LOOKUP_TABLE default\n");
   for ( i=0; i<ncell; ++i ) {
-    fprintf(fp, "%10.20g\n", values_data[i*N_STATEVAR+3] - values_data[i*N_STATEVAR] + *zmin);
+    fprintf(fp, "%10.20g\n", values_data[i*(N_STATEVAR+1)+3]);
+  }
+
+  fprintf(fp, "SCALARS Inundated float 1\n"
+              "LOOKUP_TABLE default\n");
+  for ( i=0; i<ncell; ++i ) {
+    fprintf(fp, "%10.20g\n", values_data[i*(N_STATEVAR+1)+4]);
   }
 
   if(fclose(fp) != 0) {
