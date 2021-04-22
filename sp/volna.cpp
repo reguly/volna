@@ -196,7 +196,6 @@ int main(int argc, char **argv) {
   op_dat initial_zb = NULL;
 
 
-
   /*
    * Read constants from HDF5
    */
@@ -230,7 +229,7 @@ int main(int argc, char **argv) {
         if (strcmp(events[i].streamName.c_str(), ""))
           temp_initV = op_decl_dat_hdf5(cells, 1, "float",
               filename_h5,
-              "initV"); 
+              "initV");
       } else if (!strcmp(events[i].className.c_str(), "InitBathymetry")) {
         if (strcmp(events[i].streamName.c_str(), "")){
           op_set bathy_set = cells;
@@ -320,9 +319,9 @@ int main(int argc, char **argv) {
     outputLocation_dat = op_decl_dat_temp(outputLocation, 5, "float",
                                         tmp_elem,"outputLocation_dat");
   float zmin;
+  op_dat z_zero = op_decl_dat_temp(cells, 1, "float",tmp_elem,"z_zero");
   //Very first Init loop
-  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
-  
+  processEvents(&timers, &events, 1/*firstTime*/, 1/*update timers*/, 0.0/*=dt*/, 1/*remove finished events*/, 2/*init loop, not pre/post*/, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes, lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
   /*
    *  Declaring temporary dats
   */
@@ -338,17 +337,16 @@ int main(int argc, char **argv) {
   op_dat Lw_1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "Lw_1"); //temp - cells - dim 4
   op_dat w_1 = op_decl_dat_temp(cells, 4, "float", tmp_elem, "w_1"); //temp - cells - dim 4
   // q contains the max and min values of the physical variables surrounding each cell
-  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8 
+  op_dat q = op_decl_dat_temp(cells, 8, "float", tmp_elem, "q"); //temp - cells - dim 8
   // lim is the limiter value for each physical variable defined on each cell
   op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
-    processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
+    processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
 
 
 #ifdef DEBUG
-    printf("Call to EvolveValuesRK2 CellValues H %g U %g V %g Zb %g\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
 #endif
     {
       float minTimestep = 0.0;
@@ -361,7 +359,7 @@ int main(int argc, char **argv) {
 #endif
       float dT = CFL * minTimestep;
       dT= dT < dtmax ? dT : dtmax;
-      
+
       op_par_loop(EvolveValuesRK2_1, "EvolveValuesRK2_1", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_n, -1, OP_ID, 4, "float", OP_READ),
@@ -370,7 +368,7 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(w_1, 0), normcomp(w_1, 1),normcomp(w_1, 2),normcomp(w_1, 3));
 #endif
- 
+
       float dummy = 0.0;
       spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
@@ -388,7 +386,7 @@ int main(int argc, char **argv) {
 
 
       timestep=dT;
-      float Mn = 0.013f;
+      float Mn = 0.025f;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),
@@ -398,16 +396,16 @@ int main(int argc, char **argv) {
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
 //         printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(values_new, 0), normcomp(values_new, 1),normcomp(values_new, 2),normcomp(values_new, 3));
- 
+
     itercount++;
     timestamp += timestep;
-    processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,temp_initEta, temp_initU, temp_initV, bathy_nodes,    lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
+    processEvents(&timers, &events, 0, 1, timestep, 1, 1, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes,temp_initEta, temp_initU, temp_initV, bathy_nodes,    lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
   }
 
   op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
-  
+
 
   if(op_is_root()) {
     int compressed = 0;
@@ -437,14 +435,14 @@ int main(int argc, char **argv) {
         for (int j = 0; j < pts; j++) {
           loc_data[i*pts1+pts1*len+1+j] = locationData.allvalues[j][4*i+1];
         }
-      }   
+      }
       	/*loop for storing V*/
       for (int i = 0; i < len; i++) {
         loc_data[i*pts1+2*pts1*len] = locationData.time[0][i];
         for (int j = 0; j < pts; j++) {
           loc_data[i*pts1+2*pts1*len+1+j] = locationData.allvalues[j][4*i+2];
         }
-      } 
+      }
       write_locations_hdf5(loc_data, pts1,len, "gauges.h5");
       write_locations_hdf5(loc_data+pts1*len, pts1,len, "gauges_U.h5");
       write_locations_hdf5(loc_data+2*pts1*len, pts1,len, "gauges_V.h5");
@@ -501,7 +499,7 @@ int main(int argc, char **argv) {
     op_printf("Error: temporary op_dat %s cannot be removed\n",outConservative->name);
   if (op_free_dat_temp(midPointConservative3) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",midPointConservative3->name);
-  
+
   if (op_free_dat_temp(inConservative) < 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",inConservative->name);
   */

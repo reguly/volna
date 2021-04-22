@@ -3,7 +3,7 @@ inline void toOutputs(const float *values,
             float *output )
 {
   
-  output[0] = values[0] + (values[3] - values[0] + *zmin);
+  output[0] = values[3] + *zmin;
   output[1] = values[1]/values[0];
   output[2] = values[2]/values[0];
   output[3] = values[3] - values[0] + *zmin;
