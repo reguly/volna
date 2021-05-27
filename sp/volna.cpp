@@ -349,7 +349,7 @@ int main(int argc, char **argv) {
 #ifdef DEBUG
 #endif
     {
-      float minTimestep = 0.0;
+      float minTimestep = INFINITY;
       spaceDiscretization(values, Lw_n, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,

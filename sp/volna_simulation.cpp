@@ -74,7 +74,6 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
     }
 
     if (*minTimestep >= 0.0){
-    *minTimestep = INFINITY;
     op_par_loop(Timestep, "Timestep", cells,
                 op_arg_dat(maxEdgeEigenvalues, 0, cellsToEdges, 1, "float", OP_READ),
                 op_arg_dat(maxEdgeEigenvalues, 1, cellsToEdges, 1, "float", OP_READ),
