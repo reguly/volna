@@ -3,5 +3,5 @@ inline void initBathymetry_formula(const float *coords, float *values, const dou
   float y = coords[1];
   float t = *time;
   float val = -1.0f ;;
-  values[3] = val;
+  *values = val;
 }

@@ -56,10 +56,10 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -vec-report -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	CPPFLAGS = -O3 -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
-	OMPFLAGS = -qopenmp #-openmp-report2
-	MPICPP = $(MPI_INSTALL_PATH)/bin/mpiCC
+	OMPFLAGS = -qopenmp
+	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
 	MPIFLAGS = $(CPPFLAGS)
 else
 print:
@@ -75,7 +75,7 @@ endif
 #
 
 
-NVCCFLAGS	= -arch=sm_35 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g #-G
+NVCCFLAGS	= -arch=sm_60 -Xptxas=-v -O2 -m64 -g #-G
 
 #
 # master to make all versions
@@ -115,12 +115,11 @@ endif
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK2_1.h EvolveValuesRK2_2.h EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	EvolveValuesRK2_1.h EvolveValuesRK2_2.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu  cuda/EvolveValuesRK3_1_kernel.cu\
-	cuda/EvolveValuesRK3_2_kernel.cu cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
-        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h Timestep.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu cuda/computeGradient_kernel.cu \
+        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/Timestep_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 

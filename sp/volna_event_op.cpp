@@ -185,7 +185,7 @@ void read_events_hdf5(hid_t h5file, int num_events, std::vector<TimerParams> *ti
 void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *events, int firstTime, int updateTimers,
  									 float timeIncrement, int removeFinished, int initPrePost, op_set cells, op_dat values, op_dat cellVolumes,
 									 op_dat cellCenters, op_dat nodeCoords, op_map cellsToNodes, op_dat temp_initEta, op_dat temp_initU, op_dat temp_initV, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedCellsToCells, op_dat bathy_xy, op_dat initial_zb, 
-                   op_dat* temp_initBathymetry, int n_initBathymetry, float *zmin, op_map outputLocation_map,
+                   op_dat* temp_initBathymetry, op_dat z_zero, int n_initBathymetry, float *zmin, op_map outputLocation_map,
 									 op_dat outputLocation_dat, int writeOption) {
   //  op_printf("processEvents()... \n");
   int size = (*timers).size();
@@ -219,22 +219,25 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
                  strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0*/) {
         // If initBathymetry is given by a formula (n_initBathymetry is 0), run InitBathymetry for formula
         if(n_initBathymetry == 0) {
-          InitBathymetry(cells, cellCenters, values, NULL, 0, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb,zmin);
+          InitBathymetry(cells, cellCenters, values, NULL, NULL, 0, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb,zmin);
         }
         // If initBathymetry is given by 1 file, run InitBathymetry for that particular file
         if(n_initBathymetry == 1 ) {
-          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
+          InitBathymetry(cells, cellCenters, values, *temp_initBathymetry, z_zero, 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
         // Else if initBathymetry is given by multiple files, run InitBathymetry for those files
         } else if (n_initBathymetry > 1) {
           int k = ((*timers)[i].iter - (*timers)[i].istart) / (*timers)[i].istep;
           // Handle the case when InitBathymetry files are out for further bathymetry initalization: remove the event
           if(strcmp((*events)[i].className.c_str(), "InitBathymetry") == 0 && k<n_initBathymetry) {
-            InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
+             //printf("Call to InitBathymetry H %f U %f V %f Zb %f\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
+             InitBathymetry(cells, cellCenters, values, temp_initBathymetry[k], z_zero, 1, firstTime, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
+             //printf("After Call to InitBathymetry H %f U %f V %f Zb %f\n", normcomp(values, 0), normcomp(values, 1),normcomp(values, 2),normcomp(values, 3));
+
           }
         }
       } else if (strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
         //TODO: has to verify that firstTime happened already with plain bathymetry event
-        InitBathymetry(cells, cellCenters, values, NULL, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
+        InitBathymetry(cells, cellCenters, values, NULL, z_zero, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputTime") == 0) {
         OutputTime(&(*timers)[i]);
         //op_printf("Output iter: %d \n", (*timers)[i].iter);
@@ -248,7 +251,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         // 0 - HDF5 output
         // 1 - VTK ASCII output
         // 2 - VTK Binary output
-        OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, zmin);
+        OutputSimulation(writeOption, &(*events)[i], &(*timers)[i], nodeCoords, cellsToNodes, values, cells, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputMaxElevation") == 0) {
         // 0 - HDF5 output
         // 1 - VTK ASCII output

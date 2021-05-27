@@ -2,10 +2,10 @@ inline void toOutputs(const float *values,
             const float *zmin,
             float *output )
 {
-  
+  float truncatedH = values[0] > EPS ? values[0] : EPS;
   output[0] = values[3] + *zmin;
-  output[1] = values[1]/values[0];
-  output[2] = values[2]/values[0];
+  output[1] = values[1]/truncatedH;
+  output[2] = values[2]/truncatedH;
   output[3] = values[3] - values[0] + *zmin;
   // Output inundated cells flow depth
   // Inundated threshold depth set at 1e-3

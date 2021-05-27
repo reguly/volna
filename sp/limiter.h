@@ -2,6 +2,7 @@ inline void limiter(const float *q, float *lim,
                     const float *value, const float *gradient,
                     const float *edgecenter1, const float *edgecenter2,
                     const float *edgecenter3,
+                    float *zeroInit,
                     const float *cellcenter)
 {
 
@@ -46,4 +47,8 @@ inline void limiter(const float *q, float *lim,
     lim[2] = 0.0f;
     lim[3] = 0.0f;
   }
+  zeroInit[0] = 0.0f;
+  zeroInit[1] = 0.0f;
+  zeroInit[2] = 0.0f;
+  zeroInit[3] = 0.0f;
 }

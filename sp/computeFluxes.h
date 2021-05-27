@@ -6,7 +6,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
                                 const float *leftGradient, const float *rightGradient,
                                 const int *isRightBoundary, //OP_READ
                                 float *bathySource, float *out, //OP_WRITE
-                                float *maxEdgeEigenvalues, const double *timestamp) //OP_WRITE
+                                float *maxEdgeEigenvalues, const float *zmin) //OP_WRITE
 {
   //begin EdgesValuesFromCellValues
   float leftCellValues[4];
@@ -26,13 +26,16 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   
   // Second order Reconstruction
   leftCellValues[0] += alphaleft[0] * ((dxl * leftGradient[0])+(dyl * leftGradient[1]));
-  leftCellValues[1] += alphaleft[1] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
-  leftCellValues[2] += alphaleft[2] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
-  leftCellValues[3] += alphaleft[3] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
-
-  float TruncatedHL = leftCellValues[0] > EPS ? leftCellValues[0] : EPS;
-  uL = leftCellValues[1]/TruncatedHL;
-  vL = leftCellValues[2]/TruncatedHL;
+  leftCellValues[1] += alphaleft[0] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
+  leftCellValues[2] += alphaleft[0] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
+  leftCellValues[3] += alphaleft[0] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
+  if (leftCellValues[0] >= 1e-3){
+     uL = leftCellValues[1]/leftCellValues[0];
+     vL = leftCellValues[2]/leftCellValues[0];
+  } else {
+     uL = 0.0f;
+     vL = 0.0f;
+  }
   zL = cellLeft[3] - cellLeft[0];
   
   if (!*isRightBoundary) {
@@ -43,12 +46,16 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     
     // Second order Reconstruction
     rightCellValues[0] += alpharight[0] * ((dxr * rightGradient[0])+(dyr * rightGradient[1]));
-    rightCellValues[1] += alpharight[1] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
-    rightCellValues[2] += alpharight[2] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
-    rightCellValues[3] += alpharight[3] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
-    float TruncatedHR = rightCellValues[0] > EPS ? rightCellValues[0] : EPS;
-    uR = rightCellValues[1]/TruncatedHR;
-    vR = rightCellValues[2]/TruncatedHR;
+    rightCellValues[1] += alpharight[0] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
+    rightCellValues[2] += alpharight[0] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
+    rightCellValues[3] += alpharight[0] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
+    if (rightCellValues[0] >= 1e-3){
+       uR = rightCellValues[1]/rightCellValues[0];
+       vR = rightCellValues[2]/rightCellValues[0];
+     } else {
+       uR = 0.0f;
+       vR = 0.0f;
+     }
    } else {
     float nx = edgeNormals[0];
     float ny = edgeNormals[1];
@@ -56,21 +63,24 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     float inTangentVelocity = -1.0f * uL * ny + vL * nx;
     float outNormalVelocity = 0.0f;
     float outTangentVelocity = 0.0f;
-    rightCellValues[3] = leftCellValues[3];
+    //rightCellValues[3] = leftCellValues[3];
     // Outflow
-    rightCellValues[0] = leftCellValues[0];
+    /*float wet = (fabs(*zmin) - zL) > 0.0f ? (fabs(*zmin) - zL) : EPS;
+    rightCellValues[3] = zL + wet; 
+    rightCellValues[0] = wet;
     outNormalVelocity = inNormalVelocity;
     outTangentVelocity = inTangentVelocity;
     uR = outNormalVelocity * nx - outTangentVelocity * ny;
     vR = outNormalVelocity * ny + outTangentVelocity * nx;
-
+    */
     // Wall 
-    /*rightCellValues[0] = leftCellValues[0];
+    rightCellValues[3] = leftCellValues[3];
+    rightCellValues[0] = leftCellValues[0];
     outNormalVelocity =  -1.0f*inNormalVelocity;
     outTangentVelocity = inTangentVelocity;
     uR = outNormalVelocity * nx - outTangentVelocity * ny;
     vR = outNormalVelocity * ny + outTangentVelocity * nx;
-    */
+    
 
     rightCellValues[1] = uR*rightCellValues[0];
     rightCellValues[2] = vR*rightCellValues[0];
@@ -122,12 +132,14 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   sStar = (sL*hR*(uRn - sR) - sR*hL*(uLn - sL))/
           (hR*(uRn - sR) - hL*(uLn - sL));
   
-  if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
+  //if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
+  if ((leftCellValues[0] <= 1e-3) && (rightCellValues[0] > 1e-3)) {
       sL = uRn - 2.0f*cR;
       sR = uRn + cR;
       sStar = sL;
   }
-  if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
+  //if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
+  if ((rightCellValues[0] <= 1e-3) && (leftCellValues[0] > 1e-3)) {
       sR = uLn + 2.0f*cL;
       sL =  uLn - cL;
       sStar = sR;
@@ -198,7 +210,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   //------------------------------------------------------------------------
   // HLL Flux Solver
   // ------------------------------------------------------------------------
-  float sLMinus = sL < 0.0f ? sL : 0.0f;
+  /*float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
   float sRMinussL = sRPlus - sLMinus;
   sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
@@ -221,13 +233,13 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   ( t2 * RightFluxes_V ) +
   ( t3 * ( (rightCellValues[2]) -
           (leftCellValues[2]) ) );
-    
+  */  
   // ------------------------------------------------------------------------
   //     HLLC Flux Solver (Huang et al. 2013)
   //     "Well-balanced finite volume scheme for shallow water flooding and drying
   //     over arbitrary topography"
   // ------------------------------------------------------------------------
-  /*float sLMinus = sL < 0.0f ? sL : 0.0f;
+  float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
   float sRMinussL = sRPlus - sLMinus;
   sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
@@ -265,7 +277,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     out[0] = t2*RightFluxes_H;
     out[1] = t2*RightFluxes_U;
     out[2] = t2*RightFluxes_V;
-  }*/
+  }
   out[0] *= *edgeLength;
   out[1] *= *edgeLength;
   out[2] *= *edgeLength;

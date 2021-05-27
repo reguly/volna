@@ -12,15 +12,16 @@ inline void Friction_manning(const float *dT,const float *M_n, //OP_RW, discard
   //float Fx = F*TruncatedH*values[1];
   //float Fy = F*TruncatedH*values[2];
   // Update Momentum 
-  if (values[0] <= EPS){
-     values[0] = TruncatedH;
+  values[0] = TruncatedH;
+  values[3] = values[3];
+  if (values[0] <= 1e-3){
      values[1] = 0.0f;
      values[2] = 0.0f;
-     values[3] = values[3];
-  } else {  
-  values[0] = TruncatedH;
-  values[1] = values[1] / (1.0f + F * *dT);
-  values[2] = values[2] / (1.0f + F * *dT);
-  values[3] = values[3];
+  } else if (1e-3 < values[0] <= 50.0f) {
+     values[1] = values[1] / (1.0f + F * *dT);
+     values[2] = values[2] / (1.0f + F * *dT);
+  } else {
+     values[1] = values[1];
+     values[2] = values[2];
   }
 }

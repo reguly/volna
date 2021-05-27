@@ -217,7 +217,7 @@ void processEvents(std::vector<TimerParams> *timers, std::vector<EventParams> *e
         }
       } else if (strcmp((*events)[i].className.c_str(), "InitBathyRelative") == 0) {
         //TODO: has to verify that firstTime happened already with plain bathymetry event
-        InitBathymetry(cells, cellCenters, values, NULL, NULL, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
+        InitBathymetry(cells, cellCenters, values, NULL, z_zero, 0, false, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedCellsToCells, bathy_xy, initial_zb, zmin);
       } else if (strcmp((*events)[i].className.c_str(), "OutputTime") == 0) {
         OutputTime(&(*timers)[i]);
         //op_printf("Output iter: %d \n", (*timers)[i].iter);

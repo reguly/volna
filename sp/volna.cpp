@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
    * Read constants from HDF5
    */
   op_get_const_hdf5("CFL", 1, "float", (char *) &CFL, filename_h5);
-
+  // op_get_const_hdf5("Mn", 1, "float", (char *) &CFL, filename_h5);
   // Final time: as defined by Volna the end of real-time simulation
   float ftime_tmp, dtmax_tmp;
   op_get_const_hdf5("ftime", 1, "float", (char *) &ftime_tmp, filename_h5);
@@ -353,7 +353,7 @@ int main(int argc, char **argv) {
       spaceDiscretization(values, Lw_n, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
-          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &timestamp);
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(Lw_n, 0), normcomp(Lw_n, 1),normcomp(Lw_n, 2),normcomp(Lw_n, 3));
 #endif
@@ -369,12 +369,12 @@ int main(int argc, char **argv) {
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(w_1, 0), normcomp(w_1, 1),normcomp(w_1, 2),normcomp(w_1, 3));
 #endif
 
-      float dummy = 0.0;
+      float dummy = -1.0f;
       spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
-          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &timestamp);
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
 
 
       op_par_loop(EvolveValuesRK2_2, "EvolveValuesRK2_2", cells,
