@@ -1,7 +1,7 @@
 #ifndef GEOM_HPP
 #define GEOM_HPP
 
-#include "external/eigen2/Eigen/Core"
+#include "/usr/local/Cellar/eigen/3.3.9/include/eigen3/Eigen/Core"
 #include "config.hpp"
 
 typedef Eigen::Matrix<RealType, 3, 1> Vector;
@@ -11,7 +11,7 @@ typedef Eigen::Matrix<RealType, 1, Eigen::Dynamic> ScalarValue;
 class GeomValues {
 public:
   GeomValues( size_t N ):
-	  x( ScalarValue::Zero(N) ), 
+	  x( ScalarValue::Zero(N) ),
 	  y( ScalarValue::Zero(N) ),
 	  z( ScalarValue::Zero(N) ) {};
   ScalarValue x;

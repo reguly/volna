@@ -135,6 +135,118 @@ void vtk_parse_elements_ascii( std::istream &is, unsigned int &nb_cells,
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+void oceanmesh_parse_nodes_ascii( std::istream &is, int &nb_nodes, Nodes_t &nodes ) {
+
+  unsigned int node_counter = 0;
+  std::string line;
+
+  while ( node_counter < nb_nodes ) {
+
+    getline( is, line );
+    std::istringstream isstream(line);
+    std::string token;
+    // get node index
+    int node_index;
+    getline(isstream, token, ' ');
+    if (!parse<int>(node_index, token)){
+      std::cerr << "Bad input for node index (expecting an integer): " ;
+      std::cerr << token << std::endl;
+      exit(1);
+    }
+
+    // get node coordinates
+    double x, y, z;
+    getline(isstream, token, ' ');
+    if (!parse<double>(x, token)){
+      std::cerr << token << std::endl;
+      std::cerr << "Bad input for x node coordinate (expecting a float/double): ";
+      exit(1);
+    }
+    getline(isstream, token, ' ');
+    if (!parse<double>(y, token)){
+      std::cerr << "Bad input for y node coordinate (expecting a float/double): ";
+      std::cerr << token << std::endl;
+      exit(1);
+    }
+    getline(isstream, token, ' ');
+    // if (!parse<double>(z, token)){
+    //   std::cerr << "Bad input for node coordinate (expecting a float/double): ";
+    //   std::cerr << token << std::endl;
+    //   exit(1);
+    // }
+
+    Point point = Point::Zero();
+    point.x() = x;
+    point.y() = y;
+    point.z() = 0;
+// #ifdef VOLNA_3D
+//     point.z() = z;
+// #endif
+
+    nodes.insert(std::pair<int, Point>(node_index, point));
+    ++node_counter;
+  }
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void oceanmesh_parse_elements_ascii( std::istream &is, int &nb_cells,
+                                std::vector< Cell<3,2> > &cells ) {
+
+  cells.reserve( nb_cells );
+  std::string line;
+
+  for ( unsigned int i = 0; i < nb_cells; ++i ) {
+
+    getline( is, line );
+
+    std::istringstream isstream( line );
+    std::string token;
+
+    // get cell type
+    int cell_index;
+    getline(isstream, token, ' ');
+    if (!parse<int>(cell_index, token)){
+      std::cerr << "Bad input for cell index (expecting an integer): " ;
+      std::cerr << token << std::endl;
+      exit(1);
+    }
+
+    int cell_type;
+    getline(isstream, token, ' ');
+    if (!parse<int>(cell_type, token)){
+      std::cerr << "Bad input for cell type (expecting an integer): " ;
+      std::cerr << token << std::endl;
+      exit(1);
+    }
+    // get cell vertices
+    boost::array<int, 3> vertices;
+
+    for ( unsigned int j = 0; j<3; ++j ) {
+
+      int vertice_id = 0;
+      getline( isstream, token, ' ' );
+      if (!parse<int>( vertice_id, token )) {
+        std::cerr << "Bad input for vertice index "
+                  << "(expecting an integer):  "
+                  << token << std::endl;
+        exit(1);
+      }
+
+      vertices[j] = vertice_id;
+    }
+
+    cells.push_back( Cell<3,2>( vertices ) );
+
+  }
+
+}// MESHIO_HPP
+
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+
 void gmsh_parse_nodes_ascii( std::istream &is, int &nb_nodes, Nodes_t &nodes ) {
 
   int node_counter = 0;

@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
     (*sim.events[i]).timer.dump(t_p);
     if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0)
       bathyidx = i;
-    else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) 
+    else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0)
       bathyrelidx = i;
   }
   if (bathyidx>=0 && bathyrelidx>=0 && bathyidx > bathyrelidx) {
@@ -857,7 +857,7 @@ int main(int argc, char **argv) {
     }
     if (any) {printf("Error: the coarse bathy nodes above are not part of any coarse cell that would contain any mesh cells. Please remove it.\n");exit(-1);}
     free(touched);
-    
+
     lifted_cells = op_decl_set(liftedCellCount,"liftedCells");
     int *m_lcellstobnodes = (int *)malloc(N_NODESPERCELL*liftedCellCount*sizeof(int));
     int *m_lcellstocells = (int*)malloc(liftedCellCount*sizeof(int));
@@ -870,7 +870,7 @@ int main(int argc, char **argv) {
       m_lcellstocells[liftedCellCount] = c;
       liftedCellCount++;
     }
-    
+
     liftedcellsToBathynodes = op_decl_map(lifted_cells, bathy_nodes, N_NODESPERCELL, m_lcellstobnodes, "liftedcellsToBathynodes");
     liftedcellsToCells = op_decl_map(lifted_cells,cells,1,m_lcellstocells,"liftedcellsToCells");
 
@@ -959,6 +959,10 @@ int main(int argc, char **argv) {
   //
   float cfl = sim.CFL; // CFL condition
   op_write_const_hdf5("CFL", 1, "float", (char *) &cfl, filename_h5);
+  float Mn = sim.Mn; // Mn condition
+  op_write_const_hdf5("Mn", 1, "float", (char *) &Mn, filename_h5);
+  int spherical = sim.Spherical; // Mn condition
+  op_write_const_hdf5("Spherical", 1, "int", (char *) &spherical, filename_h5);
   // Final time: as defined by Volna the end of real-time simulation
   float ftime = sim.FinalTime;
   op_write_const_hdf5("ftime", 1, "float", (char *) &ftime,

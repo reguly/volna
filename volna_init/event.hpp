@@ -7,7 +7,7 @@
 #include <sstream>
 #include <string>
 
-#include <boost/shared_ptr.hpp>
+#include </usr/local/Cellar/boost/1.75.0_3/include/boost/shared_ptr.hpp>
 
 #include "config.hpp"
 //#include "mesh.hpp"

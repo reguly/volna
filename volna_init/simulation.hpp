@@ -53,6 +53,8 @@ public:
   Timer timer;
   RealType FinalTime, Dtmax;
   RealType CFL;
+  RealType Mn;
+  unsigned int Spherical;
   std::string MeshFileName;
   Point LocationPoint;
   Mesh mesh;
@@ -74,20 +76,26 @@ private:
 };
 
 Simulation::Simulation():
-  FinalTime(INFTY), Dtmax(INFTY), CFL(.9), CellValues(10000),
+  FinalTime(INFTY), Dtmax(INFTY), CellValues(10000), Spherical(0),
   InitFilename(""), InitFormula("") {};
 
 void Simulation::init() {
 
   std::ifstream ifs( MeshFileName.c_str() );
+  // std::string mesh_str MeshFileName;
 
-  if (ifs)
-    mesh.readGmsh( ifs );
+  if (MeshFileName.find(".msh") != string::npos) {
+    mesh.readGmsh(ifs);
+    std::cerr << "GMSH file \'" << MeshFileName << "\'" << std::endl;
 
-  else if ( mesh.nx!= 0 && mesh.ny!=0 )
-    mesh.InitRectangle();
+  } else if (MeshFileName.find(".txt") != string::npos) {
+    mesh.readOceanMesh( ifs );
+    std::cerr << "OceanMesh2D file \'" << MeshFileName << "\'" << std::endl;
 
-  else {
+  } else if ( mesh.nx!= 0 && mesh.ny!=0 ) {
+      mesh.InitRectangle();
+
+  } else {
         std::cerr << "Could not initialize the mesh, aborting\n";
         std::abort();
       }
@@ -103,7 +111,7 @@ void Simulation::init() {
   //mesh.ComputeConnectivity();
   mesh.LegacyInterface();
   mesh.ComputeGeometricQuantities();
-  mesh.ComputeGradientInterpolator();
+  // mesh.ComputeGradientInterpolator();
 
   // std::ofstream stream2( "bandwith_rcm.ppm" );
   // mesh.WriteMeshBandwith( stream2 );

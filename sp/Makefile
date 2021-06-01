@@ -115,11 +115,12 @@ endif
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK2_1.h EvolveValuesRK2_2.h applyConst.h getMaxElevation.h getTotalVol.h \
+	EvolveValuesRK2_1.h EvolveValuesRK2_2.h EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h Timestep.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu cuda/computeGradient_kernel.cu \
-        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/Timestep_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu  cuda/EvolveValuesRK3_1_kernel.cu\
+	cuda/EvolveValuesRK3_2_kernel.cu cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
+        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 

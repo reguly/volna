@@ -58,12 +58,13 @@ public:
   int InitRectangle();
   int NFaces, NVolumes, NPoints;
   int readGmsh( std::istream &);
+  int readOceanMesh( std::istream &);
   void RCMRenumbering();
   void WriteMeshBandwith( std::ofstream & );
   void ComputeConnectivity();
   void LegacyInterface();
   void ComputeGeometricQuantities();
-  void ComputeGradientInterpolator();
+  // void ComputeGradientInterpolator();
 };
 
 int Mesh::InitRectangle() {
@@ -252,6 +253,111 @@ int Mesh::readGmsh( std::istream &is ) {
   return 0;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+int Mesh::readOceanMesh( std::istream &is ) {
+
+  int filetype = 0;             // 0 --> ascii, 1 --> binary
+  int datasize = sizeof( double ); // the gmsh standard for now
+
+  if (!is) {
+    std::cerr << "Error while reading mesh from stream. Aborting.\n";
+    std::abort();
+  }
+
+  std::string line = "";                // string holding the current line
+
+  while ( getline(is ,line) ) { // Iterate through stream, line by line
+    // Read file header
+    if (line.substr(0, 11) == std::string("OceanMesh2D")){
+
+      std::cerr << "Parsing header..." << std::endl;
+      // getline(is, line);
+      getline( is, line );
+			// Get number of nodes and elements
+			int nb_nodes, nb_elements;
+
+			std::istringstream isstream(line);
+	    std::string token;
+	    getline(isstream, token, ' ');
+      if( parse<int>(nb_elements, token) )
+				{
+					std::cerr << "  number of elements: " << nb_elements << std::endl;
+				}
+			else
+				{
+					std::cerr << "  bad input (number of elements): ";
+					std::cerr << "  expected an integer, got \'" << line <<
+						"\'" << std::endl;
+					exit(1);
+				}
+				getline(isstream, token, ' ');
+				if( parse<int>(nb_nodes, token) )
+					{
+						std::cerr << "  number of nodes: " << nb_nodes << std::endl;
+					}
+				else
+					{
+						std::cerr << "  bad input (number of nodes): ";
+						std::cerr << "  expected an integer, got \'" << line <<
+							"\'" << std::endl;
+						exit(1);
+					}
+			std::cerr << "Parsing nodes..." << std::endl;
+			// Get node list
+			getline(isstream, token, ' ');
+			std::cerr << " \'" << token <<
+				"\'" << std::endl;
+
+			if (filetype == 0)   {// ascii
+				oceanmesh_parse_nodes_ascii( is, nb_nodes, Nodes );
+			} else {                    // binary
+				// gmsh_parse_nodes_binary( is, nb_nodes, Nodes );
+				// // Sanity check: is the next character a newline ?
+				// assert(is.peek() == '\n');
+				std::cerr << "Bad input for mesh type (expecting an ascii): ";
+				exit(1);
+			}
+
+			std::cerr << "done parsing nodes.\n" << std::endl;
+
+			std::cerr << "Parsing elements..." << std::endl;
+			// To avoid too many dynamic reallocations of the cells vector
+			Cells.reserve( nb_elements );
+			// Get element list
+			if (filetype == 0)  { // ascii
+				oceanmesh_parse_elements_ascii( is, nb_elements, Cells );
+			} else {                    // binary
+				// gmsh_parse_nodes_binary( is, nb_nodes, Nodes );
+				// // Sanity check: is the next character a newline ?
+				// assert(is.peek() == '\n');
+				std::cerr << "Bad input for mesh type (expecting an ascii): ";
+				exit(1);
+			}
+
+			std::cerr << "done parsing elements.\n" << std::endl;
+			//
+      // // To avoid too many dynamic reallocations of the cells vector
+      // Cells.reserve( nb_elements );
+			//
+      //  int element_counter = 0;
+      // if ( filetype == 0 ) {   // ascii
+      //   //gmsh_parse_elements_ascii( is, nb_elements, elements );
+      // } else {                    // binary
+      //   gmsh_parse_elements_binary<3,2>( is, nb_elements, BoundaryFaces, Cells );
+      //   assert(is.peek() == '\n');
+      // }
+			//
+      // std::cerr << "done.\n" << std::endl;
+    } else   {                     // ignore other lines
+    }
+
+  NPoints = Nodes.size();
+  NVolumes = Cells.size();
+
+  return 0;
+}
+}
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -517,63 +623,63 @@ void Mesh::LegacyInterface() {
     }
 
   }
-  
+
 
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void Mesh::ComputeGradientInterpolator() {
+// void Mesh::ComputeGradientInterpolator() {
 
-  std::cerr << "Computing least square matrices for gradient ";
-  std::cerr << "reconstruction... ";
+  // std::cerr << "Computing least square matrices for gradient ";
+  // std::cerr << "reconstruction... ";
+	//
+  // for ( int i = 0; i < NVolumes; ++i ) {
+	//
+  //   // We construct the least square interpolation matrix as
+  //   // M = sum( Di * (Di)^t ), where Di = Xi - X0
+	//
+  //   LSQMatrix lsq = LSQMatrix::Zero();
+	//
+  //   for ( unsigned int j = 0; j < ncell; ++j )
+	//
+  //     if ( Cells.at(i).neighbors()[j] != -1 ) {
+  //       Vector DeltaPoints;
+	// DeltaPoints.x() =
+	//   CellCenters.x( Cells.at(i).neighbors()[j] ) -
+  //         CellCenters.x( i );
+	// DeltaPoints.y() =
+	//   CellCenters.y( Cells.at(i).neighbors()[j] ) -
+  //         CellCenters.y( i );
+	//
+  //       DeltaPoints /= DeltaPoints.norm();
+  //       lsq += (DeltaPoints * DeltaPoints.transpose()).block<2,2>(0,0);
+  //     }
+	//
+  //   if ( !Cells.at(i).degenerate ) {
+  //     LSQMatrix inverse = LSQMatrix::Zero();
+  //     lsq.marked<Eigen::SelfAdjoint>().computeInverse( &inverse );
+  //     GradientInterpolator.push_back( inverse );
+  //   }
+	//
+  //   // In this degenerate case, the (boundary) cell has less neighbors than the
+  //   // ambient space dimension, and we don't reconstruct the gradient.
+  //   // TODO -- reconstruct the gradient using the triangles in the 2-ring
+  //   //else
+  //     GradientInterpolator.push_back( LSQMatrix::Zero() );
+	//
+  // }
 
-  for ( int i = 0; i < NVolumes; ++i ) {
-
-    // We construct the least square interpolation matrix as
-    // M = sum( Di * (Di)^t ), where Di = Xi - X0
-
-    LSQMatrix lsq = LSQMatrix::Zero();
-
-    for ( unsigned int j = 0; j < ncell; ++j )
-
-      if ( Cells.at(i).neighbors()[j] != -1 ) {
-        Vector DeltaPoints;
-	DeltaPoints.x() = 
-	  CellCenters.x( Cells.at(i).neighbors()[j] ) -
-          CellCenters.x( i );
-	DeltaPoints.y() = 
-	  CellCenters.y( Cells.at(i).neighbors()[j] ) -
-          CellCenters.y( i );
-
-        DeltaPoints /= DeltaPoints.norm();
-        lsq += (DeltaPoints * DeltaPoints.transpose()).block<2,2>(0,0);
-      }
-
-    if ( !Cells.at(i).degenerate ) {
-      LSQMatrix inverse = LSQMatrix::Zero();
-      lsq.marked<Eigen::SelfAdjoint>().computeInverse( &inverse );
-      GradientInterpolator.push_back( inverse );
-    }
-
-    // In this degenerate case, the (boundary) cell has less neighbors than the
-    // ambient space dimension, and we don't reconstruct the gradient.
-    // TODO -- reconstruct the gradient using the triangles in the 2-ring
-    //else
-      GradientInterpolator.push_back( LSQMatrix::Zero() );
-
-  }
-
-  std::cerr << "done.\n";
-
-}
+//   std::cerr << "done.\n";
+//
+// }
 
 void Mesh::ComputeGeometricQuantities() {
 
   std::cerr << "Computing mesh geometric quantities... ";
 
-  CellCenters = GeomValues::GeomValues( NVolumes );
+  CellCenters = GeomValues( NVolumes );
   CellVolumes = ScalarValue::Zero( NVolumes );
 #pragma omp parallel for
   for (  int i = 0; i < NVolumes; ++i ) {
