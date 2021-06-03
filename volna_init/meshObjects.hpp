@@ -21,6 +21,7 @@ class MeshObject {
 private:
   static const int gmsh_type_; // class constant
   static const int vtk_type_ ; // class constant
+  static const int oceanmesh_type_ ;
   int elementary_, physical_, partition_; // gmsh tags
 public:
   int boundary_type;
@@ -35,6 +36,7 @@ public:
   int physical() { return physical_; };
   int gmsh_type() { return gmsh_type_; };
   int vtk_type() { return vtk_type_; };
+	int oceanmesh_type() { return oceanmesh_type_; };
   // Setters
   void set_partition ( unsigned int partition ) {
     partition_ = partition; };
@@ -56,6 +58,9 @@ const int MeshObject<N,d>::gmsh_type_ = GMSH_TYPE<N,d>::value();
 
 template<size_t N, int d>
 const int MeshObject<N,d>::vtk_type_ = VTK_TYPE<N,d>::value();
+
+template<size_t N, int d>
+const int MeshObject<N,d>::oceanmesh_type_ = OceanMesh_TYPE<N,d>::value();
 
 ///////////////////////////////////////////////////////////////////////////////
 // Constructors
@@ -91,7 +96,7 @@ int MeshObject<N,d>::partition() {
 // I/O
 
 template<size_t N, int d>
-std::ostream& operator << ( std::ostream& os, 
+std::ostream& operator << ( std::ostream& os,
 			    MeshObject<N,d> object ) {
 
   os << "Vertices:";
@@ -166,7 +171,7 @@ Facet<N,d>::Facet( boost::array<int,N> vertices ):
 
 template <size_t N, int d>
 Facet<N,d>::Facet( boost::array<int,N> vertices, int partition ):
-  MeshObject<N,d>( vertices, partition ), 
+  MeshObject<N,d>( vertices, partition ),
   LeftCell_(-1), RightCell_(-1) { partitions_[0] = partition;}
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -243,7 +248,7 @@ public:
   // LEGACY INTERFACE
   bool boundary, degenerate;
   // END LEGACY INTERFACE
-  
+
   // Constructor
   Cell();
   Cell ( boost::array<int,N> );

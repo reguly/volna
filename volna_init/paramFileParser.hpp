@@ -290,8 +290,8 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
         = *(blank_p) >> *(simulation_object >> +(ch_p('\n')));
 
       simulation_object
-        = time | physical_params | numerical_params
-        | mesh | event | initial_value | boundary_condition;
+        = time | physical_params | numerical_params | friction
+        | mesh | event | initial_value | boundary_condition | coordinate;
 
       numerical_params
         = str_p("NumericalParams") >> ch_p('{')
@@ -301,6 +301,16 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
       num_param_options
         = ( str_p("cfl") >> ch_p('=')
             >> real_p[ assign_a( self.sim.CFL ) ] );
+
+      friction
+        = str_p("Friction") >> ch_p('{')
+                                   >> *(friction_options)
+                                   >> ch_p('}');
+
+      friction_options
+        = ( str_p("Mn") >> ch_p('=')
+            >> real_p[ assign_a( self.sim.Mn ) ] );
+
 
       physical_params
         = str_p("PhysicalParams") >> ch_p('{')
@@ -321,7 +331,7 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
             (str_p("dtmax") >> ch_p("=") >> real_p
              [ assign_a( self.sim.Dtmax ) ] )
             );
-      
+
       mesh
         = str_p("Mesh")
         >> ( (ch_p('"')
@@ -337,8 +347,18 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
                >> uint_p[assign_a(self.sim.mesh.ny)] ));
 
       meshfilename = lexeme_d[*(alnum_p|ch_p('/')|ch_p('_')|ch_p('-'))
-			      >> str_p(".msh") ];
-      
+           >> str_p(".msh") ] || lexeme_d[*(alnum_p|ch_p('/')|ch_p('_')|ch_p('-'))
+            >> str_p(".txt") ];
+
+      coordinate
+         = str_p("Coordinate") >> ch_p('{')
+                                    >> *(coordinate_options)
+                                    >> ch_p('}');
+
+       coordinate_options
+         = ( str_p("Spherical") >> ch_p('=')
+             >> uint_p[assign_a(self.sim.Spherical)]);
+
       event = output_generic | output_location | init;
 
       output_generic
@@ -504,11 +524,13 @@ struct volna_grammar : public spirit::grammar<volna_grammar>
 
   private:
     rule_t simulation_objects_list, simulation_object;
-    rule_t param_options, num_param_options;
+    rule_t param_options, num_param_options, friction_options;
     rule_t time, time_options;
     rule_t mesh, initial_value, event, bathymetry, bathyrelative, physical_params;
     rule_t boundary_condition;
     rule_t numerical_params;
+    rule_t friction;
+    rule_t coordinate, coordinate_options;
     rule_t meshfilename, event_filename;
     rule_t event_name, timer_option, event_options;
     rule_t math_expression;

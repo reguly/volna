@@ -28,9 +28,9 @@ double timestamp = 0.0;
 int itercount = 0;
 
 // Constants
-float CFL, g, EPS;
+float CFL, g, EPS, Mn;
+int spherical;
 bool new_format = true;
-
 // Store maximum elevation and speed in global variable, for the sake of max search
 op_dat currentMaxElevation = NULL;
 op_dat currentMaxSpeed = NULL;
@@ -200,7 +200,8 @@ int main(int argc, char **argv) {
    * Read constants from HDF5
    */
   op_get_const_hdf5("CFL", 1, "float", (char *) &CFL, filename_h5);
-  // op_get_const_hdf5("Mn", 1, "float", (char *) &CFL, filename_h5);
+  op_get_const_hdf5("Mn", 1, "float", (char *) &Mn, filename_h5);
+  op_get_const_hdf5("Spherical", 1, "int", (char *) &spherical, filename_h5);
   // Final time: as defined by Volna the end of real-time simulation
   float ftime_tmp, dtmax_tmp;
   op_get_const_hdf5("ftime", 1, "float", (char *) &ftime_tmp, filename_h5);
@@ -212,7 +213,15 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &CFL);
   op_decl_const(1, "float", &EPS);
   op_decl_const(1, "float", &g);
+  op_decl_const(1, "float", &Mn);
+  op_decl_const(1, "int", &spherical);
 
+  printf("Mn = %f, CFL = %f, g = %f, EPS %f \n", Mn, CFL, g, EPS);
+  if (spherical){
+    printf("Spherical Polar coordinates \n");
+  } else {
+    printf("Cartesian coordinates \n");
+  }
   //Read InitBathymetry and InitEta event data when they come from files
   for (unsigned int i = 0; i < events.size(); i++) {
       if (!strcmp(events[i].className.c_str(), "InitEta")) {
@@ -301,8 +310,8 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
-//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+  // op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+ op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
@@ -350,10 +359,17 @@ int main(int argc, char **argv) {
 #endif
     {
       float minTimestep = INFINITY;
+      if (!spherical){
       spaceDiscretization(values, Lw_n, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      } else {
+      spaceDiscretization_sph(values, Lw_n, &minTimestep,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      }
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(Lw_n, 0), normcomp(Lw_n, 1),normcomp(Lw_n, 2),normcomp(Lw_n, 3));
 #endif
@@ -370,12 +386,19 @@ int main(int argc, char **argv) {
 #endif
 
       float dummy = -1.0f;
+      if (!spherical){
       spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
-
+      } else {
+      spaceDiscretization_sph(w_1, Lw_1, &dummy,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      }
 
       op_par_loop(EvolveValuesRK2_2, "EvolveValuesRK2_2", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
@@ -386,7 +409,7 @@ int main(int argc, char **argv) {
 
 
       timestep=dT;
-      float Mn = 0.025f;
+      // float Mn = 0.025f;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),

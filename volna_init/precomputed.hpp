@@ -2,6 +2,136 @@
 #define PRECOMPUTED_HPP
 
 #include <boost/array.hpp>
+// Precompute OceanMesh element type (as function of element dimension, and
+// number of vertices) at compile time, using template metaprogramming
+// to emulate a switch statement. See :
+// http://ubiety.uwaterloo.ca/~tveldhui/papers/Template-Metaprograms/meta-art.html
+
+// Class declarations -- n: number of vertices, d: dimension
+template<int n, unsigned int d>
+class OceanMesh_TYPE {
+public:
+  static inline int value() { return 0; }
+};
+
+template<>			// point
+class OceanMesh_TYPE<1, 0> {
+public:
+  static inline int value() { return 15; }
+};
+
+template<>			// line
+class OceanMesh_TYPE<2, 1> {
+public:
+  static inline int value() { return 1; }
+};
+
+template<>			// triangle
+class OceanMesh_TYPE<3, 2> {
+public:
+  static inline int value() { return 2; }
+};
+
+template<>			// quadrangle
+class OceanMesh_TYPE<4, 2> {
+public:
+  static inline int value() { return 3; }
+};
+
+template<>			// tetrahedron
+class OceanMesh_TYPE<4, 3> {
+public:
+  static inline int value() { return 4; }
+};
+
+template<>			// hexahedron
+class OceanMesh_TYPE<8, 3> {
+public:
+  static inline int value() { return 5; }
+};
+
+// To get the OceanMesh type for an element: OceanMesh_TYPE<N, d>::value().
+// Examples : OceanMesh_TYPE<3, 2>::value() for a triangle, OceanMesh_TYPE<8, 3>
+// for an hexahedron.
+
+
+template<int n, unsigned int d>
+class OceanMesh_FACE_TYPE {
+public:
+  static inline int value() { return n-1; }
+};
+
+template<>
+class OceanMesh_FACE_TYPE<2, 1> {
+public:				// line --> point
+  static inline int value() { return 15; }
+};
+
+template<>
+class OceanMesh_FACE_TYPE<3, 2> {
+public:				// triangle --> line
+  static inline int value() { return 1; }
+};
+
+template<>			// quadrangle --> line
+class OceanMesh_FACE_TYPE<4, 2> {
+public:
+  static inline int value() { return 1; }
+};
+
+template<>			// tetrahedron --> triangle
+class OceanMesh_FACE_TYPE<4, 3> {
+public:
+  static inline int value() { return 2; }
+};
+
+template<>			// hexahedron --> quadrangle
+class OceanMesh_FACE_TYPE<8, 3> {
+public:
+  static inline int value() { return 4; }
+};
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+template<int n, unsigned int d>
+class OceanMesh_FACE_LENGTH {
+public:
+  static inline int value() { return n-1; }
+};
+
+template<>
+class OceanMesh_FACE_LENGTH<2, 1> {
+public:				// line --> point
+  static inline int value() { return 0; }
+};
+
+template<>
+class OceanMesh_FACE_LENGTH<3, 2> {
+public:				// triangle --> line
+  static inline int value() { return 2; }
+};
+
+template<>			// quadrangle --> line
+class OceanMesh_FACE_LENGTH<4, 2> {
+public:
+  static inline int value() { return 2; }
+};
+
+template<>			// tetrahedron --> triangle
+class OceanMesh_FACE_LENGTH<4, 3> {
+public:
+  static inline int value() { return 3; }
+};
+
+template<>			// hexahedron --> quadrangle
+class OceanMesh_FACE_LENGTH<8, 3> {
+public:
+  static inline int value() { return 4; }
+};
+
+
+///////////////////////////////////////////////////////////////////////////////
 
 // Precompute gmsh element type (as function of element dimension, and
 // number of vertices) at compile time, using template metaprogramming
