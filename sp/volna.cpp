@@ -28,7 +28,7 @@ double timestamp = 0.0;
 int itercount = 0;
 
 // Constants
-float CFL, g, EPS, Mn;
+float CFL, g, EPS, Mn, Radius;
 int spherical;
 bool new_format = true;
 // Store maximum elevation and speed in global variable, for the sake of max search
@@ -216,9 +216,13 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &Mn);
   op_decl_const(1, "int", &spherical);
 
+  Radius = 6378000.0;
+  op_decl_const(1, "float", &Radius);
+
   printf("Mn = %f, CFL = %f, g = %f, EPS %f \n", Mn, CFL, g, EPS);
   if (spherical){
     printf("Spherical Polar coordinates \n");
+    printf("Radius of Earth = %f \n", Radius);
   } else {
     printf("Cartesian coordinates \n");
   }
@@ -409,7 +413,6 @@ int main(int argc, char **argv) {
 
 
       timestep=dT;
-      // float Mn = 0.025f;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),

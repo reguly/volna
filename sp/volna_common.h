@@ -43,7 +43,7 @@ extern double timestamp;
 extern int itercount;
 
 //constants
-extern float EPS, CFL, g, Mn;
+extern float EPS, CFL, g, Mn, Radius;
 extern op_dat currentMaxElevation;
 extern op_dat currentMaxSpeed;
 extern op_dat physical_vars;
