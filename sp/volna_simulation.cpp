@@ -17,7 +17,8 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "computeFluxes.h"
 #include "Timestep.h"
 #include "NumericalFluxes.h"
-
+#include "computeFluxes_sph.h"
+#include "NumericalFluxes_sph.h"
 
 
 void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,

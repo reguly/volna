@@ -216,13 +216,13 @@ int main(int argc, char **argv) {
   op_decl_const(1, "float", &Mn);
   op_decl_const(1, "int", &spherical);
 
-  Radius = 6378000.0;
+  Radius = 6378136.6;
   op_decl_const(1, "float", &Radius);
 
-  printf("Mn = %f, CFL = %f, g = %f, EPS %f \n", Mn, CFL, g, EPS);
+  printf("Mn = %f, CFL = %f \n", Mn, CFL);
   if (spherical){
     printf("Spherical Polar coordinates \n");
-    printf("Radius of Earth = %f \n", Radius);
+    printf("Radius of the Earth = %f \n", Radius);
   } else {
     printf("Cartesian coordinates \n");
   }
@@ -357,10 +357,6 @@ int main(int argc, char **argv) {
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
-
-
-#ifdef DEBUG
-#endif
     {
       float minTimestep = INFINITY;
       if (!spherical){
@@ -417,11 +413,11 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),
           op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW));
-    }
+
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
         op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_READ));
-//         printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(values_new, 0), normcomp(values_new, 1),normcomp(values_new, 2),normcomp(values_new, 3));
+    }
 
     itercount++;
     timestamp += timestep;

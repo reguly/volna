@@ -109,6 +109,16 @@ inline void computeGradient(const float *center,
     out[6] = (inverse[0][0] * Rhs[6]) + (inverse[0][1] * Rhs[7]);
     out[7] = (inverse[1][0] * Rhs[6]) + (inverse[1][1] * Rhs[7]);
 
+    if((isnan(out[0])) || (isnan(out[1])) || (isnan(out[2])) || (isnan(out[3])) || (isnan(out[4])) || (isnan(out[5])) || (isnan(out[6])) || (isnan(out[7]))){
+      out[0] = 0.0f;
+      out[1] = 0.0f;
+      out[2] = 0.0f;
+      out[3] = 0.0f;
+      out[4] = 0.0f;
+      out[5] = 0.0f;
+      out[6] = 0.0f;
+      out[7] = 0.0f;
+    }
   } else {
     // Gradients for the dry cells are set to zero.
     out[0] = 0.0f;
@@ -119,7 +129,7 @@ inline void computeGradient(const float *center,
     out[5] = 0.0f;
     out[6] = 0.0f;
     out[7] = 0.0f;
- }
+  }
   // Computed the local max and min values for H,U,V,Z
   // q[0] - Hmin , q[1] - Hmax
   // q[2] - Umin , q[3] - Umax

@@ -417,7 +417,7 @@ int main(int argc, char **argv) {
   ncell = sim.mesh.NVolumes;
   nedge = sim.mesh.NFaces;
 
-  printf("GMSH file data statistics: \n");
+  printf("Mesh file data statistics: \n");
   printf("  No. nodes    = %d\n", nnode);
   printf("  No. cells    = %d\n", ncell);
   printf("Connectivity data statistics: \n");
