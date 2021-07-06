@@ -48,17 +48,19 @@ The \texttt{vln} file will have the following structure:
 \begin{enumerate} 
 \item \texttt{Time \{ end = ... dtmax = ... \}}\\
 which specifies the simulation time and \textit{optionally} the maximum timestep.
-\item \texttt{Mesh "path/mesh.msh"} or\\
+\item \texttt{Mesh "path/gmesh.msh"} \\ \texttt{Mesh "path/oceanmesh.txt"} or\\
 \texttt{Mesh Rectangle p1x p1y p2x p2y ncellx ncelly}\\
-which specifies the simulation mesh, either as a \textit{Gmsh} file, or as a rectangle, defined by two points \texttt{p1, p2} and divided into equally-sized triangles: \texttt{2*ncellx*ncelly}.
-\item \texttt{PhysicalParams \{ g = 9.81 \}} and\\
-\texttt{NumericalParams \{ cfl = .45 \}}\\
+which specifies the simulation mesh, either as a \textit{Gmsh} file, \textit{OceanMesh2D} ascii file or as a rectangle, defined by two points \texttt{p1, p2} and divided into equally-sized triangles: \texttt{2*ncellx*ncelly}.
+\item \texttt{PhysicalParams \{ g = 9.81 \}} \\
+\texttt{NumericalParams \{ cfl = .45 \}} and  \texttt{Friction \{ Mn = .025 \}} \
 define physical and numerical parameters of the simulation
+\item \texttt{Coordinate \{ Spherical = 0 \}} \\
+This is an optional parameter, the default coordinate system is Cartesian (Spherical = 0). If one is using a spherical polar mesh from OceanMesh2D then set Spherical = 1.
 \item \texttt{Init \{istart = 0 istep = 1 iend = 10\} TYPE \{ return f(x,y,t);\}} or \\
 \texttt{Init \{istart = 0 istep = 1 iend = 10\} TYPE "filename"}\\
 Defines initial conditions where \texttt{TYPE} is one of the following: \texttt{Eta, U, V, Bathymetry} depending on which state variable is to be set (Eta corresponds to H). The initial/boundary condition is imposed beginning at simulation step defined by \texttt{istart} every \texttt{istep} until \texttt{iend} is reached.
 
-If a fuction is defined, it has to be a one-line expression returning a single value, that may be a function of \texttt{x,y,t}, which is going to be computed for each cell, with barycenter \texttt{x,y} at timestep \texttt{t}. \emph{Important}: with formulas, a header file will be generated, one directory up from where volna2hdf5 is run, if it's not in the default place, you will have to copy those files to the \texttt{sp} directory and recompile VOLNA. A more complicated expression can be used by editing the generated header file (e.g. \texttt{initBathymetry\_formula.h} for Bathymetry events), and then recompiling VOLNA.
+If a function is defined, it has to be a one-line expression returning a single value, that may be a function of \texttt{x,y,t}, which is going to be computed for each cell, with barycenter \texttt{x,y} at timestep \texttt{t}. \emph{Important}: with formulas, a header file will be generated, one directory up from where volna2hdf5 is run, if it's not in the default place, you will have to copy those files to the \texttt{sp} directory and recompile VOLNA. A more complicated expression can be used by editing the generated header file (e.g. \texttt{initBathymetry\_formula.h} for Bathymetry events), and then recompiling VOLNA.
 
 If a file is defined, and \texttt{istart=iend} (i.e. it's only applied once at the beginning, then that file will contain the value for each and every cell, one cell per line. If \texttt{istart<iend}, then a sequence of input files are required, the filename has to contain the letters \textit{\%i} which will be substituted with the iteration number (padded with 0s). E.g. for a filename \texttt{"bathy\%i.txt"}, it will look for files named as \texttt{bathy0000.txt, bathy0001.txt}, etc. For the formatting of these files, please see Section \ref{sec/bathy}.
 
@@ -68,16 +70,16 @@ If a file is defined, and \texttt{istart=iend} (i.e. it's only applied once at t
 displays the current iteration number and timestep on the console, \texttt{istart} and \texttt{iend} are usually omitted.
 
 \item \texttt{OutputSimulation \{ istart = 0 istep = 1 iend = 10 \} "output\_\%i.vtk" } \\
-Saves all the state variables as specified by \texttt{istart, istep, iend}, in order (H,U,V,Zb). Outputs either VTK files or HDF5 files, for configuration, please see Section \ref{sec/running}.
+Saves all the state variables and a derived inundated variable in order (H,U,V,Zb,Inundated), as specified by \texttt{istart, istep, iend}. Outputs either VTK files or HDF5 files, for configuration, please see Section \ref{sec/running}.
 
 \item \texttt{OutputMaxElevation \{ istart = 0 istep = 1 iend = 10 \} "output\_\%i.vtk" } \\
-Saves the value of state variables when H is maximum so far during the simulation. If only \texttt{step=-1} is defined, it will save all the state variables at the very first step and when H (wave elevation from the reference 0 elevation) reaches the maximum overall during the whole simulation before exiting. Warning: of \%i is not in the filename, the maximum will overwrite the state variables from the first step.
+Saves the value of state variables and derived inundated variable when H is maximum so far during the simulation. If only \texttt{step=-1} is defined, it will save all the state variables at the very first step and when H (wave elevation from the reference 0 elevation) reaches the maximum overall during the whole simulation before exiting, this is particularly useful to find the onshore areas that were inundated during the course of the simulation.  Warning: of \%i is not in the filename, the maximum will overwrite the state variables from the first step.
 
 \item \texttt{OutputMaxSpeed \{ istart = 0 istep = 1 iend = 10 \} "output\_\%i.vtk" } \\
 Saves the value of state variables when $sqrt(U^2+V^2)$ is maximum so far during the simulation. If only \texttt{step=-1} is defined, it will save all the state variables at the very first step and when wave speed reaches the maximum overall during the whole simulation before exiting.
 
 \item \texttt{OutputLocation \{ istep = 1 \} "output.txt" \{ x = ... y = ...\} }
-Saves total elevation (H+Zb), at a particular location in the simulation domain into the output file. All location events are aggregated into a gauges.h5 file, please see Section \ref{sec/location}.
+Saves total elevation (H+Zb) and velocities (U and V), at a particular location in the simulation domain into separate output files. All location events are aggregated into a gauges.h5, gauges\_U.h5 and gauges\_V.h5 file, please see Section \ref{sec/location}.
 
 \end{enumerate}
 
@@ -106,7 +108,7 @@ Distributed memory versions are \texttt{volna\_mpi, volna\_mpi\_openmp, volna\_m
 
 \subsection{OutputLocation files}\label{sec/location}
 
-OutputLocation events are bundled together, if they all use the same timings, into a gauges.h5 file, which is compressed to save space. To read the file, you can use any hdf5 tool, there are two datasets written: /dims which has 2 integer fields, the first indicating the size in the contiguous direction (number of OutputLocation events + 1 for timestaps) and the second in the strided dimension (number of timestamps). Data is stored under /gauges, a 1D float array of size $dims[0]*dims[1]$. To get the timestamp at iteration T and the value for gauge N (indexed $1...dims[0]-1$), access $gauges[T*dims[0]]$ for the timestamp and $gauges[T*dims[0]+N] - T$ has to be less than $dims[1]$. A python script is attached (read\_gauges.py) that shows an example of this.
+OutputLocation events are bundled together, if they all use the same timings, into a gauges.h5 file, which is compressed to save space. In addition to the gauges.h5 file, the velocities at the gauge locations will be outputted to gauges\_U.h5 and gauges\_V.h5. To read these files, you can use any hdf5 tool, there are two datasets in each file written: /dims which has 2 integer fields, the first indicating the size in the contiguous direction (number of OutputLocation events + 1 for timestaps) and the second in the strided dimension (number of timestamps). Data is stored under /gauges, a 1D float array of size $dims[0]*dims[1]$. To get the timestamp at iteration T and the value for gauge N (indexed $1...dims[0]-1$), access $gauges[T*dims[0]]$ for the timestamp and $gauges[T*dims[0]+N] - T$ has to be less than $dims[1]$. A python script is attached (read\_gauges.py) that shows an example of this.
 
 For example to print the timestamps and values at gauge number 10: \\
 {\tt
@@ -129,8 +131,9 @@ f.close() \\
 When running VOLNA, the second argument specifies the file format for outputting these files (0 - HDF5, 1 -ASCII VTK, 2 - Binary VTK). If HDF5 output is chosen (which is strongly recommended for performance), these files will have to be converted into VTK files with the hdf52vtk tool provided. To convert all the output h5 files in a directory, use the following script:\\
 {\tt hdf52vtk\_convert\_files.sh simluation\_input.h5}\\
 which will iterate through any files in the directory, and use the input file to the original execution of VOLNA to combine geometry information with the state variables stored in the output files to generate VTK files.
-The HDF5 files can be used by themselves as well, they contain a single dataset \texttt{/values}, which stores the four state variables (H, U, V, Zb) in this order, for each cell, the cells are ordered in the same way as in the input simulation file. Note however that the ordering (numbering) of cells is usually different from the input Gmsh file; to improve locality volna2hdf5 reorders them. To access the matching coordinates of the cell centers, you can open the input file and read the \texttt{/cellCenters} dataset, which contains the x-y coordinate pairs for each cell, and is ordered the same way, so for a given cell index $idx$, the coordinates are $(cellCenters[idx][0], cellCenters[idx][1]$ and the $(H,U,V,Zb)$ values are $(values[idx][0],values[idx][1],values[idx][2],values[idx][3]$.
-The VTK files contain several fields; Eta (which is H+Zb), U, V, Zb and Visual (which is Eta). 
+The HDF5 files can be used by themselves as well, they contain a single dataset \texttt{/values}, which stores five variables (H, U, V, Zb, Inundated) in this order, for each cell, the cells are ordered in the same way as in the input simulation file. Please see below for an explanation of the inundated variable. Note that the ordering (numbering) of cells is usually different from the input Gmsh or OceanMesh2d file; to improve locality volna2hdf5 reorders them. To access the matching coordinates of the cell centers, you can open the input file and read the \texttt{/cellCenters} dataset, which contains the x-y coordinate pairs for each cell, and is ordered the same way, so for a given cell index $idx$, the coordinates are $(cellCenters[idx][0], cellCenters[idx][1]$ and the $(H,U,V,Zb,Inundated)$ values are $(values[idx][0],values[idx][1],values[idx][2],values[idx][3],values[idx][4]$.
+The VTK files contain several fields; Eta (which is H+Zb), U, V, Zb and Inundated. 
+The inundated variable is the flow depth for onshore cells (when the flow depth is greater than 1mm) and is defined to be zero for offshore cells. This additional variable allows one to identify the `dry' cells which are inundated.
 
 \section{Performance considerations}
 \begin{enumerate}
@@ -149,13 +152,14 @@ Mesh Rectangle 0 180 -30 30 360 120 \\
 \#Usual constants \\
 PhysicalParams \{ g = 9.81 \} \\
 NumericalParams \{ cfl = .45 \} \\
+Friction \{ Mn = 0.0 \} \\
 \# beginning at the first timestep, upon every step, apply the following bathymetry deformation
 Init \{ istart = 0 istep = 1 \} Bathymetry \{ return .2*(-5-x)*(x<0)-(x>=0)+.2*(t<1) \\ *exp(-(x+3-2*t)*(x+3-2*t)-y*y)+.2*(t>=1)*exp(-(x+1)*(x+1)-y*y);\} \\
 \# Display iteration number and timestamp every 10 iterations on the console \\
 OutputTime \{ istep = 10 \} "cout" \\
-\# Save the state space (H,U,V,Zb) every 10 iterations to the following file (\%i is substituted for the current iteration number) \\
+\# Save the state space and inundated (H,U,V,Zb,Inundated) every 10 iterations to the following file (\%i is substituted for the current iteration number) \\
 OutputSimulation \{ istep = 10 \} "result\_sim\_lands/snapshot\%i.vtk" \\
-\# Save the state space (H,U,V,Zb) at iteration 0 into max0000.vtk and then at the end of the simulation the values when H reached its maximum in different cells \\
+\# Save the state space and inundated (H,U,V,Zb,Inundated) at iteration 0 into max0000.vtk and then at the end of the simulation the values when H reached its maximum in different cells \\
 OutputMaxElevation \{ istep = -1 \} "result\_elev\_lands/max\%i.vtk" \\
 }
 \\
@@ -169,9 +173,13 @@ Mesh "test.msh" \\
 \#Usual constants \\
 PhysicalParams \{ g = 9.81 \} \\
 NumericalParams \{ cfl = .45 \} \\
+Friction \{ Mn = 0.025 \} \\
+\#Optional parameter defining the choice of Coordinate system which is defaulted to \\
+\#Cartesian (Spherical = 0) \\
+Coordinate \{Spherical = 0\} \\
 \# beginning at the first timestep, upon every step, up until the 10th timestep apply the bathymetry deformation specified in the following files:
 Init \{ istart = 0 istep = 1 iend 10\} Bathymetry "bathy/bathy\%i.txt" \\
-\# Save total water height (H+Zb) every timestep at a prescribed location, the filename is unused \\
+\# Save total water height (H+Zb) and velocities (U and V) every timestep at a prescribed location, the filename is unused \\
 OutputLocation \{ istep=1 \} " gauge\_x0\_y0.txt" \{ x = 0.00001 y = 0.0001 \}
 }
 \\
