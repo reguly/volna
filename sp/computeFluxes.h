@@ -136,13 +136,11 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
           (hR*(uRn - sR) - hL*(uLn - sL));
 
   if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
-  // if ((leftCellValues[0] <= 1e-3) && (rightCellValues[0] > 1e-3)) {
       sL = uRn - 2.0f*cR;
       sR = uRn + cR;
       sStar = sL;
   }
   if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
-  // if ((rightCellValues[0] <= 1e-3) && (leftCellValues[0] > 1e-3)) {
       sR = uLn + 2.0f*cL;
       sL =  uLn - cL;
       sStar = sR;
@@ -153,7 +151,6 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   float uRp = vR*edgeNormals[0] - uR*edgeNormals[1];
 
   float LeftFluxes_H, LeftFluxes_N, LeftFluxes_U, LeftFluxes_V;
-  //inlined ProjectedPhysicalFluxes(leftCellValues, Normals, params, LeftFluxes);
   float HuDotN = (hL*uL) * edgeNormals[0] + (hL*vL) * edgeNormals[1];
 
   LeftFluxes_H = HuDotN;
@@ -165,10 +162,8 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   LeftFluxes_U += (.5f * g * edgeNormals[0] ) * ( hL * hL );
   LeftFluxes_V += (.5f * g * edgeNormals[1] ) * ( hL * hL );
   LeftFluxes_N += (.5f * g ) * ( hL * hL );
-  //end of inlined
 
   float RightFluxes_H,RightFluxes_N, RightFluxes_U, RightFluxes_V;
-  //inlined ProjectedPhysicalFluxes(rightCellValues, Normals, params, RightFluxes);
   HuDotN = (hR*uR) * edgeNormals[0] + (hR*vR) * edgeNormals[1];
 
   RightFluxes_H =   HuDotN;
