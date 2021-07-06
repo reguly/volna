@@ -1,7 +1,7 @@
 #ifndef GEOM_HPP
 #define GEOM_HPP
 
-#include "/usr/local/Cellar/eigen/3.3.9/include/eigen3/Eigen/Core"
+#include "external/eigen2/Eigen/Core"
 #include "config.hpp"
 
 typedef Eigen::Matrix<RealType, 3, 1> Vector;
