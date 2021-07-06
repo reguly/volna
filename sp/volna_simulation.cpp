@@ -105,7 +105,7 @@ void spaceDiscretization_sph(op_dat data_in, op_dat data_out, float *minTimestep
                          op_map cellsToCells, op_dat edgeCenters, op_dat cellCenters, op_dat GradientatCell, op_dat q, op_dat lim, float *zmin) {
   {
 
-    {
+        {
     // TO DO: Pre calculate the geometric mesh quantities
     op_par_loop(computeGradient, "computeGradient", cells,
                   op_arg_dat(data_in, -1, OP_ID, 4, "float", OP_READ),

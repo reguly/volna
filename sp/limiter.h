@@ -38,9 +38,9 @@ inline void limiter(const float *q, float *lim,
    lim[j] = max[0] < max[1] ? max[0] : max[1];
    lim[j] = lim[j] < max[2] ? lim[j]: max[2];
   }
-  lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
-  lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
-  lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
+  //lim[0] = lim[0] < lim[1] ? lim[0]: lim[1];
+  //lim[0] = lim[0] < lim[2] ? lim[0]: lim[2];
+  //lim[0] = lim[0] < lim[3] ? lim[0]: lim[3];
   } else {
     lim[0] = 0.0f;
     lim[1] = 0.0f;
