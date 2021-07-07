@@ -2,7 +2,7 @@
 #define VALUES_HPP
 
 #include <fstream>
-
+#include <iostream>
 #include "external/eigen2/Eigen/Core"
 #include "external/eigen2/Eigen/Array"
 

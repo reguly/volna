@@ -11,7 +11,7 @@ typedef Eigen::Matrix<RealType, 1, Eigen::Dynamic> ScalarValue;
 class GeomValues {
 public:
   GeomValues( size_t N ):
-	  x( ScalarValue::Zero(N) ), 
+	  x( ScalarValue::Zero(N) ),
 	  y( ScalarValue::Zero(N) ),
 	  z( ScalarValue::Zero(N) ) {};
   ScalarValue x;

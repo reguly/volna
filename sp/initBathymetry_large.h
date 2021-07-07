@@ -43,6 +43,6 @@ inline void initBathymetry_large(float *values, const float *cellCenter,
     float b = -(node1[0]-node0[0])*(*bathy2-*bathy0)+(node2[0]-node0[0])*(*bathy1-*bathy0);
     float c =  (node1[0]-node0[0])*(node2[1]-node0[1])-(node2[0]-node0[0])*(node1[1]-node0[1]);
     //get z so that the vector is orthogonal to the normal
-    values[3] += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
+    *values += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
   }
 }

@@ -8,9 +8,8 @@ inline void computeGradient(const float *center,
                             const float *nb3Center,
                             float *q, float *out) //OP_WRITE
 {
-  // Only reconstruct if the cell is not a touching the edge
   // Least-Squares Gradient Reconstruction
-  if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
+  if(center[0]> EPS){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];
@@ -23,17 +22,25 @@ inline void computeGradient(const float *center,
     delta[1][0] =  (nb2Center[0] - x);
     delta[1][1] =  (nb2Center[1] - y);
 
-    delta[2][0] =  (nb3Center[0] - x);
-    delta[2][1] =  (nb3Center[1] - y);
+    if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
+      delta[2][0] =  (nb3Center[0] - x);
+      delta[2][1] =  (nb3Center[1] - y);
+    } else {
+      delta[2][0] =  0.5f*(delta[0][0] + delta[1][0]);
+      delta[2][1] =  0.5f*(delta[0][1] + delta[1][1]);
+    }
+
     // Calculating the weights coefficients based on the distance between
     // neighbouring cells and center cell.
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
+
     total = weights[0] + weights[1] + weights[2];
+    
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
-    weights[2] = total/ weights[2];
+    weights[2] = total/weights[2];
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
@@ -101,8 +108,19 @@ inline void computeGradient(const float *center,
     Rhs[7] = (delta[0][1]*dz[0]) + (delta[1][1]*dz[1]) + (delta[2][1]*dz[2]);
     out[6] = (inverse[0][0] * Rhs[6]) + (inverse[0][1] * Rhs[7]);
     out[7] = (inverse[1][0] * Rhs[6]) + (inverse[1][1] * Rhs[7]);
- }else {
-    // Gradients for the edge cells are set to zero.
+
+    if((isnan(out[0])) || (isnan(out[1])) || (isnan(out[2])) || (isnan(out[3])) || (isnan(out[4])) || (isnan(out[5])) || (isnan(out[6])) || (isnan(out[7]))){
+      out[0] = 0.0f;
+      out[1] = 0.0f;
+      out[2] = 0.0f;
+      out[3] = 0.0f;
+      out[4] = 0.0f;
+      out[5] = 0.0f;
+      out[6] = 0.0f;
+      out[7] = 0.0f;
+    }
+  } else {
+    // Gradients for the dry cells are set to zero.
     out[0] = 0.0f;
     out[1] = 0.0f;
     out[2] = 0.0f;
@@ -111,7 +129,7 @@ inline void computeGradient(const float *center,
     out[5] = 0.0f;
     out[6] = 0.0f;
     out[7] = 0.0f;
- }
+  }
   // Computed the local max and min values for H,U,V,Z
   // q[0] - Hmin , q[1] - Hmax
   // q[2] - Umin , q[3] - Umax

@@ -272,7 +272,7 @@ int main(int argc, char **argv) {
     (*sim.events[i]).timer.dump(t_p);
     if (strcmp(e_p.className.c_str(), "InitBathymetry") == 0)
       bathyidx = i;
-    else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0) 
+    else if (strcmp(e_p.className.c_str(), "InitBathyRelative") == 0)
       bathyrelidx = i;
   }
   if (bathyidx>=0 && bathyrelidx>=0 && bathyidx > bathyrelidx) {
@@ -402,6 +402,8 @@ int main(int argc, char **argv) {
   float *eleng = NULL; // Edge length
   int   *isbound = NULL;
   float *initEta = NULL;
+  float *initU = NULL;
+  float *initV = NULL;
   float **initBathymetry = NULL;
   float *x = NULL; // Node coordinates in 2D
   float *w = NULL; // Conservative variables
@@ -415,7 +417,7 @@ int main(int argc, char **argv) {
   ncell = sim.mesh.NVolumes;
   nedge = sim.mesh.NFaces;
 
-  printf("GMSH file data statistics: \n");
+  printf("Mesh file data statistics: \n");
   printf("  No. nodes    = %d\n", nnode);
   printf("  No. cells    = %d\n", ncell);
   printf("Connectivity data statistics: \n");
@@ -433,6 +435,8 @@ int main(int argc, char **argv) {
   eleng = (float*) malloc(nedge * sizeof(float));
   isbound = (int*) malloc(nedge * sizeof(int));
   initEta = (float*) malloc(ncell * sizeof(float));
+  initU = (float*) malloc(ncell * sizeof(float));
+  initV = (float*) malloc(ncell * sizeof(float));
   initBathymetry = (float**) malloc(sizeof(float*));
   initBathymetry[0] = (float*) malloc(ncell*sizeof(float));
   x = (float*) malloc(MESH_DIM * nnode * sizeof(float));
@@ -542,6 +546,13 @@ int main(int argc, char **argv) {
     } else {
       if(strncmp(event_className[i].c_str(), "InitEta",7) == 0) {
         read_event_data(event_streamName[i].c_str(), initEta, ncell);
+      }
+      if(strncmp(event_className[i].c_str(), "InitU",7) == 0) {
+        op_printf("Checking read in of U %s", event_streamName[i].c_str());
+        read_event_data(event_streamName[i].c_str(), initU, ncell);
+      }
+      if(strncmp(event_className[i].c_str(), "InitV",7) == 0) {
+        read_event_data(event_streamName[i].c_str(), initV, ncell);
       }
       if(strcmp(event_className[i].c_str(), "InitBathymetry") == 0) {
         if(strcmp(event_streamName[i].c_str(), "") != 0) {
@@ -710,7 +721,8 @@ int main(int argc, char **argv) {
   }
   op_dat isBoundary = op_decl_dat(edges, 1, "int", isbound, "isBoundary");
   op_dat initEtadat = op_decl_dat(cells, 1, "float", initEta, "initEta");
-
+  op_dat initUdat = op_decl_dat(cells, 1, "float", initU, "initU");
+  op_dat initVdat = op_decl_dat(cells, 1, "float", initV, "initV");
   /*
    * Reorder OP2 maps to increase data locality, ie. reduce adjacency
    * matrix bandwidth
@@ -744,7 +756,8 @@ int main(int argc, char **argv) {
       if (initial_zb)
         op_reorder_dat(initial_z,  cells_iperm, cells);
       op_reorder_dat(initEtadat,      cells_iperm, cells);
-
+      op_reorder_dat(initUdat,      cells_iperm, cells);
+      op_reorder_dat(initVdat,      cells_iperm, cells);
       op_printf("Reordering edges... \n");
       // Reorder edges
       // Obtain new permutation (ordering) based on GPS alg. implemented in SCOTCH
@@ -844,7 +857,7 @@ int main(int argc, char **argv) {
     }
     if (any) {printf("Error: the coarse bathy nodes above are not part of any coarse cell that would contain any mesh cells. Please remove it.\n");exit(-1);}
     free(touched);
-    
+
     lifted_cells = op_decl_set(liftedCellCount,"liftedCells");
     int *m_lcellstobnodes = (int *)malloc(N_NODESPERCELL*liftedCellCount*sizeof(int));
     int *m_lcellstocells = (int*)malloc(liftedCellCount*sizeof(int));
@@ -857,7 +870,7 @@ int main(int argc, char **argv) {
       m_lcellstocells[liftedCellCount] = c;
       liftedCellCount++;
     }
-    
+
     liftedcellsToBathynodes = op_decl_map(lifted_cells, bathy_nodes, N_NODESPERCELL, m_lcellstobnodes, "liftedcellsToBathynodes");
     liftedcellsToCells = op_decl_map(lifted_cells,cells,1,m_lcellstocells,"liftedcellsToCells");
 
@@ -946,6 +959,10 @@ int main(int argc, char **argv) {
   //
   float cfl = sim.CFL; // CFL condition
   op_write_const_hdf5("CFL", 1, "float", (char *) &cfl, filename_h5);
+  float Mn = sim.Mn; // Mn condition
+  op_write_const_hdf5("Mn", 1, "float", (char *) &Mn, filename_h5);
+  int spherical = sim.Spherical; // Mn condition
+  op_write_const_hdf5("Spherical", 1, "int", (char *) &spherical, filename_h5);
   // Final time: as defined by Volna the end of real-time simulation
   float ftime = sim.FinalTime;
   op_write_const_hdf5("ftime", 1, "float", (char *) &ftime,
@@ -1067,6 +1084,8 @@ int main(int argc, char **argv) {
   free(eleng);
   free(isbound);
   free(initEta);
+  free(initU);
+  free(initV);
   free(initBathymetry);
   free(x);
   free(w);

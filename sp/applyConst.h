@@ -12,7 +12,7 @@ inline void applyConst(const float *in, float *out, const int *variables) {
 //    out[2] += *in;
   }
   if (*variables & 8) {
-    out[3] = *in;
+    *out = *in;
 //    out[3] += *in;
   }
 }

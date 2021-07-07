@@ -1,27 +1,13 @@
-inline void EvolveValuesRK2_1(const float *dT, float *midPointConservative, //OP_RW //temp
+inline void EvolveValuesRK2_1(const float *dT, const float *Lw_n, //OP_RW //temp
             const float *in, //OP_READ
-            float *inConservative, //OP_WRITE //temp
-            float *midPoint) //OP_WRITE
+            float *out) //OP_WRITE
 {
-  midPointConservative[0] *= *dT;
-  midPointConservative[1] *= *dT;
-  midPointConservative[2] *= *dT;
-
-  //call to ToConservativeVariables inlined
-  inConservative[0] = in[0];
-  inConservative[1] = in[0] * (in[1]);
-  inConservative[2] = in[0] * (in[2]);
-  inConservative[3] = in[3];
-
-  midPointConservative[0] += inConservative[0];
-  midPointConservative[1] += inConservative[1];
-  midPointConservative[2] += inConservative[2];
-  midPointConservative[3] += inConservative[3];
-
-  //call to ToPhysicalVariables inlined
-  float TruncatedH = midPointConservative[0] < EPS ? EPS : midPointConservative[0];
-  midPoint[0] = midPointConservative[0];
-  midPoint[1] = midPointConservative[1] / TruncatedH;
-  midPoint[2] = midPointConservative[2] / TruncatedH;
-  midPoint[3] = midPointConservative[3];
+  out[0] = Lw_n[0] * *dT + in[0];
+  out[1] = Lw_n[1] * *dT + in[1];
+  out[2] = Lw_n[2] * *dT + in[2];
+  out[3] = in[3]-in[0];
+  
+  float TruncatedH = out[0] < EPS ? EPS : out[0];
+  out[0] = TruncatedH;
+  out[3] += TruncatedH;
 }

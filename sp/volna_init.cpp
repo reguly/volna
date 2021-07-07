@@ -21,6 +21,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "initU_formula.h"
 #include "initV_formula.h"
 #include "values_operation2.h"
+#include "zero_bathy.h"
 
 #include "op_seq.h"
 
@@ -49,9 +50,17 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
 #endif
 }
 
-void InitU(op_set cells, op_dat cellCenters, op_dat values) {
+void InitU(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile) {
   //TODO: document the fact that this actually adds to the value of U
   // i.e. user should only access values[1]
+  if(fromFile) {
+  int variable = 2;
+  op_par_loop(incConst, "incConst", cells,
+                op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
+                op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                op_arg_gbl(&variable, 1, "int", OP_READ));
+  } else {
+
 #ifdef DEBUG
   op_printf("InitU...");
 #endif
@@ -59,17 +68,27 @@ void InitU(op_set cells, op_dat cellCenters, op_dat values) {
               op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
               op_arg_gbl(&timestamp, 1, "double", OP_READ));
+  }
 #ifdef DEBUG
   op_printf("done\n");
 #endif
 }
 
-void InitV(op_set cells, op_dat cellCenters, op_dat values) {
+  
+void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile) {
   //TODO: document the fact that this actually adds to the value of V
   // i.e. user should only access values[2]
 #ifdef DEBUG
   op_printf("InitV...");
 #endif
+ if(fromFile) {
+  int variable = 4;
+  op_par_loop(incConst, "incConst", cells,
+                op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
+                op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                op_arg_gbl(&variable, 1, "int", OP_READ));
+
+ } else { 
   op_par_loop(initV_formula, "initV_formula", cells,
               op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
@@ -78,35 +97,23 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values) {
   op_printf("done\n");
 #endif
 }
-
+}
 //void OutputSimulation(op_set points, op_set cells, op_dat p_x, op_dat values) {
 //
 //
 //}
 
-void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb) {
-  if (firstTime) {
-    int result = 0;
-    int leftOperand = 0;
-    int rightOperand = 3;
-    int operation = 0; //0 +, 1 -, 2 *, 3 /
-    op_par_loop(values_operation2, "values_operation2", cells,
-                op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                op_arg_gbl(&result, 1, "int", OP_READ),
-                op_arg_gbl(&leftOperand, 1, "int", OP_READ),
-                op_arg_gbl(&rightOperand, 1, "int", OP_READ),
-                op_arg_gbl(&operation, 1, "int", OP_READ));
-  }
+void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, op_dat z_zero, int fromFile, int firstTime, op_set bathy_nodes, op_set lifted_cells, op_map liftedcellsToBathyNodes, op_map liftedcellsToCells, op_dat bathy_xy, op_dat initial_zb, float *zmin) {
   if (fromFile) {
-    //overwrite values.Zb with values stored in initValues
     if (new_format) {
+      
       int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
       op_par_loop(applyConst, "applyConst", cells,
                   op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
-                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                  op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_RW),
                   op_arg_gbl(&variable, 1, "int", OP_READ));
       op_par_loop(initBathymetry_large, "initBathymetry_large", lifted_cells,
-                  op_arg_dat(values, 0, liftedcellsToCells, 4, "float", OP_INC),
+                  op_arg_dat(z_zero, 0, liftedcellsToCells, 1, "float", OP_INC),
                   op_arg_dat(cellCenters, 0, liftedcellsToCells, 2, "float", OP_READ),
                   op_arg_dat(bathy_xy, 0, liftedcellsToBathyNodes, 2, "float", OP_READ),
                   op_arg_dat(bathy_xy, 1, liftedcellsToBathyNodes, 2, "float", OP_READ),
@@ -116,33 +123,39 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                   op_arg_dat(initValues, 2, liftedcellsToBathyNodes, 1, "float", OP_READ));
     } else {
       int variable = 8; //bitmask 1 - H, 2 - U, 4 - V, 8 - Zb
-      //TODO: we are only overwriting H, moving the whole thing
       op_par_loop(applyConst, "applyConst", cells,
                   op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
-                  op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                  op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_RW),
                   op_arg_gbl(&variable, 1, "int", OP_READ));
     }
   } else {
-    //TODO: document the fact that this actually sets to the value of Zb
-    // i.e. user should only access values[3]
     if (initial_zb != NULL) {
       op_par_loop(initBathyRelative_formula, "initBathyRelative_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
-                op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+                op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_RW),
                 op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_gbl(&timestamp, 1, "double", OP_READ));
     } else {
       op_par_loop(initBathymetry_formula, "initBathymetry_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
-                op_arg_dat(values, -1, OP_ID, 4, "float", OP_INC),
+                op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_INC),
                 op_arg_gbl(&timestamp, 1, "double", OP_READ));
     }
   }
+  if (firstTime) {
+    *zmin = 0.0f;
+    op_par_loop(zero_bathy, "zero_bathy", cells,
+             op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_READ),
+             op_arg_gbl(zmin, 1, "float", OP_MIN));
+    printf("zmin %f \n", *zmin);
+  }
   op_par_loop(initBathymetry_update, "initBathymetry_update", cells,
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
+              op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_READ),
+              op_arg_gbl(zmin, 1, "float", OP_READ),
               op_arg_gbl(&firstTime, 1, "int", OP_READ));
 #ifdef DEBUG
-  printf("InitBathymetry executing H: %g Zb: %g\n", normcomp(values, 0), normcomp(values, 3));
+  printf("InitBathymetry executing H: %f Zb: %f\n", normcomp(values, 0), normcomp(values, 3));
 #endif
 }
 
