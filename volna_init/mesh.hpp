@@ -18,6 +18,7 @@
 #include "meshObjects.hpp"
 #include "meshIo.hpp"
 #include "mathParser.hpp"
+namespace bg = boost::geometry;
 
 inline bool PairCompare( const std::pair<int,Face> &elem1,
                          const std::pair<int,Face> &elem2 )
@@ -63,7 +64,7 @@ public:
   void WriteMeshBandwith( std::ofstream & );
   void ComputeConnectivity();
   void LegacyInterface();
-  void ComputeGeometricQuantities();
+  void ComputeGeometricQuantities(unsigned int&);
   // void ComputeGradientInterpolator();
 };
 
@@ -408,14 +409,14 @@ void Mesh::RCMRenumbering() {
 
 	if ( neighbors.at(j) != -1 )
 	  trueNeighbors.push_back( Cells.at(j) );
-	
+
       }
-   
+
 
       for ( int j = 0; j < 3; ++j ) {
 
         int neighbor = neighbors.at( 2 - j );
-	
+
         if ( neighbor != -1 && parent[neighbor] == -1 ) {
 
           // neighbor is unvisited
@@ -612,7 +613,7 @@ void Mesh::LegacyInterface() {
 
     // detect boundary Triangles
     if ( Cells.at(i).neighbors()[2] == -1 ) {
-      
+
       Cells.at(i).boundary = true;
       Cells.at(i).boundary_type = -1;
 
@@ -675,10 +676,14 @@ void Mesh::LegacyInterface() {
 //
 // }
 
-void Mesh::ComputeGeometricQuantities() {
+void Mesh::ComputeGeometricQuantities(unsigned int& spherical) {
 
   std::cerr << "Computing mesh geometric quantities... ";
-
+  if (spherical){
+    std::cerr << "Spherical coordinate system" << std::endl;
+  } else {
+    std::cerr << "Cartesian coordinate system" << std::endl;
+  }
   CellCenters = GeomValues( NVolumes );
   CellVolumes = ScalarValue::Zero( NVolumes );
 #pragma omp parallel for
@@ -696,19 +701,37 @@ void Mesh::ComputeGeometricQuantities() {
     CellCenters.y( i ) = center( 1 );
     CellCenters.z( i ) = center( 2 );
 
-    // Cell volumes
+
     Point p1 = Nodes[ Cells.at(i).vertices()[0] ];
     Point p2 = Nodes[ Cells.at(i).vertices()[1] ];
     Point p3 = Nodes[ Cells.at(i).vertices()[2] ];
+    RealType volume;
 
-    RealType volume = 0.5 * std::abs( orient2d( p1, p2, p3 ) );
-
+    if (spherical){
+      // Area is computed using boost libraries
+      typedef bg::model::point
+      <double, 2, bg::cs::spherical_equatorial<bg::degree>> spherical_point;
+      // <double, 2, bg::cs::geographic<bg::degree>> spherical_point;
+      spherical_point vert1(p1.x(), p1.y());
+      spherical_point vert2(p2.x(), p2.y());
+      spherical_point vert3(p3.x(), p3.y());
+      bg::model::polygon< spherical_point > sph_poly;
+      bg::append( sph_poly, vert1);
+      bg::append( sph_poly, vert2);
+      bg::append( sph_poly, vert3);
+      bg::append( sph_poly, vert1);
+      bg::correct(sph_poly);
+      double const earth_radius = 6378136.6; // miles
+      bg::strategy::area::spherical< spherical_point > spherical_earth(earth_radius);
+      volume = bg::area(sph_poly,spherical_earth);
+    } else {
+      volume = 0.5 * std::abs( orient2d( p1, p2, p3 ) );
+    }
     CellVolumes( i ) = volume;
 
   }
-
-  FacetCenters = GeomValues::GeomValues( NFaces );
-  FacetNormals = GeomValues::GeomValues( NFaces );
+  FacetCenters = GeomValues( NFaces );
+  FacetNormals = GeomValues( NFaces );
   FacetVolumes = ScalarValue::Zero( NFaces );
 #pragma omp parallel for
   for (  int i = 0; i < NFaces; ++i ) {
@@ -728,17 +751,40 @@ void Mesh::ComputeGeometricQuantities() {
     // Facet volume (e.g. length)
     Point p1 = Nodes[ Facets.at(i).vertices()[0] ];
     Point p2 = Nodes[ Facets.at(i).vertices()[1] ];
+    RealType volume;
 
-    RealType volume = (p2 - p1).norm();
-
+    if (spherical){
+       // Length is computed using n-vector formulation (spherical assumption)
+       // double const earth_radius = 6378136.6;
+       // double rad = M_PI/180.0;
+       // double test_length = earth_radius*acos(cos(p1.x()*rad)*cos(p1.y()*rad)*cos(p2.x()*rad)*cos(p2.y()*rad) +
+       //                   cos(p1.y()*rad)*sin(p1.x()*rad)*cos(p2.y()*rad)*sin(p2.x()*rad) +
+       //                   sin(p1.y()*rad)*sin(p2.y()*rad));
+       // Length is computed using boost libraries (geoid assumption)
+       typedef bg::model::point
+       <double, 2, bg::cs::spherical_equatorial<bg::degree>> spherical_point;
+       spherical_point vert1(p1.x(), p1.y());
+       spherical_point vert2(p2.x(), p2.y());
+       double const earth_radius = 6378136.6; // meters
+       volume = bg::distance(vert1, vert2)*earth_radius;
+    } else {
+       volume = (p2 - p1).norm();
+    }
     FacetVolumes( i ) = volume;
 
     // Facet normal
     Vector normal = Vector::UnitX();
     normal.x() =  - ( p2 - p1 ).y();
     normal.y() = ( p2 - p1).x();
-    normal.normalize();
-
+    // normal.normalize();
+    if (spherical){
+       double rad = M_PI/180.0;
+       double sigma = sqrt((normal.x()/cos(FacetCenters.y(i)*rad))*(normal.x()/cos(FacetCenters.y(i)*rad)) + (normal.y()*normal.y()));
+       normal.x() = normal.x()/(sigma*cos(FacetCenters.y(i)*rad));
+       normal.y() = normal.y()/(sigma);
+    } else {
+       normal.normalize();
+    }
     // Flip the normal if needed.
     // RealType
     //   ScalarProduct = ( FacetCenters.col(i) -

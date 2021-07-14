@@ -29,7 +29,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   leftCellValues[1] += alphaleft[0] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
   leftCellValues[2] += alphaleft[0] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
   leftCellValues[3] += alphaleft[0] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
-  if (leftCellValues[0] >= 1e-3){
+  if (leftCellValues[0] >= EPS){
      uL = leftCellValues[1]/leftCellValues[0];
      vL = leftCellValues[2]/leftCellValues[0];
   } else {
@@ -49,7 +49,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
     rightCellValues[1] += alpharight[0] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
     rightCellValues[2] += alpharight[0] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
     rightCellValues[3] += alpharight[0] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
-    if (rightCellValues[0] >= 1e-3){
+    if (rightCellValues[0] >= EPS){
        uR = rightCellValues[1]/rightCellValues[0];
        vR = rightCellValues[2]/rightCellValues[0];
      } else {
@@ -135,12 +135,12 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   sStar = (sL*hR*(uRn - sR) - sR*hL*(uLn - sL))/
           (hR*(uRn - sR) - hL*(uLn - sL));
 
-  if ((leftCellValues[0] <= EPS) && (rightCellValues[0] > EPS)) {
+  if ((hL <= EPS) && (hR > EPS)) {
       sL = uRn - 2.0f*cR;
       sR = uRn + cR;
       sStar = sL;
   }
-  if ((rightCellValues[0] <= EPS) && (leftCellValues[0] > EPS)) {
+  if ((hR <= EPS) && (hL > EPS)) {
       sR = uLn + 2.0f*cL;
       sL =  uLn - cL;
       sStar = sR;
