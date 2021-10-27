@@ -8,6 +8,7 @@ __device__ void simulation_1_gpu( float *out, const float *in) {
   out[1] = in[1];
   out[2] = in[2];
   out[3] = in[3];
+
 }
 
 // CUDA kernel function
@@ -40,25 +41,24 @@ void op_par_loop_simulation_1(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(4);
+  op_timing_realloc(3);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[4].name      = name;
-  OP_kernels[4].count    += 1;
+  OP_kernels[3].name      = name;
+  OP_kernels[3].count    += 1;
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  simulation_1");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_4
-      int nthread = OP_BLOCK_SIZE_4;
+    #ifdef OP_BLOCK_SIZE_3
+      int nthread = OP_BLOCK_SIZE_3;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
@@ -69,10 +69,12 @@ void op_par_loop_simulation_1(char const *name, op_set set,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[4].time     += wall_t2 - wall_t1;
-  OP_kernels[4].transfer += (float)set->size * arg0.size * 2.0f;
-  OP_kernels[4].transfer += (float)set->size * arg1.size;
+  OP_kernels[3].time     += wall_t2 - wall_t1;
+  OP_kernels[3].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[3].transfer += (float)set->size * arg1.size;
 }

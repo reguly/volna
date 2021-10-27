@@ -8,17 +8,23 @@
 // host stub function
 void op_par_loop_initBathymetry_update(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1){
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3){
 
-  int nargs = 2;
-  op_arg args[2];
+  int nargs = 4;
+  op_arg args[4];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
+  args[3] = arg3;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(14);
+  op_timing_realloc(20);
+  OP_kernels[20].name      = name;
+  OP_kernels[20].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -26,7 +32,7 @@ void op_par_loop_initBathymetry_update(char const *name, op_set set,
     printf(" kernel routine w/o indirection:  initBathymetry_update");
   }
 
-  op_mpi_halo_exchanges(set, nargs, args);
+  int set_size = op_mpi_halo_exchanges(set, nargs, args);
   // set number of threads
   #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
@@ -34,7 +40,7 @@ void op_par_loop_initBathymetry_update(char const *name, op_set set,
     int nthreads = 1;
   #endif
 
-  if (set->size >0) {
+  if (set_size >0) {
 
     // execute plan
     #pragma omp parallel for
@@ -44,7 +50,9 @@ void op_par_loop_initBathymetry_update(char const *name, op_set set,
       for ( int n=start; n<finish; n++ ){
         initBathymetry_update(
           &((float*)arg0.data)[4*n],
-          (int*)arg1.data);
+          &((float*)arg1.data)[1*n],
+          (float*)arg2.data,
+          (int*)arg3.data);
       }
     }
   }
@@ -54,8 +62,7 @@ void op_par_loop_initBathymetry_update(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[14].name      = name;
-  OP_kernels[14].count    += 1;
-  OP_kernels[14].time     += wall_t2 - wall_t1;
-  OP_kernels[14].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[20].time     += wall_t2 - wall_t1;
+  OP_kernels[20].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[20].transfer += (float)set->size * arg1.size;
 }

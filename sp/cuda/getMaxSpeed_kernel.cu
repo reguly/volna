@@ -5,12 +5,20 @@
 //user function
 __device__ void getMaxSpeed_gpu( const float* values, float* currentMaxSpeed) {
 
-  if (sqrt(values[1]*values[1]+values[2]*values[2]) > sqrt(currentMaxSpeed[1]*currentMaxSpeed[1]+currentMaxSpeed[2]*currentMaxSpeed[2])) {
-    currentMaxSpeed[0] = values[0];
-    currentMaxSpeed[1] = values[1];
-    currentMaxSpeed[2] = values[2];
-    currentMaxSpeed[3] = values[3];
+  if (values[0] > 1e-3){
+    float TruncatedH = values[0];
+    float u = values[1]/TruncatedH;
+    float v = values[2]/TruncatedH;
+    float umax = currentMaxSpeed[1]/currentMaxSpeed[0];
+    float vmax = currentMaxSpeed[2]/currentMaxSpeed[0];
+    if (sqrt(u*u + v*v) > sqrt(umax*umax+vmax*vmax)) {
+      currentMaxSpeed[0] = values[0];
+      currentMaxSpeed[1] = values[1];
+      currentMaxSpeed[2] = values[2];
+      currentMaxSpeed[3] = values[3];
+    }
   }
+
 }
 
 // CUDA kernel function
@@ -43,25 +51,24 @@ void op_par_loop_getMaxSpeed(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(19);
+  op_timing_realloc(26);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[19].name      = name;
-  OP_kernels[19].count    += 1;
+  OP_kernels[26].name      = name;
+  OP_kernels[26].count    += 1;
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  getMaxSpeed");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_19
-      int nthread = OP_BLOCK_SIZE_19;
+    #ifdef OP_BLOCK_SIZE_26
+      int nthread = OP_BLOCK_SIZE_26;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
@@ -72,10 +79,12 @@ void op_par_loop_getMaxSpeed(char const *name, op_set set,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[19].time     += wall_t2 - wall_t1;
-  OP_kernels[19].transfer += (float)set->size * arg0.size;
-  OP_kernels[19].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[26].time     += wall_t2 - wall_t1;
+  OP_kernels[26].transfer += (float)set->size * arg0.size;
+  OP_kernels[26].transfer += (float)set->size * arg1.size * 2.0f;
 }

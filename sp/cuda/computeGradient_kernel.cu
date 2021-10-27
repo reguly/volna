@@ -13,8 +13,7 @@ __device__ void computeGradient_gpu( const float *center,
                             const float *nb3Center,
                             float *q, float *out) {
 
-
-  if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
+  if(center[0]> EPS_cuda){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];
@@ -27,17 +26,24 @@ __device__ void computeGradient_gpu( const float *center,
     delta[1][0] =  (nb2Center[0] - x);
     delta[1][1] =  (nb2Center[1] - y);
 
-    delta[2][0] =  (nb3Center[0] - x);
-    delta[2][1] =  (nb3Center[1] - y);
+    if( (cellCenter[0] != nb3Center[0]) && (cellCenter[1] != nb3Center[1])){
+      delta[2][0] =  (nb3Center[0] - x);
+      delta[2][1] =  (nb3Center[1] - y);
+    } else {
+      delta[2][0] =  0.5f*(delta[0][0] + delta[1][0]);
+      delta[2][1] =  0.5f*(delta[0][1] + delta[1][1]);
+    }
 
 
     weights[0] = sqrt(delta[0][0] * delta[0][0] + delta[0][1] * delta[0][1]);
     weights[1] = sqrt(delta[1][0] * delta[1][0] + delta[1][1] * delta[1][1]);
     weights[2] = sqrt(delta[2][0] * delta[2][0] + delta[2][1] * delta[2][1]);
+
     total = weights[0] + weights[1] + weights[2];
+
     weights[0] = total/weights[0];
     weights[1] = total/weights[1];
-    weights[2] = total/ weights[2];
+    weights[2] = total/weights[2];
     delta[0][0] *= weights[0];
     delta[0][1] *= weights[0];
 
@@ -105,7 +111,18 @@ __device__ void computeGradient_gpu( const float *center,
     Rhs[7] = (delta[0][1]*dz[0]) + (delta[1][1]*dz[1]) + (delta[2][1]*dz[2]);
     out[6] = (inverse[0][0] * Rhs[6]) + (inverse[0][1] * Rhs[7]);
     out[7] = (inverse[1][0] * Rhs[6]) + (inverse[1][1] * Rhs[7]);
- }else {
+
+    if((isnan(out[0])) || (isnan(out[1])) || (isnan(out[2])) || (isnan(out[3])) || (isnan(out[4])) || (isnan(out[5])) || (isnan(out[6])) || (isnan(out[7]))){
+      out[0] = 0.0f;
+      out[1] = 0.0f;
+      out[2] = 0.0f;
+      out[3] = 0.0f;
+      out[4] = 0.0f;
+      out[5] = 0.0f;
+      out[6] = 0.0f;
+      out[7] = 0.0f;
+    }
+  } else {
 
     out[0] = 0.0f;
     out[1] = 0.0f;
@@ -115,7 +132,7 @@ __device__ void computeGradient_gpu( const float *center,
     out[5] = 0.0f;
     out[6] = 0.0f;
     out[7] = 0.0f;
- }
+  }
 
 
 
@@ -148,65 +165,45 @@ __device__ void computeGradient_gpu( const float *center,
   q[7] = center[3] > neighbour1[3] ? center[3] : neighbour1[3];
   q[7] = q[7] > neighbour2[3] ? q[7] : neighbour2[3];
   q[7] = q[7] > neighbour3[3] ? q[7] : neighbour3[3];
+
 }
 
 // CUDA kernel function
 __global__ void op_cuda_computeGradient(
   const float *__restrict ind_arg0,
   const float *__restrict ind_arg1,
+  float *__restrict ind_arg2,
   const int *__restrict opDat1Map,
   const float *__restrict arg0,
   const float *__restrict arg4,
   float *arg8,
   float *arg9,
-  int    block_offset,
-  int   *blkmap,
-  int   *offset,
-  int   *nelems,
-  int   *ncolors,
-  int   *colors,
-  int   nblocks,
+  int start,
+  int end,
+  int *col_reord,
   int   set_size) {
-
-  __shared__ int    nelem, offset_b;
-
-  extern __shared__ char shared[];
-
-  if (blockIdx.x+blockIdx.y*gridDim.x >= nblocks) {
-    return;
-  }
-  if (threadIdx.x==0) {
-
-    //get sizes and shift pointers and direct-mapped data
-
-    int blockId = blkmap[blockIdx.x + blockIdx.y*gridDim.x  + block_offset];
-
-    nelem    = nelems[blockId];
-    offset_b = offset[blockId];
-
-  }
-  __syncthreads(); // make sure all of above completed
-
-  for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  if (tid + start < end) {
+    int n = col_reord[tid + start];
+    //initialise local variables
     int map1idx;
     int map2idx;
     int map3idx;
-    map1idx = opDat1Map[n + offset_b + set_size * 0];
-    map2idx = opDat1Map[n + offset_b + set_size * 1];
-    map3idx = opDat1Map[n + offset_b + set_size * 2];
-
+    map1idx = opDat1Map[n + set_size * 0];
+    map2idx = opDat1Map[n + set_size * 1];
+    map3idx = opDat1Map[n + set_size * 2];
 
     //user-supplied kernel call
-    computeGradient_gpu(arg0+(n+offset_b)*4,
+    computeGradient_gpu(arg0+n*4,
                     ind_arg0+map1idx*4,
                     ind_arg0+map2idx*4,
                     ind_arg0+map3idx*4,
-                    arg4+(n+offset_b)*2,
+                    arg4+n*2,
                     ind_arg1+map1idx*2,
                     ind_arg1+map2idx*2,
-                    ind_arg1+map3idx*2,
-                    arg8+(n+offset_b)*8,
-                    arg9+(n+offset_b)*8);
+                    ind_arg2+map3idx*2,
+                    arg8+n*8,
+                    arg9+n*8);
   }
 }
 
@@ -240,73 +237,68 @@ void op_par_loop_computeGradient(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(21);
+  op_timing_realloc(4);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[21].name      = name;
-  OP_kernels[21].count    += 1;
+  OP_kernels[4].name      = name;
+  OP_kernels[4].count    += 1;
 
 
-  int    ninds   = 2;
-  int    inds[10] = {-1,0,0,0,-1,1,1,1,-1,-1};
+  int    ninds   = 3;
+  int    inds[10] = {-1,0,0,0,-1,1,1,2,-1,-1};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: computeGradient\n");
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_21
-    int part_size = OP_PART_SIZE_21;
+  #ifdef OP_PART_SIZE_4
+    int part_size = OP_PART_SIZE_4;
   #else
     int part_size = OP_part_size;
   #endif
 
-  int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+    op_plan *Plan = op_plan_get_stage(name,set,part_size,nargs,args,ninds,inds,OP_COLOR2);
 
     //execute plan
-
-    int block_offset = 0;
     for ( int col=0; col<Plan->ncolors; col++ ){
       if (col==Plan->ncolors_core) {
-        op_mpi_wait_all_cuda(nargs, args);
+        op_mpi_wait_all_grouped(nargs, args, 2);
       }
-      #ifdef OP_BLOCK_SIZE_21
-      int nthread = OP_BLOCK_SIZE_21;
+      #ifdef OP_BLOCK_SIZE_4
+      int nthread = OP_BLOCK_SIZE_4;
       #else
       int nthread = OP_block_size;
       #endif
 
-      dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
-      Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
-      if (Plan->ncolblk[col] > 0) {
-        op_cuda_computeGradient<<<nblocks,nthread>>>(
-        (float *)arg1.data_d,
-        (float *)arg5.data_d,
-        arg1.map_data_d,
-        (float*)arg0.data_d,
-        (float*)arg4.data_d,
-        (float*)arg8.data_d,
-        (float*)arg9.data_d,
-        block_offset,
-        Plan->blkmap,
-        Plan->offset,
-        Plan->nelems,
-        Plan->nthrcol,
-        Plan->thrcol,
-        Plan->ncolblk[col],
-        set->size+set->exec_size);
+      int start = Plan->col_offsets[0][col];
+      int end = Plan->col_offsets[0][col+1];
+      int nblocks = (end - start - 1)/nthread + 1;
+      op_cuda_computeGradient<<<nblocks,nthread>>>(
+      (float *)arg1.data_d,
+      (float *)arg5.data_d,
+      (float *)arg7.data_d,
+      arg1.map_data_d,
+      (float*)arg0.data_d,
+      (float*)arg4.data_d,
+      (float*)arg8.data_d,
+      (float*)arg9.data_d,
+      start,
+      end,
+      Plan->col_reord,
+      set->size+set->exec_size);
 
-      }
-      block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[21].transfer  += Plan->transfer;
-    OP_kernels[21].transfer2 += Plan->transfer2;
+    OP_kernels[4].transfer  += Plan->transfer;
+    OP_kernels[4].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[21].time     += wall_t2 - wall_t1;
+  OP_kernels[4].time     += wall_t2 - wall_t1;
 }

@@ -3,32 +3,24 @@
 //
 
 //user function
-__device__
-inline void EvolveValuesRK2_2_gpu(const float *dT, float *outConservative, //OP_RW, discard
-            const float *inConservative, //OP_READ, discard
-            const float *midPointConservative, //OP_READ, discard
-            float *out) //OP_WRITE
+__device__ void EvolveValuesRK2_2_gpu( const float *dT,const float *Lw_1,
+            const float *values,
+            const float *w_1,
+            float *out) {
+  out[0] = 0.5*(Lw_1[0] * *dT + w_1[0] + values[0]);
+  out[1] = 0.5*(Lw_1[1] * *dT + w_1[1] + values[1]);
+  out[2] = 0.5*(Lw_1[2] * *dT + w_1[2] + values[2]);
+  out[3] = values[3]-values[0];
+  float TruncatedH = out[0] < EPS_cuda ? EPS_cuda : out[0];
+  out[0] = TruncatedH;
+  out[3] += TruncatedH;
 
-{
-  outConservative[0] = 0.5*(outConservative[0] * *dT + midPointConservative[0] + inConservative[0]);
-  outConservative[1] = 0.5*(outConservative[1] * *dT + midPointConservative[1] + inConservative[1]);
-  outConservative[2] = 0.5*(outConservative[2] * *dT + midPointConservative[2] + inConservative[2]);
-
-  outConservative[0] = outConservative[0] <= EPS ? EPS : outConservative[0];
-  outConservative[3] = inConservative[3];
-
-  //call to ToPhysicalVariables inlined
-  float TruncatedH = outConservative[0] < EPS ? EPS : outConservative[0];
-  out[0] = outConservative[0];
-  out[1] = outConservative[1] / TruncatedH;
-  out[2] = outConservative[2] / TruncatedH;
-  out[3] = outConservative[3];
 }
 
 // CUDA kernel function
 __global__ void op_cuda_EvolveValuesRK2_2(
   const float *arg0,
-  float *arg1,
+  const float *__restrict arg1,
   const float *__restrict arg2,
   const float *__restrict arg3,
   float *arg4,
@@ -48,8 +40,8 @@ __global__ void op_cuda_EvolveValuesRK2_2(
 }
 
 
-//GPU host stub function
-void op_par_loop_EvolveValuesRK2_2_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_EvolveValuesRK2_2(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -72,15 +64,14 @@ void op_par_loop_EvolveValuesRK2_2_gpu(char const *name, op_set set,
   op_timers_core(&cpu_t1, &wall_t1);
   OP_kernels[1].name      = name;
   OP_kernels[1].count    += 1;
-  if (OP_kernels[1].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  EvolveValuesRK2_2");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //transfer constants to GPU
     int consts_bytes = 0;
@@ -100,7 +91,6 @@ void op_par_loop_EvolveValuesRK2_2_gpu(char const *name, op_set set,
       int nthread = OP_BLOCK_SIZE_1;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
@@ -114,65 +104,14 @@ void op_par_loop_EvolveValuesRK2_2_gpu(char const *name, op_set set,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
   OP_kernels[1].time     += wall_t2 - wall_t1;
-  OP_kernels[1].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[1].transfer += (float)set->size * arg1.size;
   OP_kernels[1].transfer += (float)set->size * arg2.size;
   OP_kernels[1].transfer += (float)set->size * arg3.size;
-  OP_kernels[1].transfer += (float)set->size * arg4.size;
+  OP_kernels[1].transfer += (float)set->size * arg4.size * 2.0f;
 }
-
-void op_par_loop_EvolveValuesRK2_2_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_EvolveValuesRK2_2(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_EvolveValuesRK2_2_gpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4);
-
-    }else{
-    op_par_loop_EvolveValuesRK2_2_cpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4);
-
-  }
-}
-#else
-void op_par_loop_EvolveValuesRK2_2(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
-
-  op_par_loop_EvolveValuesRK2_2_gpu(name, set,
-    arg0,
-    arg1,
-    arg2,
-    arg3,
-    arg4);
-
-  }
-#endif //OP_HYBRID_GPU

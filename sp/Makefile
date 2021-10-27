@@ -42,7 +42,7 @@ ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_INC   = -I$(PTSCOTCH_INSTALL_PATH)/include
 PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
-	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
+	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lscotch -lptscotcherr
 endif
 
 ifeq ($(OP2_COMPILER),gnu)
@@ -56,7 +56,7 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	CPPFLAGS = -O3 -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
@@ -75,7 +75,7 @@ endif
 #
 
 
-NVCCFLAGS	= -arch=sm_60 -Xptxas=-v -O2 -m64 -g #-G
+NVCCFLAGS	= -arch=sm_80 -Xptxas=-v -O2 -m64 -g #-G
 
 #
 # master to make all versions
