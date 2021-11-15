@@ -117,20 +117,11 @@ endif
 cuda/volna_kernels_cu.o:        cuda/volna_kernels.cu \
 	EvolveValuesRK2_1.h EvolveValuesRK2_2.h applyConst.h getMaxElevation.h getMaxSpeed.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-<<<<<<< HEAD
 	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h Timestep.h NumericalFluxes.h simulation_1.h \
 	values_operation2.h Friction_manning.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu  cuda/EvolveValuesRK2_2_kernel.cu \
 	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/Timestep_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu cuda/computeGradient_kernel.cu cuda/getMaxSpeed_kernel.cu cuda/getMaxElevation_kernel.cu \
 	cuda/values_operation2_kernel.cu cuda/Friction_manning_kernel.cu Makefile
-=======
-	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h Timestep.h \
-	NumericalFluxes.h simulation_1.h values_operation2.h cuda/applyConst_kernel.cu \
-	cuda/EvolveValuesRK2_1_kernel.cu  cuda/EvolveValuesRK2_2_kernel.cu cuda/computeFluxes_kernel.cu \
-	cuda/limiter_kernel.cu cuda/Timestep_kernel.cu cuda/NumericalFluxes_kernel.cu \
-	cuda/simulation_1_kernel.cu cuda/computeGradient_kernel.cu cuda/getMaxSpeed_kernel.cu cuda/getMaxElevation_kernel.cu \
-	cuda/values_operation2_kernel.cu Makefile
->>>>>>> 1a93fa5856e7445214d587fca380b11da9ba8b72
 	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o cuda/volna_kernels_cu.o cuda/volna_kernels.cu
 
 volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp Makefile
