@@ -7,9 +7,12 @@
 #define MAX_CONST_SIZE 128
 #endif
 
-__constant__ float CFL;
-__constant__ float EPS;
-__constant__ float g;
+__constant__ float CFL_cuda;
+__constant__ float EPS_cuda;
+__constant__ float g_cuda;
+__constant__ float Mn_cuda;
+__constant__ int spherical_cuda;
+__constant__ float Radius_cuda;
 
 //header
 #include "op_lib_cpp.h"
@@ -20,15 +23,27 @@ void op_decl_const_char(int dim, char const *type,
 int size, char *dat, char const *name){
   if (!OP_hybrid_gpu) return;
   if (!strcmp(name,"CFL")) {
-    cutilSafeCall(cudaMemcpyToSymbol(CFL, dat, dim*size));
+    cutilSafeCall(cudaMemcpyToSymbol(CFL_cuda, dat, dim*size));
   }
   else
   if (!strcmp(name,"EPS")) {
-    cutilSafeCall(cudaMemcpyToSymbol(EPS, dat, dim*size));
+    cutilSafeCall(cudaMemcpyToSymbol(EPS_cuda, dat, dim*size));
   }
   else
   if (!strcmp(name,"g")) {
-    cutilSafeCall(cudaMemcpyToSymbol(g, dat, dim*size));
+    cutilSafeCall(cudaMemcpyToSymbol(g_cuda, dat, dim*size));
+  }
+  else
+  if (!strcmp(name,"Mn")) {
+    cutilSafeCall(cudaMemcpyToSymbol(Mn_cuda, dat, dim*size));
+  }
+  else
+  if (!strcmp(name,"spherical")) {
+    cutilSafeCall(cudaMemcpyToSymbol(spherical_cuda, dat, dim*size));
+  }
+  else
+  if (!strcmp(name,"Radius")) {
+    cutilSafeCall(cudaMemcpyToSymbol(Radius_cuda, dat, dim*size));
   }
   else
   {
@@ -37,29 +52,32 @@ int size, char *dat, char const *name){
 }
 
 //user kernel files
-#include "EvolveValuesRK3_1_kernel.cu"
-#include "EvolveValuesRK3_2_kernel.cu"
-#include "EvolveValuesRK3_3_kernel.cu"
-#include "EvolveValuesRK3_4_kernel.cu"
+#include "EvolveValuesRK2_1_kernel.cu"
+#include "EvolveValuesRK2_2_kernel.cu"
+#include "Friction_manning_kernel.cu"
 #include "simulation_1_kernel.cu"
 #include "incConst_kernel.cu"
 #include "initEta_formula_kernel.cu"
 #include "initU_formula_kernel.cu"
 #include "initV_formula_kernel.cu"
-#include "values_operation2_kernel.cu"
 #include "applyConst_kernel.cu"
 #include "initBathymetry_large_kernel.cu"
 #include "initBathyRelative_formula_kernel.cu"
 #include "initBathymetry_formula_kernel.cu"
+#include "zero_bathy_kernel.cu"
 #include "initBathymetry_update_kernel.cu"
 #include "initBore_select_kernel.cu"
 #include "initGaussianLandslide_kernel.cu"
+#include "values_operation2_kernel.cu"
 #include "getTotalVol_kernel.cu"
 #include "getMaxElevation_kernel.cu"
 #include "getMaxSpeed_kernel.cu"
 #include "gatherLocations_kernel.cu"
+#include "toOutputs_kernel.cu"
 #include "computeGradient_kernel.cu"
 #include "limiter_kernel.cu"
 #include "computeFluxes_kernel.cu"
+#include "Timestep_kernel.cu"
 #include "NumericalFluxes_kernel.cu"
-#include "SpaceDiscretization_kernel.cu"
+#include "computeFluxes_sph_kernel.cu"
+#include "NumericalFluxes_sph_kernel.cu"

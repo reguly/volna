@@ -17,9 +17,10 @@ __device__ void applyConst_gpu( const float *in, float *out, const int *variable
 
   }
   if (*variables & 8) {
-    out[3] = *in;
+    *out = *in;
 
   }
+
 }
 
 // CUDA kernel function
@@ -35,7 +36,7 @@ __global__ void op_cuda_applyConst(
 
     //user-supplied kernel call
     applyConst_gpu(arg0+n*1,
-               arg1+n*4,
+               arg1+n*1,
                arg2);
   }
 }
@@ -57,18 +58,18 @@ void op_par_loop_applyConst(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(10);
+  op_timing_realloc(8);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[10].name      = name;
-  OP_kernels[10].count    += 1;
+  OP_kernels[8].name      = name;
+  OP_kernels[8].count    += 1;
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  applyConst");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //transfer constants to GPU
     int consts_bytes = 0;
@@ -84,11 +85,10 @@ void op_par_loop_applyConst(char const *name, op_set set,
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_10
-      int nthread = OP_BLOCK_SIZE_10;
+    #ifdef OP_BLOCK_SIZE_8
+      int nthread = OP_BLOCK_SIZE_8;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
@@ -100,10 +100,12 @@ void op_par_loop_applyConst(char const *name, op_set set,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[10].time     += wall_t2 - wall_t1;
-  OP_kernels[10].transfer += (float)set->size * arg0.size;
-  OP_kernels[10].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[8].time     += wall_t2 - wall_t1;
+  OP_kernels[8].transfer += (float)set->size * arg0.size;
+  OP_kernels[8].transfer += (float)set->size * arg1.size * 2.0f;
 }

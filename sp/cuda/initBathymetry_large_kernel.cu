@@ -45,8 +45,9 @@ __device__ void initBathymetry_large_gpu( float *values, const float *cellCenter
     float b = -(node1[0]-node0[0])*(*bathy2-*bathy0)+(node2[0]-node0[0])*(*bathy1-*bathy0);
     float c =  (node1[0]-node0[0])*(node2[1]-node0[1])-(node2[0]-node0[0])*(node1[1]-node0[1]);
 
-    values[3] += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
+    *values += *bathy0 - (a*(cellCenter[0]-node0[0]) + b*(cellCenter[1]-node0[1]))/c;
   }
+
 }
 
 // CUDA kernel function
@@ -57,6 +58,10 @@ __global__ void op_cuda_initBathymetry_large(
   const float *__restrict ind_arg3,
   const int *__restrict opDat0Map,
   const int *__restrict opDat2Map,
+  int   *ind_map,
+  short *arg_map,
+  int   *ind_arg_sizes,
+  int   *ind_arg_offs,
   int    block_offset,
   int   *blkmap,
   int   *offset,
@@ -65,7 +70,10 @@ __global__ void op_cuda_initBathymetry_large(
   int   *colors,
   int   nblocks,
   int   set_size) {
-  float arg0_l[4];
+  float arg0_l[1];
+
+  __shared__  int  *ind_arg0_map, ind_arg0_size;
+  __shared__  float *ind_arg0_s;
 
   __shared__ int    nelems2, ncolor;
   __shared__ int    nelem, offset_b;
@@ -87,8 +95,21 @@ __global__ void op_cuda_initBathymetry_large(
     nelems2  = blockDim.x*(1+(nelem-1)/blockDim.x);
     ncolor   = ncolors[blockId];
 
+    ind_arg0_size = ind_arg_sizes[0+blockId*1];
+
+    ind_arg0_map = &ind_map[0*set_size] + ind_arg_offs[0+blockId*1];
+
+    //set shared memory pointers
+    int nbytes = 0;
+    ind_arg0_s = (float *) &shared[nbytes];
   }
   __syncthreads(); // make sure all of above completed
+
+  for ( int n=threadIdx.x; n<ind_arg0_size*1; n+=blockDim.x ){
+    ind_arg0_s[n] = ZERO_float;
+  }
+
+  __syncthreads();
 
   for ( int n=threadIdx.x; n<nelems2; n+=blockDim.x ){
     int col2 = -1;
@@ -98,7 +119,7 @@ __global__ void op_cuda_initBathymetry_large(
     int map4idx;
     if (n<nelem) {
       //initialise local variables
-      for ( int d=0; d<4; d++ ){
+      for ( int d=0; d<1; d++ ){
         arg0_l[d] = ZERO_float;
       }
       map0idx = opDat0Map[n + offset_b + set_size * 0];
@@ -121,19 +142,21 @@ __global__ void op_cuda_initBathymetry_large(
 
     //store local variables
 
+    int arg0_map;
+    if (col2>=0) {
+      arg0_map = arg_map[0*set_size+n+offset_b];
+    }
+
     for ( int col=0; col<ncolor; col++ ){
       if (col2==col) {
-        arg0_l[0] += ind_arg0[0+map0idx*4];
-        arg0_l[1] += ind_arg0[1+map0idx*4];
-        arg0_l[2] += ind_arg0[2+map0idx*4];
-        arg0_l[3] += ind_arg0[3+map0idx*4];
-        ind_arg0[0+map0idx*4] = arg0_l[0];
-        ind_arg0[1+map0idx*4] = arg0_l[1];
-        ind_arg0[2+map0idx*4] = arg0_l[2];
-        ind_arg0[3+map0idx*4] = arg0_l[3];
+        arg0_l[0] += ind_arg0_s[0+arg0_map*1];
+        ind_arg0_s[0+arg0_map*1] = arg0_l[0];
       }
       __syncthreads();
     }
+  }
+  for ( int n=threadIdx.x; n<ind_arg0_size*1; n+=blockDim.x ){
+    ind_arg0[n%1+ind_arg0_map[n/1]*1] += ind_arg0_s[n];
   }
 }
 
@@ -163,10 +186,10 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(11);
+  op_timing_realloc(9);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[11].name      = name;
-  OP_kernels[11].count    += 1;
+  OP_kernels[9].name      = name;
+  OP_kernels[9].count    += 1;
 
 
   int    ninds   = 4;
@@ -177,26 +200,26 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
   }
 
   //get plan
-  #ifdef OP_PART_SIZE_11
-    int part_size = OP_PART_SIZE_11;
+  #ifdef OP_PART_SIZE_9
+    int part_size = OP_PART_SIZE_9;
   #else
     int part_size = OP_part_size;
   #endif
 
-  int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+    op_plan *Plan = op_plan_get_stage(name,set,part_size,nargs,args,ninds,inds,OP_STAGE_INC);
 
     //execute plan
 
     int block_offset = 0;
     for ( int col=0; col<Plan->ncolors; col++ ){
       if (col==Plan->ncolors_core) {
-        op_mpi_wait_all_cuda(nargs, args);
+        op_mpi_wait_all_grouped(nargs, args, 2);
       }
-      #ifdef OP_BLOCK_SIZE_11
-      int nthread = OP_BLOCK_SIZE_11;
+      #ifdef OP_BLOCK_SIZE_9
+      int nthread = OP_BLOCK_SIZE_9;
       #else
       int nthread = OP_block_size;
       #endif
@@ -204,13 +227,18 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
       dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
       Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
       if (Plan->ncolblk[col] > 0) {
-        op_cuda_initBathymetry_large<<<nblocks,nthread>>>(
+        int nshared = Plan->nsharedCol[col];
+        op_cuda_initBathymetry_large<<<nblocks,nthread,nshared>>>(
         (float *)arg0.data_d,
         (float *)arg1.data_d,
         (float *)arg2.data_d,
         (float *)arg5.data_d,
         arg0.map_data_d,
         arg2.map_data_d,
+        Plan->ind_map,
+        Plan->loc_map,
+        Plan->ind_sizes,
+        Plan->ind_offs,
         block_offset,
         Plan->blkmap,
         Plan->offset,
@@ -223,12 +251,14 @@ void op_par_loop_initBathymetry_large(char const *name, op_set set,
       }
       block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[11].transfer  += Plan->transfer;
-    OP_kernels[11].transfer2 += Plan->transfer2;
+    OP_kernels[9].transfer  += Plan->transfer;
+    OP_kernels[9].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[11].time     += wall_t2 - wall_t1;
+  OP_kernels[9].time     += wall_t2 - wall_t1;
 }

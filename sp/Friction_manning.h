@@ -14,10 +14,10 @@ inline void Friction_manning(const float *dT,const float *M_n, //OP_RW, discard
   // Update Momentum
   values[0] = TruncatedH;
   values[3] = values[3];
-  if (values[0] <= 1e-3){
+  if (values[0] <= EPS){
      values[1] = 0.0f;
      values[2] = 0.0f;
-  } else if (1e-3 < values[0] <= 50.0f) {
+  } else if (EPS < values[0] <= 50.0f) {
      values[1] = values[1] / (1.0f + Fr * *dT);
      values[2] = values[2] / (1.0f + Fr * *dT);
   } else {

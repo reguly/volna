@@ -3,19 +3,21 @@
 //
 
 //user function
-__device__ void gatherLocations_gpu( const float *values, float *dest) {
-	dest[0] = values[0] + values[3];
+__device__ void gatherLocations_gpu( const float *values, const float *zmin, float *dest) {
+  dest[0] = values[0] + (values[3] - values[0] + *zmin);
   dest[1] = values[0];
-  dest[2] = values[1];
-  dest[3] = values[2];
+  dest[2] = values[1]/values[0];
+  dest[3] = values[2]/values[0];
   dest[4] = values[3];
+
 }
 
 // CUDA kernel function
 __global__ void op_cuda_gatherLocations(
   const float *__restrict ind_arg0,
   const int *__restrict opDat0Map,
-  float *arg1,
+  const float *arg1,
+  float *arg2,
   int    block_offset,
   int   *blkmap,
   int   *offset,
@@ -24,6 +26,7 @@ __global__ void op_cuda_gatherLocations(
   int   *colors,
   int   nblocks,
   int   set_size) {
+
 
   __shared__ int    nelem, offset_b;
 
@@ -51,7 +54,8 @@ __global__ void op_cuda_gatherLocations(
 
     //user-supplied kernel call
     gatherLocations_gpu(ind_arg0+map0idx*4,
-                    arg1+(n+offset_b)*5);
+                    arg1,
+                    arg2+(n+offset_b)*5);
   }
 }
 
@@ -59,13 +63,16 @@ __global__ void op_cuda_gatherLocations(
 //host stub function
 void op_par_loop_gatherLocations(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1){
+  op_arg arg1,
+  op_arg arg2){
 
-  int nargs = 2;
-  op_arg args[2];
+  float*arg1h = (float *)arg1.data;
+  int nargs = 3;
+  op_arg args[3];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -76,7 +83,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
 
   int    ninds   = 1;
-  int    inds[2] = {0,-1};
+  int    inds[3] = {0,-1,-1};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: gatherLocations\n");
@@ -89,17 +96,30 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
     int part_size = OP_part_size;
   #endif
 
-  int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
+
+    //transfer constants to GPU
+    int consts_bytes = 0;
+    consts_bytes += ROUND_UP(1*sizeof(float));
+    reallocConstArrays(consts_bytes);
+    consts_bytes = 0;
+    arg1.data   = OP_consts_h + consts_bytes;
+    arg1.data_d = OP_consts_d + consts_bytes;
+    for ( int d=0; d<1; d++ ){
+      ((float *)arg1.data)[d] = arg1h[d];
+    }
+    consts_bytes += ROUND_UP(1*sizeof(float));
+    mvConstArraysToDevice(consts_bytes);
 
     //execute plan
 
     int block_offset = 0;
     for ( int col=0; col<Plan->ncolors; col++ ){
       if (col==Plan->ncolors_core) {
-        op_mpi_wait_all_cuda(nargs, args);
+        op_mpi_wait_all_grouped(nargs, args, 2);
       }
       #ifdef OP_BLOCK_SIZE_20
       int nthread = OP_BLOCK_SIZE_20;
@@ -114,6 +134,7 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
         (float *)arg0.data_d,
         arg0.map_data_d,
         (float*)arg1.data_d,
+        (float*)arg2.data_d,
         block_offset,
         Plan->blkmap,
         Plan->offset,
@@ -130,7 +151,9 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
     OP_kernels[20].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
-  cutilSafeCall(cudaDeviceSynchronize());
+  if (OP_diags>1) {
+    cutilSafeCall(cudaDeviceSynchronize());
+  }
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
   OP_kernels[20].time     += wall_t2 - wall_t1;
