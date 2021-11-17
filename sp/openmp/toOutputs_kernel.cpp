@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "../EvolveValuesRK3_2.h"
+#include "../toOutputs.h"
 
 // host stub function
-void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
+void op_par_loop_toOutputs(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2){
@@ -20,15 +20,17 @@ void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(1);
+  op_timing_realloc(28);
+  OP_kernels[28].name      = name;
+  OP_kernels[28].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  EvolveValuesRK3_2");
+    printf(" kernel routine w/o indirection:  toOutputs");
   }
 
-  op_mpi_halo_exchanges(set, nargs, args);
+  int set_size = op_mpi_halo_exchanges(set, nargs, args);
   // set number of threads
   #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
@@ -36,7 +38,7 @@ void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
     int nthreads = 1;
   #endif
 
-  if (set->size >0) {
+  if (set_size >0) {
 
     // execute plan
     #pragma omp parallel for
@@ -44,10 +46,10 @@ void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
       for ( int n=start; n<finish; n++ ){
-        EvolveValuesRK3_2(
-          (float*)arg0.data,
-          &((float*)arg1.data)[4*n],
-          &((float*)arg2.data)[4*n]);
+        toOutputs(
+          &((float*)arg0.data)[4*n],
+          (float*)arg1.data,
+          &((float*)arg2.data)[5*n]);
       }
     }
   }
@@ -57,9 +59,7 @@ void op_par_loop_EvolveValuesRK3_2(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[1].name      = name;
-  OP_kernels[1].count    += 1;
-  OP_kernels[1].time     += wall_t2 - wall_t1;
-  OP_kernels[1].transfer += (float)set->size * arg1.size;
-  OP_kernels[1].transfer += (float)set->size * arg2.size * 2.0f;
+  OP_kernels[28].time     += wall_t2 - wall_t1;
+  OP_kernels[28].transfer += (float)set->size * arg0.size;
+  OP_kernels[28].transfer += (float)set->size * arg2.size * 2.0f;
 }
