@@ -3,31 +3,30 @@
 //
 
 //user function
-#include "../incConst.h"
+#include "../zero_bathy.h"
 
 // host stub function
-void op_par_loop_incConst(char const *name, op_set set,
+void op_par_loop_zero_bathy(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1,
-  op_arg arg2){
+  op_arg arg1){
 
-  int nargs = 3;
-  op_arg args[3];
+  float*arg1h = (float *)arg1.data;
+  int nargs = 2;
+  op_arg args[2];
 
   args[0] = arg0;
   args[1] = arg1;
-  args[2] = arg2;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(4);
-  OP_kernels[4].name      = name;
-  OP_kernels[4].count    += 1;
+  op_timing_realloc(12);
+  OP_kernels[12].name      = name;
+  OP_kernels[12].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  incConst");
+    printf(" kernel routine w/o indirection:  zero_bathy");
   }
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -38,6 +37,14 @@ void op_par_loop_incConst(char const *name, op_set set,
     int nthreads = 1;
   #endif
 
+  // allocate and initialise arrays for global reduction
+  float arg1_l[nthreads*64];
+  for ( int thr=0; thr<nthreads; thr++ ){
+    for ( int d=0; d<1; d++ ){
+      arg1_l[d+thr*64]=arg1h[d];
+    }
+  }
+
   if (set_size >0) {
 
     // execute plan
@@ -46,20 +53,24 @@ void op_par_loop_incConst(char const *name, op_set set,
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
       for ( int n=start; n<finish; n++ ){
-        incConst(
+        zero_bathy(
           &((float*)arg0.data)[1*n],
-          &((float*)arg1.data)[4*n],
-          (int*)arg2.data);
+          &arg1_l[64*omp_get_thread_num()]);
       }
     }
   }
 
   // combine reduction data
+  for ( int thr=0; thr<nthreads; thr++ ){
+    for ( int d=0; d<1; d++ ){
+      arg1h[d]  = MIN(arg1h[d],arg1_l[d+thr*64]);
+    }
+  }
+  op_mpi_reduce(&arg1,arg1h);
   op_mpi_set_dirtybit(nargs, args);
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[4].time     += wall_t2 - wall_t1;
-  OP_kernels[4].transfer += (float)set->size * arg0.size;
-  OP_kernels[4].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[12].time     += wall_t2 - wall_t1;
+  OP_kernels[12].transfer += (float)set->size * arg0.size;
 }

@@ -3,35 +3,31 @@
 //
 
 //user function
-#include "../values_operation2.h"
+#include "../Friction_manning.h"
 
 // host stub function
-void op_par_loop_values_operation2(char const *name, op_set set,
+void op_par_loop_Friction_manning(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
+  op_arg arg2){
 
-  int nargs = 5;
-  op_arg args[5];
+  int nargs = 3;
+  op_arg args[3];
 
   args[0] = arg0;
   args[1] = arg1;
   args[2] = arg2;
-  args[3] = arg3;
-  args[4] = arg4;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(16);
-  OP_kernels[16].name      = name;
-  OP_kernels[16].count    += 1;
+  op_timing_realloc(2);
+  OP_kernels[2].name      = name;
+  OP_kernels[2].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
   if (OP_diags>2) {
-    printf(" kernel routine w/o indirection:  values_operation2");
+    printf(" kernel routine w/o indirection:  Friction_manning");
   }
 
   int set_size = op_mpi_halo_exchanges(set, nargs, args);
@@ -50,12 +46,10 @@ void op_par_loop_values_operation2(char const *name, op_set set,
       int start  = (set->size* thr)/nthreads;
       int finish = (set->size*(thr+1))/nthreads;
       for ( int n=start; n<finish; n++ ){
-        values_operation2(
-          &((float*)arg0.data)[4*n],
-          (int*)arg1.data,
-          (int*)arg2.data,
-          (int*)arg3.data,
-          (int*)arg4.data);
+        Friction_manning(
+          (float*)arg0.data,
+          (float*)arg1.data,
+          &((float*)arg2.data)[4*n]);
       }
     }
   }
@@ -65,6 +59,6 @@ void op_par_loop_values_operation2(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[16].time     += wall_t2 - wall_t1;
-  OP_kernels[16].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[2].time     += wall_t2 - wall_t1;
+  OP_kernels[2].transfer += (float)set->size * arg2.size * 2.0f;
 }

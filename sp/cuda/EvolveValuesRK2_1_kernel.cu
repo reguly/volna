@@ -3,42 +3,26 @@
 //
 
 //user function
-__device__
-inline void EvolveValuesRK2_1_gpu(const float *dT, float *midPointConservative, //OP_RW //temp
-            const float *in, //OP_READ
-            float *inConservative, //OP_WRITE //temp
-            float *midPoint) //OP_WRITE
-{
-  midPointConservative[0] *= *dT;
-  midPointConservative[1] *= *dT;
-  midPointConservative[2] *= *dT;
+__device__ void EvolveValuesRK2_1_gpu( const float *dT, const float *Lw_n,
+            const float *in,
+            float *out) {
+  out[0] = Lw_n[0] * *dT + in[0];
+  out[1] = Lw_n[1] * *dT + in[1];
+  out[2] = Lw_n[2] * *dT + in[2];
+  out[3] = in[3]-in[0];
 
-  //call to ToConservativeVariables inlined
-  inConservative[0] = in[0];
-  inConservative[1] = in[0] * (in[1]);
-  inConservative[2] = in[0] * (in[2]);
-  inConservative[3] = in[3];
+  float TruncatedH = out[0] < EPS_cuda ? EPS_cuda : out[0];
+  out[0] = TruncatedH;
+  out[3] += TruncatedH;
 
-  midPointConservative[0] += inConservative[0];
-  midPointConservative[1] += inConservative[1];
-  midPointConservative[2] += inConservative[2];
-  midPointConservative[3] += inConservative[3];
-
-  //call to ToPhysicalVariables inlined
-  float TruncatedH = midPointConservative[0] < EPS ? EPS : midPointConservative[0];
-  midPoint[0] = midPointConservative[0];
-  midPoint[1] = midPointConservative[1] / TruncatedH;
-  midPoint[2] = midPointConservative[2] / TruncatedH;
-  midPoint[3] = midPointConservative[3];
 }
 
 // CUDA kernel function
 __global__ void op_cuda_EvolveValuesRK2_1(
   const float *arg0,
-  float *arg1,
+  const float *__restrict arg1,
   const float *__restrict arg2,
   float *arg3,
-  float *arg4,
   int   set_size ) {
 
 
@@ -49,29 +33,26 @@ __global__ void op_cuda_EvolveValuesRK2_1(
     EvolveValuesRK2_1_gpu(arg0,
                       arg1+n*4,
                       arg2+n*4,
-                      arg3+n*4,
-                      arg4+n*4);
+                      arg3+n*4);
   }
 }
 
 
-//GPU host stub function
-void op_par_loop_EvolveValuesRK2_1_gpu(char const *name, op_set set,
+//host stub function
+void op_par_loop_EvolveValuesRK2_1(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
+  op_arg arg3){
 
   float*arg0h = (float *)arg0.data;
-  int nargs = 5;
-  op_arg args[5];
+  int nargs = 4;
+  op_arg args[4];
 
   args[0] = arg0;
   args[1] = arg1;
   args[2] = arg2;
   args[3] = arg3;
-  args[4] = arg4;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -79,15 +60,14 @@ void op_par_loop_EvolveValuesRK2_1_gpu(char const *name, op_set set,
   op_timers_core(&cpu_t1, &wall_t1);
   OP_kernels[0].name      = name;
   OP_kernels[0].count    += 1;
-  if (OP_kernels[0].count==1) op_register_strides();
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  EvolveValuesRK2_1");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //transfer constants to GPU
     int consts_bytes = 0;
@@ -107,7 +87,6 @@ void op_par_loop_EvolveValuesRK2_1_gpu(char const *name, op_set set,
       int nthread = OP_BLOCK_SIZE_0;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
@@ -117,7 +96,6 @@ void op_par_loop_EvolveValuesRK2_1_gpu(char const *name, op_set set,
       (float *) arg1.data_d,
       (float *) arg2.data_d,
       (float *) arg3.data_d,
-      (float *) arg4.data_d,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
@@ -125,61 +103,7 @@ void op_par_loop_EvolveValuesRK2_1_gpu(char const *name, op_set set,
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
   OP_kernels[0].time     += wall_t2 - wall_t1;
-  OP_kernels[0].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[0].transfer += (float)set->size * arg1.size;
   OP_kernels[0].transfer += (float)set->size * arg2.size;
-  OP_kernels[0].transfer += (float)set->size * arg3.size;
-  OP_kernels[0].transfer += (float)set->size * arg4.size;
+  OP_kernels[0].transfer += (float)set->size * arg3.size * 2.0f;
 }
-
-void op_par_loop_EvolveValuesRK2_1_cpu(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4);
-
-
-//GPU host stub function
-#if OP_HYBRID_GPU
-void op_par_loop_EvolveValuesRK2_1(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
-
-  if (OP_hybrid_gpu) {
-    op_par_loop_EvolveValuesRK2_1_gpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4);
-
-    }else{
-    op_par_loop_EvolveValuesRK2_1_cpu(name, set,
-      arg0,
-      arg1,
-      arg2,
-      arg3,
-      arg4);
-
-  }
-}
-#else
-void op_par_loop_EvolveValuesRK2_1(char const *name, op_set set,
-  op_arg arg0,
-  op_arg arg1,
-  op_arg arg2,
-  op_arg arg3,
-  op_arg arg4){
-
-  op_par_loop_EvolveValuesRK2_1_gpu(name, set,
-    arg0,
-    arg1,
-    arg2,
-    arg3,
-    arg4);
-
-  }
-#endif //OP_HYBRID_GPU

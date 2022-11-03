@@ -3,26 +3,27 @@
 //
 
 //user function
-__device__ void NumericalFluxes_gpu( float *left,
+__device__ void NumericalFluxes_sph_gpu( float *left,
               float *right,
+              const float *leftcellCenters, const float *rightcellCenters,
               const float *edgeFluxes,
               const float *bathySource,
               const float *edgeNormals, const int *isRightBoundary,
               const float *cellVolumes0,
               const float *cellVolumes1) {
-  left[0] -= (edgeFluxes[0])/cellVolumes0[0];
-  left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/cellVolumes0[0];
-  left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/cellVolumes0[0];
+  left[0] -= (edgeFluxes[0])/(Radius_cuda*cellVolumes0[0]);
+  left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(M_PI*leftcellCenters[1]/180.0));
+  left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/(Radius_cuda*cellVolumes0[0]);
 
-  left[1] += (bathySource[2] *edgeNormals[0])/cellVolumes0[0];
-  left[2] += (bathySource[2] *edgeNormals[1])/cellVolumes0[0];
+  left[1] += (bathySource[2] *edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(M_PI*leftcellCenters[1]/180.0));
+  left[2] += (bathySource[2] *edgeNormals[1])/(Radius_cuda*cellVolumes0[0]);
   if (!*isRightBoundary) {
     right[0] += edgeFluxes[0]/cellVolumes1[0];
-    right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/cellVolumes1[0];
-    right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/cellVolumes1[0];
+    right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(M_PI*rightcellCenters[1]/180.0));
+    right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/(Radius_cuda*cellVolumes1[0]);
 
-    right[1] -= (bathySource[3] *edgeNormals[0])/cellVolumes1[0];
-    right[2] -= (bathySource[3] *edgeNormals[1])/cellVolumes1[0];
+    right[1] -= (bathySource[3] *edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(M_PI*rightcellCenters[1]/180.0));
+    right[2] -= (bathySource[3] *edgeNormals[1])/(Radius_cuda*cellVolumes1[0]);
    } else {
    right[0] += 0.0f;
    right[1] += 0.0f;
@@ -33,14 +34,15 @@ __device__ void NumericalFluxes_gpu( float *left,
 }
 
 // CUDA kernel function
-__global__ void op_cuda_NumericalFluxes(
+__global__ void op_cuda_NumericalFluxes_sph(
   float *__restrict ind_arg0,
   const float *__restrict ind_arg1,
+  const float *__restrict ind_arg2,
   const int *__restrict opDat0Map,
-  const float *__restrict arg2,
-  const float *__restrict arg3,
   const float *__restrict arg4,
-  const int *__restrict arg5,
+  const float *__restrict arg5,
+  const float *__restrict arg6,
+  const int *__restrict arg7,
   int start,
   int end,
   int   set_size) {
@@ -62,14 +64,16 @@ __global__ void op_cuda_NumericalFluxes(
     map1idx = opDat0Map[n + set_size * 1];
 
     //user-supplied kernel call
-    NumericalFluxes_gpu(arg0_l,
-                    arg1_l,
-                    arg2+n*3,
-                    arg3+n*4,
-                    arg4+n*2,
-                    arg5+n*1,
-                    ind_arg1+map0idx*1,
-                    ind_arg1+map1idx*1);
+    NumericalFluxes_sph_gpu(arg0_l,
+                        arg1_l,
+                        ind_arg1+map0idx*2,
+                        ind_arg1+map1idx*2,
+                        arg4+n*3,
+                        arg5+n*4,
+                        arg6+n*2,
+                        arg7+n*1,
+                        ind_arg2+map0idx*1,
+                        ind_arg2+map1idx*1);
     atomicAdd(&ind_arg0[0+map0idx*4],arg0_l[0]);
     atomicAdd(&ind_arg0[1+map0idx*4],arg0_l[1]);
     atomicAdd(&ind_arg0[2+map0idx*4],arg0_l[2]);
@@ -83,7 +87,7 @@ __global__ void op_cuda_NumericalFluxes(
 
 
 //host stub function
-void op_par_loop_NumericalFluxes(char const *name, op_set set,
+void op_par_loop_NumericalFluxes_sph(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -91,10 +95,12 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 10;
+  op_arg args[10];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -104,27 +110,29 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(26);
+  op_timing_realloc(28);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[26].name      = name;
-  OP_kernels[26].count    += 1;
+  OP_kernels[28].name      = name;
+  OP_kernels[28].count    += 1;
 
 
-  int    ninds   = 2;
-  int    inds[8] = {0,0,-1,-1,-1,-1,1,1};
+  int    ninds   = 3;
+  int    inds[10] = {0,0,1,1,-1,-1,-1,-1,2,2};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: NumericalFluxes\n");
+    printf(" kernel routine with indirection: NumericalFluxes_sph\n");
   }
   int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
   if (set_size > 0) {
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_26
-      int nthread = OP_BLOCK_SIZE_26;
+    #ifdef OP_BLOCK_SIZE_28
+      int nthread = OP_BLOCK_SIZE_28;
     #else
       int nthread = OP_block_size;
     #endif
@@ -137,14 +145,15 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
       int end = round==0 ? set->core_size : set->size + set->exec_size;
       if (end-start>0) {
         int nblocks = (end-start-1)/nthread+1;
-        op_cuda_NumericalFluxes<<<nblocks,nthread>>>(
+        op_cuda_NumericalFluxes_sph<<<nblocks,nthread>>>(
         (float *)arg0.data_d,
-        (float *)arg6.data_d,
+        (float *)arg2.data_d,
+        (float *)arg8.data_d,
         arg0.map_data_d,
-        (float*)arg2.data_d,
-        (float*)arg3.data_d,
         (float*)arg4.data_d,
-        (int*)arg5.data_d,
+        (float*)arg5.data_d,
+        (float*)arg6.data_d,
+        (int*)arg7.data_d,
         start,end,set->size+set->exec_size);
       }
     }
@@ -153,5 +162,5 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[26].time     += wall_t2 - wall_t1;
+  OP_kernels[28].time     += wall_t2 - wall_t1;
 }

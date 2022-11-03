@@ -22,7 +22,9 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(12);
+  op_timing_realloc(10);
+  OP_kernels[10].name      = name;
+  OP_kernels[10].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
 
@@ -30,7 +32,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
     printf(" kernel routine w/o indirection:  initBathyRelative_formula");
   }
 
-  op_mpi_halo_exchanges(set, nargs, args);
+  int set_size = op_mpi_halo_exchanges(set, nargs, args);
   // set number of threads
   #ifdef _OPENMP
     int nthreads = omp_get_max_threads();
@@ -38,7 +40,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
     int nthreads = 1;
   #endif
 
-  if (set->size >0) {
+  if (set_size >0) {
 
     // execute plan
     #pragma omp parallel for
@@ -48,7 +50,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
       for ( int n=start; n<finish; n++ ){
         initBathyRelative_formula(
           &((float*)arg0.data)[2*n],
-          &((float*)arg1.data)[4*n],
+          &((float*)arg1.data)[1*n],
           &((float*)arg2.data)[1*n],
           (double*)arg3.data);
       }
@@ -60,10 +62,8 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[12].name      = name;
-  OP_kernels[12].count    += 1;
-  OP_kernels[12].time     += wall_t2 - wall_t1;
-  OP_kernels[12].transfer += (float)set->size * arg0.size;
-  OP_kernels[12].transfer += (float)set->size * arg1.size * 2.0f;
-  OP_kernels[12].transfer += (float)set->size * arg2.size;
+  OP_kernels[10].time     += wall_t2 - wall_t1;
+  OP_kernels[10].transfer += (float)set->size * arg0.size;
+  OP_kernels[10].transfer += (float)set->size * arg1.size * 2.0f;
+  OP_kernels[10].transfer += (float)set->size * arg2.size;
 }

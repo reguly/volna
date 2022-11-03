@@ -69,9 +69,9 @@ double timestamp = 0.0;
 int itercount = 0;
 
 // Constants
-float CFL, g, EPS;
+float CFL, g, EPS, Mn, Radius;
+int spherical;
 bool new_format = true;
-
 // Store maximum elevation and speed in global variable, for the sake of max search
 op_dat currentMaxElevation = NULL;
 op_dat currentMaxSpeed = NULL;
@@ -241,7 +241,8 @@ int main(int argc, char **argv) {
    * Read constants from HDF5
    */
   op_get_const_hdf5("CFL", 1, "float", (char *) &CFL, filename_h5);
-  // op_get_const_hdf5("Mn", 1, "float", (char *) &CFL, filename_h5);
+  op_get_const_hdf5("Mn", 1, "float", (char *) &Mn, filename_h5);
+  op_get_const_hdf5("Spherical", 1, "int", (char *) &spherical, filename_h5);
   // Final time: as defined by Volna the end of real-time simulation
   float ftime_tmp, dtmax_tmp;
   op_get_const_hdf5("ftime", 1, "float", (char *) &ftime_tmp, filename_h5);
@@ -253,7 +254,19 @@ int main(int argc, char **argv) {
   op_decl_const2("CFL",1,"float",&CFL);
   op_decl_const2("EPS",1,"float",&EPS);
   op_decl_const2("g",1,"float",&g);
+  op_decl_const2("Mn",1,"float",&Mn);
+  op_decl_const2("spherical",1,"int",&spherical);
 
+  Radius = 6378136.6;
+  op_decl_const2("Radius",1,"float",&Radius);
+
+  printf("Mn = %f, CFL = %f \n", Mn, CFL);
+  if (spherical){
+    printf("Spherical Polar coordinates \n");
+    printf("Radius of the Earth = %f \n", Radius);
+  } else {
+    printf("Cartesian coordinates \n");
+  }
   //Read InitBathymetry and InitEta event data when they come from files
   for (unsigned int i = 0; i < events.size(); i++) {
       if (!strcmp(events[i].className.c_str(), "InitEta")) {
@@ -342,8 +355,8 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
-//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+  // op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+ op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
@@ -385,16 +398,19 @@ int main(int argc, char **argv) {
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
-
-
-#ifdef DEBUG
-#endif
     {
-      float minTimestep = 0.0;
+      float minTimestep = INFINITY;
+      if (!spherical){
       spaceDiscretization(values, Lw_n, &minTimestep,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      } else {
+      spaceDiscretization_sph(values, Lw_n, &minTimestep,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges, cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      }
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(Lw_n, 0), normcomp(Lw_n, 1),normcomp(Lw_n, 2),normcomp(Lw_n, 3));
 #endif
@@ -411,12 +427,19 @@ int main(int argc, char **argv) {
 #endif
 
       float dummy = -1.0f;
+      if (!spherical){
       spaceDiscretization(w_1, Lw_1, &dummy,
           bathySource, edgeFluxes, maxEdgeEigenvalues,
           edgeNormals, edgeLength, cellVolumes, isBoundary,
           cells, edges, edgesToCells, cellsToEdges,
           cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
-
+      } else {
+      spaceDiscretization_sph(w_1, Lw_1, &dummy,
+          bathySource, edgeFluxes, maxEdgeEigenvalues,
+          edgeNormals, edgeLength, cellVolumes, isBoundary,
+          cells, edges, edgesToCells, cellsToEdges,
+          cellsToCells, edgeCenters, cellCenters, GradientatCell, q, lim, &zmin);
+      }
 
       op_par_loop_EvolveValuesRK2_2("EvolveValuesRK2_2",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
@@ -427,16 +450,15 @@ int main(int argc, char **argv) {
 
 
       timestep=dT;
-      float Mn = 0.025f;
       op_par_loop_Friction_manning("Friction_manning",cells,
                   op_arg_gbl(&dT,1,"float",OP_READ),
                   op_arg_gbl(&Mn,1,"float",OP_READ),
                   op_arg_dat(values_new,-1,OP_ID,4,"float",OP_RW));
-    }
+
     op_par_loop_simulation_1("simulation_1",cells,
                 op_arg_dat(values,-1,OP_ID,4,"float",OP_WRITE),
                 op_arg_dat(values_new,-1,OP_ID,4,"float",OP_READ));
-//         printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(values_new, 0), normcomp(values_new, 1),normcomp(values_new, 2),normcomp(values_new, 3));
+    }
 
     itercount++;
     timestamp += timestep;

@@ -3,17 +3,31 @@
 //
 
 //user function
-__device__ void initBathymetry_update_gpu( float *values, const int *firstTime) {
-  if (*firstTime)
-    values[0] -= values[3];
+__device__ void initBathymetry_update_gpu( float *values, const float *z_zero, const float *zmin, const int *firstTime) {
+    if (*firstTime){
+      if (*z_zero > 0.0f){
+        values[0] = EPS_cuda;
+        values[3] = -1.0f* *zmin + *z_zero;
+      } else {
+        values[0] = -1.0f* *z_zero;
+        values[3] = -1.0f* *zmin;
+      }
+    } else {
+      if (*z_zero > 0.0f){
+        values[3] = -1.0f* *zmin + *z_zero + values[0];
+      } else {
+        values[3] = values[0] + *z_zero - *zmin;
+      }
+    }
 
-  values[0] = values[0] < EPS ? EPS : values[0];
 }
 
 // CUDA kernel function
 __global__ void op_cuda_initBathymetry_update(
   float *arg0,
-  const int *arg1,
+  const float *__restrict arg1,
+  const float *arg2,
+  const int *arg3,
   int   set_size ) {
 
 
@@ -22,7 +36,9 @@ __global__ void op_cuda_initBathymetry_update(
 
     //user-supplied kernel call
     initBathymetry_update_gpu(arg0+n*4,
-                          arg1);
+                          arg1+n*1,
+                          arg2,
+                          arg3);
   }
 }
 
@@ -30,62 +46,76 @@ __global__ void op_cuda_initBathymetry_update(
 //host stub function
 void op_par_loop_initBathymetry_update(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1){
+  op_arg arg1,
+  op_arg arg2,
+  op_arg arg3){
 
-  int*arg1h = (int *)arg1.data;
-  int nargs = 2;
-  op_arg args[2];
+  float*arg2h = (float *)arg2.data;
+  int*arg3h = (int *)arg3.data;
+  int nargs = 4;
+  op_arg args[4];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
+  args[3] = arg3;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(14);
+  op_timing_realloc(13);
   op_timers_core(&cpu_t1, &wall_t1);
-  OP_kernels[14].name      = name;
-  OP_kernels[14].count    += 1;
+  OP_kernels[13].name      = name;
+  OP_kernels[13].count    += 1;
 
 
   if (OP_diags>2) {
     printf(" kernel routine w/o indirection:  initBathymetry_update");
   }
 
-  op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
     //transfer constants to GPU
     int consts_bytes = 0;
+    consts_bytes += ROUND_UP(1*sizeof(float));
     consts_bytes += ROUND_UP(1*sizeof(int));
     reallocConstArrays(consts_bytes);
     consts_bytes = 0;
-    arg1.data   = OP_consts_h + consts_bytes;
-    arg1.data_d = OP_consts_d + consts_bytes;
+    arg2.data   = OP_consts_h + consts_bytes;
+    arg2.data_d = OP_consts_d + consts_bytes;
     for ( int d=0; d<1; d++ ){
-      ((int *)arg1.data)[d] = arg1h[d];
+      ((float *)arg2.data)[d] = arg2h[d];
+    }
+    consts_bytes += ROUND_UP(1*sizeof(float));
+    arg3.data   = OP_consts_h + consts_bytes;
+    arg3.data_d = OP_consts_d + consts_bytes;
+    for ( int d=0; d<1; d++ ){
+      ((int *)arg3.data)[d] = arg3h[d];
     }
     consts_bytes += ROUND_UP(1*sizeof(int));
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
-    #ifdef OP_BLOCK_SIZE_14
-      int nthread = OP_BLOCK_SIZE_14;
+    #ifdef OP_BLOCK_SIZE_13
+      int nthread = OP_BLOCK_SIZE_13;
     #else
       int nthread = OP_block_size;
-    //  int nthread = 128;
     #endif
 
     int nblocks = 200;
 
     op_cuda_initBathymetry_update<<<nblocks,nthread>>>(
       (float *) arg0.data_d,
-      (int *) arg1.data_d,
+      (float *) arg1.data_d,
+      (float *) arg2.data_d,
+      (int *) arg3.data_d,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());
   //update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[14].time     += wall_t2 - wall_t1;
-  OP_kernels[14].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[13].time     += wall_t2 - wall_t1;
+  OP_kernels[13].transfer += (float)set->size * arg0.size * 2.0f;
+  OP_kernels[13].transfer += (float)set->size * arg1.size;
 }

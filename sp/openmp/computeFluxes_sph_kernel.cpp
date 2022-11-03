@@ -3,10 +3,10 @@
 //
 
 //user function
-#include "../NumericalFluxes.h"
+#include "../computeFluxes_sph.h"
 
 // host stub function
-void op_par_loop_NumericalFluxes(char const *name, op_set set,
+void op_par_loop_computeFluxes_sph(char const *name, op_set set,
   op_arg arg0,
   op_arg arg1,
   op_arg arg2,
@@ -14,10 +14,18 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   op_arg arg4,
   op_arg arg5,
   op_arg arg6,
-  op_arg arg7){
+  op_arg arg7,
+  op_arg arg8,
+  op_arg arg9,
+  op_arg arg10,
+  op_arg arg11,
+  op_arg arg12,
+  op_arg arg13,
+  op_arg arg14,
+  op_arg arg15){
 
-  int nargs = 8;
-  op_arg args[8];
+  int nargs = 16;
+  op_arg args[16];
 
   args[0] = arg0;
   args[1] = arg1;
@@ -27,24 +35,32 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
   args[5] = arg5;
   args[6] = arg6;
   args[7] = arg7;
+  args[8] = arg8;
+  args[9] = arg9;
+  args[10] = arg10;
+  args[11] = arg11;
+  args[12] = arg12;
+  args[13] = arg13;
+  args[14] = arg14;
+  args[15] = arg15;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
-  op_timing_realloc(26);
-  OP_kernels[26].name      = name;
-  OP_kernels[26].count    += 1;
+  op_timing_realloc(27);
+  OP_kernels[27].name      = name;
+  OP_kernels[27].count    += 1;
   op_timers_core(&cpu_t1, &wall_t1);
 
-  int  ninds   = 2;
-  int  inds[8] = {0,0,-1,-1,-1,-1,1,1};
+  int  ninds   = 4;
+  int  inds[16] = {0,0,1,1,-1,-1,2,2,-1,3,3,-1,-1,-1,-1,-1};
 
   if (OP_diags>2) {
-    printf(" kernel routine with indirection: NumericalFluxes\n");
+    printf(" kernel routine with indirection: computeFluxes_sph\n");
   }
 
   // get plan
-  #ifdef OP_PART_SIZE_26
-    int part_size = OP_PART_SIZE_26;
+  #ifdef OP_PART_SIZE_27
+    int part_size = OP_PART_SIZE_27;
   #else
     int part_size = OP_part_size;
   #endif
@@ -75,22 +91,30 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
           map1idx = arg0.map_data[n * arg0.map->dim + 1];
 
 
-          NumericalFluxes(
+          computeFluxes_sph(
             &((float*)arg0.data)[4 * map0idx],
             &((float*)arg0.data)[4 * map1idx],
-            &((float*)arg2.data)[3 * n],
-            &((float*)arg3.data)[4 * n],
-            &((float*)arg4.data)[2 * n],
-            &((int*)arg5.data)[1 * n],
-            &((float*)arg6.data)[1 * map0idx],
-            &((float*)arg6.data)[1 * map1idx]);
+            &((float*)arg2.data)[4 * map0idx],
+            &((float*)arg2.data)[4 * map1idx],
+            &((float*)arg4.data)[1 * n],
+            &((float*)arg5.data)[2 * n],
+            &((float*)arg6.data)[2 * map0idx],
+            &((float*)arg6.data)[2 * map1idx],
+            &((float*)arg8.data)[2 * n],
+            &((float*)arg9.data)[8 * map0idx],
+            &((float*)arg9.data)[8 * map1idx],
+            &((int*)arg11.data)[1 * n],
+            &((float*)arg12.data)[4 * n],
+            &((float*)arg13.data)[3 * n],
+            &((float*)arg14.data)[1 * n],
+            (float*)arg15.data);
         }
       }
 
       block_offset += nblocks;
     }
-    OP_kernels[26].transfer  += Plan->transfer;
-    OP_kernels[26].transfer2 += Plan->transfer2;
+    OP_kernels[27].transfer  += Plan->transfer;
+    OP_kernels[27].transfer2 += Plan->transfer2;
   }
 
   if (set_size == 0 || set_size == set->core_size) {
@@ -101,5 +125,5 @@ void op_par_loop_NumericalFluxes(char const *name, op_set set,
 
   // update kernel record
   op_timers_core(&cpu_t2, &wall_t2);
-  OP_kernels[26].time     += wall_t2 - wall_t1;
+  OP_kernels[27].time     += wall_t2 - wall_t1;
 }

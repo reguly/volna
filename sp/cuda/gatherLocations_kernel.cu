@@ -3,55 +3,35 @@
 //
 
 //user function
-__device__ void gatherLocations_gpu( const float *values, float *dest) {
-	dest[0] = values[0] + values[3];
+__device__ void gatherLocations_gpu( const float *values, const float *zmin, float *dest) {
+  dest[0] = values[0] + (values[3] - values[0] + *zmin);
   dest[1] = values[0];
-  dest[2] = values[1];
-  dest[3] = values[2];
+  dest[2] = values[1]/values[0];
+  dest[3] = values[2]/values[0];
   dest[4] = values[3];
+
 }
 
 // CUDA kernel function
 __global__ void op_cuda_gatherLocations(
   const float *__restrict ind_arg0,
   const int *__restrict opDat0Map,
-  float *arg1,
-  int    block_offset,
-  int   *blkmap,
-  int   *offset,
-  int   *nelems,
-  int   *ncolors,
-  int   *colors,
-  int   nblocks,
+  const float *arg1,
+  float *arg2,
+  int start,
+  int end,
   int   set_size) {
-
-  __shared__ int    nelem, offset_b;
-
-  extern __shared__ char shared[];
-
-  if (blockIdx.x+blockIdx.y*gridDim.x >= nblocks) {
-    return;
-  }
-  if (threadIdx.x==0) {
-
-    //get sizes and shift pointers and direct-mapped data
-
-    int blockId = blkmap[blockIdx.x + blockIdx.y*gridDim.x  + block_offset];
-
-    nelem    = nelems[blockId];
-    offset_b = offset[blockId];
-
-  }
-  __syncthreads(); // make sure all of above completed
-
-  for ( int n=threadIdx.x; n<nelem; n+=blockDim.x ){
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  if (tid + start < end) {
+    int n = tid + start;
+    //initialise local variables
     int map0idx;
-    map0idx = opDat0Map[n + offset_b + set_size * 0];
-
+    map0idx = opDat0Map[n + set_size * 0];
 
     //user-supplied kernel call
     gatherLocations_gpu(ind_arg0+map0idx*4,
-                    arg1+(n+offset_b)*5);
+                    arg1,
+                    arg2+n*5);
   }
 }
 
@@ -59,13 +39,16 @@ __global__ void op_cuda_gatherLocations(
 //host stub function
 void op_par_loop_gatherLocations(char const *name, op_set set,
   op_arg arg0,
-  op_arg arg1){
+  op_arg arg1,
+  op_arg arg2){
 
-  int nargs = 2;
-  op_arg args[2];
+  float*arg1h = (float *)arg1.data;
+  int nargs = 3;
+  op_arg args[3];
 
   args[0] = arg0;
   args[1] = arg1;
+  args[2] = arg2;
 
   // initialise timers
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
@@ -76,58 +59,50 @@ void op_par_loop_gatherLocations(char const *name, op_set set,
 
 
   int    ninds   = 1;
-  int    inds[2] = {0,-1};
+  int    inds[3] = {0,-1,-1};
 
   if (OP_diags>2) {
     printf(" kernel routine with indirection: gatherLocations\n");
   }
+  int set_size = op_mpi_halo_exchanges_grouped(set, nargs, args, 2);
+  if (set_size > 0) {
 
-  //get plan
-  #ifdef OP_PART_SIZE_20
-    int part_size = OP_PART_SIZE_20;
-  #else
-    int part_size = OP_part_size;
-  #endif
+    //transfer constants to GPU
+    int consts_bytes = 0;
+    consts_bytes += ROUND_UP(1*sizeof(float));
+    reallocConstArrays(consts_bytes);
+    consts_bytes = 0;
+    arg1.data   = OP_consts_h + consts_bytes;
+    arg1.data_d = OP_consts_d + consts_bytes;
+    for ( int d=0; d<1; d++ ){
+      ((float *)arg1.data)[d] = arg1h[d];
+    }
+    consts_bytes += ROUND_UP(1*sizeof(float));
+    mvConstArraysToDevice(consts_bytes);
 
-  int set_size = op_mpi_halo_exchanges_cuda(set, nargs, args);
-  if (set->size > 0) {
-
-    op_plan *Plan = op_plan_get(name,set,part_size,nargs,args,ninds,inds);
-
-    //execute plan
-
-    int block_offset = 0;
-    for ( int col=0; col<Plan->ncolors; col++ ){
-      if (col==Plan->ncolors_core) {
-        op_mpi_wait_all_cuda(nargs, args);
-      }
-      #ifdef OP_BLOCK_SIZE_20
+    //set CUDA execution parameters
+    #ifdef OP_BLOCK_SIZE_20
       int nthread = OP_BLOCK_SIZE_20;
-      #else
+    #else
       int nthread = OP_block_size;
-      #endif
+    #endif
 
-      dim3 nblocks = dim3(Plan->ncolblk[col] >= (1<<16) ? 65535 : Plan->ncolblk[col],
-      Plan->ncolblk[col] >= (1<<16) ? (Plan->ncolblk[col]-1)/65535+1: 1, 1);
-      if (Plan->ncolblk[col] > 0) {
+    for ( int round=0; round<2; round++ ){
+      if (round==1) {
+        op_mpi_wait_all_grouped(nargs, args, 2);
+      }
+      int start = round==0 ? 0 : set->core_size;
+      int end = round==0 ? set->core_size : set->size + set->exec_size;
+      if (end-start>0) {
+        int nblocks = (end-start-1)/nthread+1;
         op_cuda_gatherLocations<<<nblocks,nthread>>>(
         (float *)arg0.data_d,
         arg0.map_data_d,
         (float*)arg1.data_d,
-        block_offset,
-        Plan->blkmap,
-        Plan->offset,
-        Plan->nelems,
-        Plan->nthrcol,
-        Plan->thrcol,
-        Plan->ncolblk[col],
-        set->size+set->exec_size);
-
+        (float*)arg2.data_d,
+        start,end,set->size+set->exec_size);
       }
-      block_offset += Plan->ncolblk[col];
     }
-    OP_kernels[20].transfer  += Plan->transfer;
-    OP_kernels[20].transfer2 += Plan->transfer2;
   }
   op_mpi_set_dirtybit_cuda(nargs, args);
   cutilSafeCall(cudaDeviceSynchronize());

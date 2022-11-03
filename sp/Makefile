@@ -14,8 +14,8 @@
 # set paths for header files and libraries
 #
 
-OP2_INC = -I$(OP2_INSTALL_PATH)/c/include
-OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib
+OP2_INC = -I$(OP2_INSTALL_PATH)/c/include -I$(OP2_INSTALL_PATH)/include
+OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib -L$(OP2_INSTALL_PATH)/lib
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
@@ -41,7 +41,7 @@ endif
 ifdef PTSCOTCH_INSTALL_PATH
 PTSCOTCH_INC 	= -I$(PTSCOTCH_INSTALL_PATH)/include -DHAVE_PTSCOTCH
 PTSCOTCH_INC   = -I$(PTSCOTCH_INSTALL_PATH)/include
-PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch \
+PTSCOTCH_LIB 	= -L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotch -lscotch \
 	-L$(PTSCOTCH_INSTALL_PATH)/lib/ -lptscotcherr
 endif
 
