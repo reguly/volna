@@ -121,9 +121,9 @@ int Mesh::InitRectangle() {
 
 Mesh::Mesh():
   hmin( INFTY ), hmax( MINUS_INFTY ), nx(0), ny(0),
-  CellCenters(GeomValues::GeomValues(10000)),
-  FacetCenters(GeomValues::GeomValues(10000)),
-  FacetNormals(GeomValues::GeomValues(10000)) {};
+  CellCenters(GeomValues(10000)),
+  FacetCenters(GeomValues(10000)),
+  FacetNormals(GeomValues(10000)) {};
 
 int Mesh::readGmsh( std::istream &is ) {
 
@@ -707,8 +707,8 @@ void Mesh::ComputeGeometricQuantities() {
 
   }
 
-  FacetCenters = GeomValues::GeomValues( NFaces );
-  FacetNormals = GeomValues::GeomValues( NFaces );
+  FacetCenters = GeomValues( NFaces );
+  FacetNormals = GeomValues( NFaces );
   FacetVolumes = ScalarValue::Zero( NFaces );
 #pragma omp parallel for
   for (  int i = 0; i < NFaces; ++i ) {
