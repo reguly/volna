@@ -98,7 +98,7 @@ void print_info() {
 }
 
 int main(int argc, char **argv) {
-  op_init(argc, argv, 2);
+  op_init_soa(argc, argv, 2,1);
   if(argc < 3) {
     op_printf("Wrong parameters! \n");
     print_info();
@@ -397,6 +397,8 @@ int main(int argc, char **argv) {
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
+    if (itercount == 1)
+	    op_timers(&cpu_t1, &wall_t1);
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
     {
       float minTimestep = INFINITY;
@@ -585,10 +587,10 @@ int main(int argc, char **argv) {
     op_printf("Error: temporary op_dat %s cannot be removed\n",q->name);
   if (op_free_dat_temp(lim)< 0)
     op_printf("Error: temporary op_dat %s cannot be removed\n",lim->name);
-  op_timers(&cpu_t2, &wall_t2);
+/*  op_timers(&cpu_t2, &wall_t2);
   op_timing_output();
   op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);
-
+*/
   op_exit();
 
   return 0;

@@ -1,21 +1,22 @@
 #
 # The following environment variables should be predefined:
 #
-#OP2_INSTALL_PATH =
+#OP2_INSTALL_PATH = 
 #HDF5_INSTALL_PATH =
 #MPI_INSTALL_PATH =
 #PARMETIS_INSTALL_PATH =
 #PTSCOTCH_INSTALL_PATH =
 #CUDA_INSTALL_PATH =
 #OP2_COMPILER =
-#
+#SLOPE_INSTALL_PATH=
+#METIS_INSTALL_PATH=
 
 #
 # set paths for header files and libraries
 #
 
-OP2_INC = -I$(OP2_INSTALL_PATH)/c/include -I$(OP2_INSTALL_PATH)/include
-OP2_LIB = -L$(OP2_INSTALL_PATH)/c/lib -L$(OP2_INSTALL_PATH)/lib
+OP2_INC = -I$(OP2_INSTALL_PATH)/include -I$(OP2_INSTALL_PATH)/c/include
+OP2_LIB = -L$(OP2_INSTALL_PATH)/lib -L$(OP2_INSTALL_PATH)/c/lib
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
 HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
@@ -24,6 +25,16 @@ MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
 CUDA_INC	= -I$(CUDA_INSTALL_PATH)/include
 CUDA_LIB	= -L$(CUDA_INSTALL_PATH)/lib64
+
+ifdef SLOPE_INSTALL_PATH
+  SLOPE_INC = -I$(SLOPE_INSTALL_PATH)/sparsetiling/include
+  SLOPE_LIB = -L$(SLOPE_INSTALL_PATH)/lib
+endif
+
+ifdef METIS_INSTALL_PATH
+  METIS_INC = -I$(METIS_INSTALL_PATH)/include
+  METIS_LIB = -L$(METIS_INSTALL_PATH)/lib
+endif
 
 ifdef PARMETIS_INSTALL_PATH
 PARMETIS_INCLUDE_PATH ?= $(PARMETIS_INSTALL_PATH)
@@ -56,14 +67,34 @@ else
 ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
-	CPPFLAGS = -O3 -xHost -parallel -g -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+	#CPPFLAGS = -O3 -qopt-report -xHost -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
+        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel -std=c++11 -qopt-zmm-usage=high
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
-	OMPFLAGS = -qopenmp
+	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
 	MPIFLAGS = $(CPPFLAGS)
 else
+ifeq ($(OP2_COMPILER),intel-sycl)
+  ifdef DEBUG
+    CCFLAGS  = -g -O0
+  else
+    CCFLAGS  = -O3
+  endif
+  CXX       = g++
+  SYCLCXX   = dpcpp
+  CXXFLAGS  = $(CCFLAGS)
+  MPICXX    = $(MPICPP_PATH)
+  MPICPP    = mpicxx
+  MPISYCLCXX = $(MPICXX)
+  MPIFLAGS  = $(CXXFLAGS)
+  NVCCFLAGS = -ccbin=$(NVCC_HOST_COMPILER)
+  SYCL_LIB   = #-L$(SYCL_INSTALL_PATH)/lib -lOpenCL
+  SYCL_FLAGS = -std=c++17 -fsycl #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl
+  #SYCL_FLAGS = -std=c++11 -fsycl #intel sycl
+else
 print:
 	@echo "unrecognized value for OP2_COMPILER"
+endif
 endif
 endif
 
@@ -75,19 +106,33 @@ endif
 #
 
 
-NVCCFLAGS	= -arch=sm_60 -Xptxas=-v -O2 -m64 -g #-G
+NVCCFLAGS	= -arch=sm_35 -Xptxas=-v -Dlcm=ca -use_fast_math -O3 -m64 -g #-G
 
 #
 # master to make all versions
 #
 
-all: clean volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda
+all: clean volna volna_slope volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda
 
 volna: volna.cpp volna_util.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp Makefile
 ifdef MPI_INSTALL_PATH
 	$(MPICPP) $(CPPFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simulation.cpp volna_util.cpp volna_writeVTK.cpp $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_seq -lop2_hdf5 -o volna
 else
 	$(CPP) $(CPPFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_simulation.cpp volna_util.cpp volna_writeVTK.cpp $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(HDF5_INC) $(OP2_INC) $(HDF5_LIB) $(OP2_LIB) -lop2_seq -lop2_hdf5 -o volna
+endif
+
+volna_slope: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+ifdef MPI_INSTALL_PATH
+	$(MPICPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE volna_op.cpp \
+	volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp \
+	volna_simulation_op.cpp volna_event.cpp \
+	slope/volna_kernels.cpp \
+	$(HDF5_INC) $(OP2_INC) $(SLOPE_INC) $(METIS_INC) $(HDF5_LIB) $(OP2_LIB) $(SLOPE_LIB) $(METIS_LIB) \
+	-lop2_openmp -lop2_hdf5 -lslope -lmetis -o volna_slope
+else
+	$(CPP) $(CPPFLAGS) $(OMPFLAGS) -DSLOPE  volna_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp volna_event.cpp openmp/volna_kernels.cpp \
+	$(HDF5_INC) $(OP2_INC) $(SLOPE_INC) $(METIS_INC) $(HDF5_LIB) $(OP2_LIB) $(SLOPE_LIB) $(METIS_LIB) \
+	-lop2_openmp -lop2_hdf5 -lslope -lmetis -o volna_slope
 endif
 
 volna_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
@@ -115,12 +160,12 @@ endif
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK2_1.h EvolveValuesRK2_2.h EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
 	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK2_1_kernel.cu cuda/EvolveValuesRK2_2_kernel.cu  cuda/EvolveValuesRK3_1_kernel.cu\
-	cuda/EvolveValuesRK3_2_kernel.cu cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
-        cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK3_1_kernel.cu  cuda/EvolveValuesRK3_2_kernel.cu\
+	cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
+	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 
@@ -129,6 +174,24 @@ cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
 volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp Makefile
 	$(MPICPP) $(MPIFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp $(OP2_INC) $(HDF5_INC) \
 	$(OP2_LIB) -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi
+
+volna_mpi_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) -fsycl $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(PARMETIS_INC) $(PTSCOTCH_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp sycl/volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_INSTALL_PATH)/c/lib/libop2_mpi_sycl.a \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_sycl
+
+volna_mpi_vec: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(PARMETIS_INC) $(PTSCOTCH_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp vec/volna_veckernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_vec
+
+volna_mpi_genseq: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(PARMETIS_INC) $(PTSCOTCH_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp seq/volna_seqkernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
+	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_genseq
 
 volna_mpi_openmp: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
@@ -151,4 +214,4 @@ cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
 #
 
 clean:
-	rm -f volna volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o
+	rm -f volna volna_slope volna_openmp volna_cuda volna_mpi volna_mpi_openmp volna_mpi_cuda *.o cuda/*.o 
