@@ -98,6 +98,10 @@ endif
 endif
 endif
 
+ifdef PROFILE_ITT
+OP2_LIB += -L$(VTUNE_PROFILER_DIR)/lib64 -littnotify
+CXXFLAGS += -DPROFILE_ITT -I$(VTUNE_PROFILER_DIR)/include
+endif
 #VOLNA_SRC =
 
 

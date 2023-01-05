@@ -22,6 +22,10 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 //
 #include "op_seq.h"
 
+#ifdef PROFILE_ITT
+#include <ittnotify.h>
+#endif
+
 //these are not const, we just don't want to pass them around
 LocationData locationData;
 double timestamp = 0.0;
@@ -356,8 +360,12 @@ int main(int argc, char **argv) {
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
-    if (itercount == 1)
+    if (itercount == 1) {
+#ifdef PROFILE_ITT
+      __itt_resume();
+#endif
 	    op_timers(&cpu_t1, &wall_t1);
+    }
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
     {
       float minTimestep = INFINITY;
@@ -427,6 +435,9 @@ int main(int argc, char **argv) {
   }
 
   op_timers(&cpu_t2, &wall_t2);
+#ifdef PROFILE_ITT
+  __itt_pause();
+#endif
   op_timing_output();
   op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
 
