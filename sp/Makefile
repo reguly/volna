@@ -92,8 +92,24 @@ ifeq ($(OP2_COMPILER),intel-sycl)
   SYCL_FLAGS = -std=c++17 -fsycl #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl
   #SYCL_FLAGS = -std=c++11 -fsycl #intel sycl
 else
+ifeq ($(OP2_COMPILER),cray)
+  ifdef DEBUG
+    CCFLAGS  = -g -O0
+  else
+    CCFLAGS  = -Ofast
+  endif
+  CXX       = CC
+  HIPCXX   = CC -x hip
+  CXXFLAGS  = $(CCFLAGS)
+  MPICXX    = $(MPICPP_PATH)
+  MPIHIPCXX    = $(MPICPP_PATH)
+  MPICPP    = CC
+  MPIFLAGS  = $(CXXFLAGS)
+  HIPFLAGS = $(CXXFLAGS) --offload-arch=$(HIP_ARCH) -munsafe-fp-atomics
+else
 print:
 	@echo "unrecognized value for OP2_COMPILER"
+endif
 endif
 endif
 endif
@@ -162,6 +178,11 @@ else
 	$(OP2_LIB) $(CUDA_LIB) -lcudart -lop2_cuda -lop2_hdf5 $(HDF5_LIB) -o volna_cuda
 endif
 
+volna_hip:	volna_op.cpp hip/volna_kernels.o volna_simulation_op.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp Makefile
+	$(MPICPP) $(VAR) $(CPPFLAGS) volna_op.cpp volna_simulation_op.cpp volna_event.cpp volna_init_op.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp hip/volna_kernels.o \
+	$(PTSCOTCH_INC) $(PTSCOTCH_LIB) -lscotch $(PARMETIS_LIB) $(PARMETIS_INC) $(OP2_INC) $(HDF5_INC) \
+	$(OP2_LIB) -lop2_hip -lop2_hdf5 $(HDF5_LIB) -o volna_hip
+
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
 	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
@@ -174,6 +195,19 @@ cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
 	cuda/values_operation2_kernel.cu Makefile
 
 	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o cuda/volna_kernels_cu.o cuda/volna_kernels.cu
+
+hip/volna_kernels.o:	hip/volna_kernels.cpp \
+	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h hip/applyConst_kernel.cpp hip/EvolveValuesRK3_1_kernel.cpp  hip/EvolveValuesRK3_2_kernel.cpp\
+	hip/EvolveValuesRK3_3_kernel.cpp hip/EvolveValuesRK3_4_kernel.cpp hip/computeGradient_kernel.cpp \
+	hip/computeFluxes_kernel.cpp hip/limiter_kernel.cpp hip/SpaceDiscretization_kernel.cpp hip/NumericalFluxes_kernel.cpp \
+	hip/simulation_1_kernel.cpp \
+	hip/values_operation2_kernel.cpp Makefile
+
+	$(HIPCXX)  $(VAR) $(INC) $(HIPFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o hip/volna_kernels.o hip/volna_kernels.cpp
+
 
 volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp Makefile
 	$(MPICPP) $(MPIFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp $(OP2_INC) $(HDF5_INC) \
@@ -209,9 +243,19 @@ volna_mpi_cuda: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_eve
 	$(OP2_LIB) -lop2_mpi_cuda $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
 	$(HDF5_LIB) $(CUDA_LIB) -lcudart -o volna_mpi_cuda
 
+volna_mpi_hip: volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp hip/volna_kernels_mpi.o Makefile
+	$(MPICPP) $(MPIFLAGS) volna_op.cpp volna_simulation_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_util.cpp -lm hip/volna_kernels_mpi.o \
+	$(OP2_INC) $(PARMETIS_INC) $(PTSCOTCH_INC) $(HDF5_INC) \
+	$(OP2_LIB) -lop2_mpi_hip $(PARMETIS_LIB) $(PTSCOTCH_LIB) \
+	$(HDF5_LIB) -o volna_mpi_hip
+
 cuda/volna_kernels_mpi_cu.o: cuda/volna_kernels.cu Makefile
 	nvcc  $(INC) $(NVCCFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
 	-c -o cuda/volna_kernels_mpi_cu.o cuda/volna_kernels.cu
+
+hip/volna_kernels_mpi.o: hip/volna_kernels.cpp Makefile
+	$(HIPCXX)  $(INC) $(HIPFLAGS) $(OP2_INC) -I $(MPI_INSTALL_PATH)/include \
+	-c -o hip/volna_kernels_mpi.o hip/volna_kernels.cpp
 
 #
 # cleanup
