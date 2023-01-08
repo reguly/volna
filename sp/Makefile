@@ -76,9 +76,9 @@ ifeq ($(OP2_COMPILER),intel)
 else
 ifeq ($(OP2_COMPILER),intel-sycl)
   ifdef DEBUG
-    CCFLAGS  = -g -O0
+    CPPFLAGS  = -g -O0
   else
-    CCFLAGS  = -O3
+    CPPFLAGS  = -g -O3
   endif
   CXX       = g++
   SYCLCXX   = dpcpp
@@ -212,6 +212,11 @@ hip/volna_kernels.o:	hip/volna_kernels.cpp \
 volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp Makefile
 	$(MPICPP) $(MPIFLAGS) $(PARMETIS_INC) $(PTSCOTCH_INC) volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_writeVTK.cpp volna_simulation.cpp volna_util.cpp $(OP2_INC) $(HDF5_INC) \
 	$(OP2_LIB) -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi
+
+volna_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
+	$(MPICPP) -fsycl $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	volna_op.cpp volna_init_op.cpp volna_event.cpp sycl/volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_INSTALL_PATH)/c/lib/libop2_sycl.a $(OP2_LIB) -lop2_hdf5 \
+	$(HDF5_LIB) -o volna_sycl
 
 volna_mpi_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
 	$(MPICPP) -fsycl $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \

@@ -364,6 +364,7 @@ int main(int argc, char **argv) {
 #ifdef PROFILE_ITT
       __itt_resume();
 #endif
+      printf("timer reset\n");
 	    op_timers(&cpu_t1, &wall_t1);
     }
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
@@ -439,7 +440,7 @@ int main(int argc, char **argv) {
   __itt_pause();
 #endif
   op_timing_output();
-  op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
+  op_printf("Main simulation runtime = %lf\n",wall_t2-wall_t1);
 
 
   if(op_is_root()) {

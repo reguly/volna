@@ -143,10 +143,11 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
   } else {
     //TODO: document the fact that this actually adds to the value of V
     // i.e. user should only access values[2]
+    float timestampf = timestamp;
     op_par_loop_initEta_formula("initEta_formula",cells,
                 op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
                 op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
-                op_arg_gbl(&timestamp,1,"double",OP_READ));
+                op_arg_gbl(&timestampf,1,"float",OP_READ));
   }
 #ifdef DEBUG
   op_printf("done\n");
@@ -167,10 +168,11 @@ void InitU(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
 #ifdef DEBUG
   op_printf("InitU...");
 #endif
+  float timestampf = timestamp;
   op_par_loop_initU_formula("initU_formula",cells,
               op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
               op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
-              op_arg_gbl(&timestamp,1,"double",OP_READ));
+              op_arg_gbl(&timestampf,1,"float",OP_READ));
   }
 #ifdef DEBUG
   op_printf("done\n");
@@ -192,10 +194,11 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
               op_arg_gbl(&variable,1,"int",OP_READ));
 
  } else { 
+  float timestampf = timestamp;
   op_par_loop_initV_formula("initV_formula",cells,
               op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
               op_arg_dat(values,-1,OP_ID,4,"float",OP_INC),
-              op_arg_gbl(&timestamp,1,"double",OP_READ));
+              op_arg_gbl(&timestampf,1,"float",OP_READ));
 #ifdef DEBUG
   op_printf("done\n");
 #endif
@@ -232,17 +235,18 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                   op_arg_gbl(&variable,1,"int",OP_READ));
     }
   } else {
+    float timestampf = timestamp;
     if (initial_zb != NULL) {
       op_par_loop_initBathyRelative_formula("initBathyRelative_formula",cells,
                   op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
                   op_arg_dat(z_zero,-1,OP_ID,1,"float",OP_RW),
                   op_arg_dat(initial_zb,-1,OP_ID,1,"float",OP_READ),
-                  op_arg_gbl(&timestamp,1,"double",OP_READ));
+                  op_arg_gbl(&timestampf,1,"float",OP_READ));
     } else {
       op_par_loop_initBathymetry_formula("initBathymetry_formula",cells,
                   op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
                   op_arg_dat(z_zero,-1,OP_ID,1,"float",OP_INC),
-                  op_arg_gbl(&timestamp,1,"double",OP_READ));
+                  op_arg_gbl(&timestampf,1,"float",OP_READ));
     }
   }
   if (firstTime) {
@@ -294,12 +298,13 @@ void InitBore(op_set cells, op_dat cellCenters, op_dat values, BoreParams params
 
 void InitGaussianLandslide(op_set cells, op_dat cellCenters, op_dat values, GaussianLandslideParams params, int firstTime) {
   //again, we only need Zb
+  float timestampf = timestamp;
   op_par_loop_initGaussianLandslide("initGaussianLandslide",cells,
               op_arg_dat(cellCenters,-1,OP_ID,2,"float",OP_READ),
               op_arg_dat(values,-1,OP_ID,4,"float",OP_RW),
               op_arg_gbl(&params.mesh_xmin,1,"float",OP_READ),
               op_arg_gbl(&params.A,1,"float",OP_READ),
-              op_arg_gbl(&timestamp,1,"double",OP_READ),
+              op_arg_gbl(&timestampf,1,"float",OP_READ),
               op_arg_gbl(&params.lx,1,"float",OP_READ),
               op_arg_gbl(&params.ly,1,"float",OP_READ),
               op_arg_gbl(&params.v,1,"float",OP_READ));

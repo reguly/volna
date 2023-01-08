@@ -10,7 +10,7 @@ inline void toOutputs(const float *values,
   // Output inundated cells flow depth
   // Inundated threshold depth set at 1e-3
   if ((values[3] - values[0] + *zmin) > 0.0f){
-     if (values[0] > 1e-3){
+     if (values[0] > 1e-3f){
          output[4] = values[0];
      } else {
          output[4] = 0.0f;

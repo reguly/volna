@@ -63,6 +63,10 @@ void op_par_loop_simulation_1(char const *, op_set,
 #endif
 
 
+#ifdef PROFILE_ITT
+#include <ittnotify.h>
+#endif
+
 //these are not const, we just don't want to pass them around
 LocationData locationData;
 double timestamp = 0.0;
@@ -98,7 +102,7 @@ void print_info() {
 }
 
 int main(int argc, char **argv) {
-  op_init_soa(argc, argv, 2,1);
+  op_init(argc, argv, 2);
   if(argc < 3) {
     op_printf("Wrong parameters! \n");
     print_info();
@@ -397,8 +401,13 @@ int main(int argc, char **argv) {
   double timestep;
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
-    if (itercount == 1)
+    if (itercount == 1) {
+#ifdef PROFILE_ITT
+      __itt_resume();
+#endif
+      printf("timer reset\n");
 	    op_timers(&cpu_t1, &wall_t1);
+    }
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
     {
       float minTimestep = INFINITY;
@@ -468,8 +477,11 @@ int main(int argc, char **argv) {
   }
 
   op_timers(&cpu_t2, &wall_t2);
+#ifdef PROFILE_ITT
+  __itt_pause();
+#endif
   op_timing_output();
-  op_printf("Main simulation runtime = \n%lf\n",wall_t2-wall_t1);
+  op_printf("Main simulation runtime = %lf\n",wall_t2-wall_t1);
 
 
   if(op_is_root()) {

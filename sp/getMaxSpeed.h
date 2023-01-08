@@ -1,7 +1,7 @@
 inline void getMaxSpeed(const float* values, float* currentMaxSpeed) {
   /*float tmp = values[0]+values[3];
   *currentMaxSpeed = *currentMaxSpeed > tmp ? *currentMaxSpeed : tmp;*/
-  if (values[0] > 1e-3){
+  if (values[0] > 1e-3f){
     float TruncatedH = values[0];// < EPS ? EPS : values[0];
     float u = values[1]/TruncatedH;
     float v = values[2]/TruncatedH;
