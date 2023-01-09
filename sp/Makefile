@@ -225,7 +225,7 @@ volna_mpi_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.c
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_sycl
 
 volna_mpi_vec: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
-	$(MPICPP) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(MPICPP) $(VAR) -DVECTORIZE $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
 	$(PARMETIS_INC) $(PTSCOTCH_INC) \
 	volna_op.cpp volna_init_op.cpp volna_event.cpp vec/volna_veckernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_LIB) -lop2_mpi \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_vec
