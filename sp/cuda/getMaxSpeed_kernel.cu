@@ -5,7 +5,7 @@
 //user function
 __device__ void getMaxSpeed_gpu( const float* values, float* currentMaxSpeed) {
 
-  if (values[0] > 1e-3){
+  if (values[0] > 1e-3f){
     float TruncatedH = values[0];
     float u = values[1]/TruncatedH;
     float v = values[2]/TruncatedH;

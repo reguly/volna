@@ -32,7 +32,7 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
   leftCellValues[1] += alphaleft[0] * ((dxl * leftGradient[2])+(dyl * leftGradient[3]));
   leftCellValues[2] += alphaleft[0] * ((dxl * leftGradient[4])+(dyl * leftGradient[5]));
   leftCellValues[3] += alphaleft[0] * ((dxl * leftGradient[6])+(dyl * leftGradient[7]));
-  if (leftCellValues[0] >= 1e-3){
+  if (leftCellValues[0] >= 1e-3f){
      uL = leftCellValues[1]/leftCellValues[0];
      vL = leftCellValues[2]/leftCellValues[0];
   } else {
@@ -51,7 +51,7 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
     rightCellValues[1] += alpharight[0] * ((dxr * rightGradient[2])+(dyr * rightGradient[3]));
     rightCellValues[2] += alpharight[0] * ((dxr * rightGradient[4])+(dyr * rightGradient[5]));
     rightCellValues[3] += alpharight[0] * ((dxr * rightGradient[6])+(dyr * rightGradient[7]));
-    if (rightCellValues[0] >= 1e-3){
+    if (rightCellValues[0] >= 1e-3f){
        uR = rightCellValues[1]/rightCellValues[0];
        vR = rightCellValues[2]/rightCellValues[0];
      } else {
@@ -187,7 +187,7 @@ __device__ void computeFluxes_gpu( const float *cellLeft, const float *cellRight
   float sRMinussL = sRPlus - sLMinus;
   sRMinussL = sRMinussL < EPS_cuda ?  EPS_cuda : sRMinussL;
   float t1 = sRPlus / sRMinussL;
-  float t2 = ( -1.0 * sLMinus ) / sRMinussL;
+  float t2 = ( -1.0f * sLMinus ) / sRMinussL;
   float t3 = ( sRPlus * sLMinus ) / sRMinussL;
   float FStar[3];
   FStar[0] =

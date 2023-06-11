@@ -68,7 +68,7 @@ ifeq ($(OP2_COMPILER),intel)
 	CPP = icpc
 #	CPPFLAGS = -g -O0
 	#CPPFLAGS = -O3 -qopt-report -xHost -DMPICH_IGNORE_CXX_SEEK -DMPICH_SKIP_MPICXX
-        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel -std=c++11 -qopt-zmm-usage=high
+        CPPFLAGS = -O3 -xHost -inline-forceinline -qopenmp -DMPICH_IGNORE_CXX_SEEK -restrict -fno-alias -qopt-report -parallel -std=c++11 #-qopt-zmm-usage=high
 #	CPPFLAGS = -g -O0 -vec-report -xSSE4.2 -parallel
 	OMPFLAGS = -qopenmp #-openmp-report2
 	MPICPP = $(MPI_INSTALL_PATH)/bin/mpicxx
@@ -89,7 +89,7 @@ ifeq ($(OP2_COMPILER),intel-sycl)
   MPIFLAGS  = $(CXXFLAGS)
   NVCCFLAGS = -ccbin=$(NVCC_HOST_COMPILER)
   SYCL_LIB   = #-L$(SYCL_INSTALL_PATH)/lib -lOpenCL
-  SYCL_FLAGS = -std=c++17 -fsycl #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl
+  SYCL_FLAGS = -std=c++17 -fsycl -fsycl-targets=spir64_x86_64 -Xs "-march=avx512" -Ofast -ffast-math -march=native -fp-model fast -fno-alias -std=c++17 -qopenmp #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl
   #SYCL_FLAGS = -std=c++11 -fsycl #intel sycl
 else
 ifeq ($(OP2_COMPILER),cray)
@@ -214,12 +214,12 @@ volna_mpi: volna.cpp volna_event.cpp volna_init.cpp volna_output.cpp volna_write
 	$(OP2_LIB) -lop2_mpi $(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi
 
 volna_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
-	$(MPICPP) -fsycl $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(MPICPP) $(SYCL_FLAGS) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
 	volna_op.cpp volna_init_op.cpp volna_event.cpp sycl/volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_INSTALL_PATH)/c/lib/libop2_sycl.a $(OP2_LIB) -lop2_hdf5 \
 	$(HDF5_LIB) -o volna_sycl
 
 volna_mpi_sycl: volna_op.cpp volna_init_op.cpp volna_event.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp Makefile
-	$(MPICPP) -fsycl $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
+	$(MPICPP) $(SYCL_FLAGS) $(VAR) $(CPPFLAGS) $(OMPFLAGS) $(OP2_INC) $(OP2_INC) $(HDF5_INC) \
 	$(PARMETIS_INC) $(PTSCOTCH_INC) \
 	volna_op.cpp volna_init_op.cpp volna_event.cpp sycl/volna_kernels.cpp volna_output_op.cpp volna_writeVTK.cpp volna_simulation_op.cpp -lm $(OP2_INSTALL_PATH)/c/lib/libop2_mpi_sycl.a \
 	$(PARMETIS_LIB) $(PTSCOTCH_LIB) $(HDF5_LIB) -o volna_mpi_sycl

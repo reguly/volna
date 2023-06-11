@@ -12,17 +12,17 @@ __device__ void NumericalFluxes_sph_gpu( float *left,
               const float *cellVolumes0,
               const float *cellVolumes1) {
   left[0] -= (edgeFluxes[0])/(Radius_cuda*cellVolumes0[0]);
-  left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(M_PI*leftcellCenters[1]/180.0));
+  left[1] -= (edgeFluxes[1] + bathySource[0] * edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(3.14159265358979323846f*leftcellCenters[1]/180.0f));
   left[2] -= (edgeFluxes[2] + bathySource[0] * edgeNormals[1])/(Radius_cuda*cellVolumes0[0]);
 
-  left[1] += (bathySource[2] *edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(M_PI*leftcellCenters[1]/180.0));
+  left[1] += (bathySource[2] *edgeNormals[0])/(Radius_cuda*cellVolumes0[0]*cos(3.14159265358979323846f*leftcellCenters[1]/180.0f));
   left[2] += (bathySource[2] *edgeNormals[1])/(Radius_cuda*cellVolumes0[0]);
   if (!*isRightBoundary) {
     right[0] += edgeFluxes[0]/cellVolumes1[0];
-    right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(M_PI*rightcellCenters[1]/180.0));
+    right[1] += (edgeFluxes[1] + bathySource[1] * edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(3.14159265358979323846f*rightcellCenters[1]/180.0f));
     right[2] += (edgeFluxes[2] + bathySource[1] * edgeNormals[1])/(Radius_cuda*cellVolumes1[0]);
 
-    right[1] -= (bathySource[3] *edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(M_PI*rightcellCenters[1]/180.0));
+    right[1] -= (bathySource[3] *edgeNormals[0])/(Radius_cuda*cellVolumes1[0]*cos(3.14159265358979323846f*rightcellCenters[1]/180.0f));
     right[2] -= (bathySource[3] *edgeNormals[1])/(Radius_cuda*cellVolumes1[0]);
    } else {
    right[0] += 0.0f;

@@ -3,12 +3,12 @@
 //
 
 //user function
-__device__ void initGaussianLandslide_gpu( const float *center, float *values, const float *mesh_xmin, const float *A, const double *t, const float *lx, const float *ly, const float *v) {
+__device__ void initGaussianLandslide_gpu( const float *center, float *values, const float *mesh_xmin, const float *A, const float *t, const float *lx, const float *ly, const float *v) {
   float x = center[0];
   float y = center[1];
-  values[3] = (*mesh_xmin-x)*(x<0.0)-5.0*(x>=0.0)+
-      *A*(*t<1.0/(*v))*exp(-1.0* *lx* *lx*(x+3.0-*v**t)*(x+3.0-*v**t)-*ly**ly*y*y)
-      +*A*(*t>=1.0/(*v))*exp(-*lx*(x+3.0-1.0)**lx*(x+3.0-1.0)-*ly**ly*y*y);
+  values[3] = (*mesh_xmin-x)*(x<0.0f)-5.0f*(x>=0.0f)+
+      *A*(*t<1.0f/(*v))*exp(-1.0f* *lx* *lx*(x+3.0f-*v**t)*(x+3.0f-*v**t)-*ly**ly*y*y)
+      +*A*(*t>=1.0f/(*v))*exp(-*lx*(x+3.0f-1.0f)**lx*(x+3.0f-1.0f)-*ly**ly*y*y);
 
 }
 
@@ -18,7 +18,7 @@ __global__ void op_cuda_initGaussianLandslide(
   float *arg1,
   const float *arg2,
   const float *arg3,
-  const double *arg4,
+  const float *arg4,
   const float *arg5,
   const float *arg6,
   const float *arg7,
@@ -54,7 +54,7 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
 
   float*arg2h = (float *)arg2.data;
   float*arg3h = (float *)arg3.data;
-  double*arg4h = (double *)arg4.data;
+  float*arg4h = (float *)arg4.data;
   float*arg5h = (float *)arg5.data;
   float*arg6h = (float *)arg6.data;
   float*arg7h = (float *)arg7.data;
@@ -89,7 +89,7 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
     int consts_bytes = 0;
     consts_bytes += ROUND_UP(1*sizeof(float));
     consts_bytes += ROUND_UP(1*sizeof(float));
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     consts_bytes += ROUND_UP(1*sizeof(float));
     consts_bytes += ROUND_UP(1*sizeof(float));
     consts_bytes += ROUND_UP(1*sizeof(float));
@@ -110,9 +110,9 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
     arg4.data   = OP_consts_h + consts_bytes;
     arg4.data_d = OP_consts_d + consts_bytes;
     for ( int d=0; d<1; d++ ){
-      ((double *)arg4.data)[d] = arg4h[d];
+      ((float *)arg4.data)[d] = arg4h[d];
     }
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     arg5.data   = OP_consts_h + consts_bytes;
     arg5.data_d = OP_consts_d + consts_bytes;
     for ( int d=0; d<1; d++ ){
@@ -147,7 +147,7 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
       (float *) arg1.data_d,
       (float *) arg2.data_d,
       (float *) arg3.data_d,
-      (double *) arg4.data_d,
+      (float *) arg4.data_d,
       (float *) arg5.data_d,
       (float *) arg6.data_d,
       (float *) arg7.data_d,

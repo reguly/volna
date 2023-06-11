@@ -3,11 +3,11 @@
 //
 
 //user function
-__device__ void initBathyRelative_formula_gpu( const float *coords, float *values, const float *bathy0, const double *time) {
+__device__ void initBathyRelative_formula_gpu( const float *coords, float *values, const float *bathy0, const float *time) {
   float x = coords[0];
   float y = coords[1];
   float t = *time;
-  float val = exp(-(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*M_PI)/360.f)))-sqrt(g_cuda)*0.01f*t)*(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*M_PI)/360.f)))-sqrt(g_cuda)*0.01f*t));;
+  float val = exp(-(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*3.14159265358979323846f)/360.f)))-sqrt(g_cuda)*0.01f*t)*(2.f*sqrt(x*0.01f*0.01f/(tan((5.7f*2.f*3.14159265358979323846f)/360.f)))-sqrt(g_cuda)*0.01f*t));;
   *values = *bathy0 + val;
 
 }
@@ -17,7 +17,7 @@ __global__ void op_cuda_initBathyRelative_formula(
   const float *__restrict arg0,
   float *arg1,
   const float *__restrict arg2,
-  const double *arg3,
+  const float *arg3,
   int   set_size ) {
 
 
@@ -40,7 +40,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
   op_arg arg2,
   op_arg arg3){
 
-  double*arg3h = (double *)arg3.data;
+  float*arg3h = (float *)arg3.data;
   int nargs = 4;
   op_arg args[4];
 
@@ -66,15 +66,15 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
 
     //transfer constants to GPU
     int consts_bytes = 0;
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     reallocConstArrays(consts_bytes);
     consts_bytes = 0;
     arg3.data   = OP_consts_h + consts_bytes;
     arg3.data_d = OP_consts_d + consts_bytes;
     for ( int d=0; d<1; d++ ){
-      ((double *)arg3.data)[d] = arg3h[d];
+      ((float *)arg3.data)[d] = arg3h[d];
     }
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
@@ -90,7 +90,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
       (float *) arg0.data_d,
       (float *) arg1.data_d,
       (float *) arg2.data_d,
-      (double *) arg3.data_d,
+      (float *) arg3.data_d,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);

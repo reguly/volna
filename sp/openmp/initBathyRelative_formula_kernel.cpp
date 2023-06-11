@@ -52,7 +52,7 @@ void op_par_loop_initBathyRelative_formula(char const *name, op_set set,
           &((float*)arg0.data)[2*n],
           &((float*)arg1.data)[1*n],
           &((float*)arg2.data)[1*n],
-          (double*)arg3.data);
+          (float*)arg3.data);
       }
     }
   }

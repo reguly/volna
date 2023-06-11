@@ -61,7 +61,7 @@ void op_par_loop_initGaussianLandslide(char const *name, op_set set,
           &((float*)arg1.data)[4*n],
           (float*)arg2.data,
           (float*)arg3.data,
-          (double*)arg4.data,
+          (float*)arg4.data,
           (float*)arg5.data,
           (float*)arg6.data,
           (float*)arg7.data);

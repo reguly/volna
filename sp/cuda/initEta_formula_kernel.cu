@@ -3,7 +3,7 @@
 //
 
 //user function
-__device__ void initEta_formula_gpu( const float *coords, float *values, const double *time) {
+__device__ void initEta_formula_gpu( const float *coords, float *values, const float *time) {
   float x = coords[0];
   float y = coords[1];
   float t = *time;
@@ -16,7 +16,7 @@ __device__ void initEta_formula_gpu( const float *coords, float *values, const d
 __global__ void op_cuda_initEta_formula(
   const float *__restrict arg0,
   float *arg1,
-  const double *arg2,
+  const float *arg2,
   int   set_size ) {
 
 
@@ -37,7 +37,7 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
   op_arg arg1,
   op_arg arg2){
 
-  double*arg2h = (double *)arg2.data;
+  float*arg2h = (float *)arg2.data;
   int nargs = 3;
   op_arg args[3];
 
@@ -62,15 +62,15 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
 
     //transfer constants to GPU
     int consts_bytes = 0;
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     reallocConstArrays(consts_bytes);
     consts_bytes = 0;
     arg2.data   = OP_consts_h + consts_bytes;
     arg2.data_d = OP_consts_d + consts_bytes;
     for ( int d=0; d<1; d++ ){
-      ((double *)arg2.data)[d] = arg2h[d];
+      ((float *)arg2.data)[d] = arg2h[d];
     }
-    consts_bytes += ROUND_UP(1*sizeof(double));
+    consts_bytes += ROUND_UP(1*sizeof(float));
     mvConstArraysToDevice(consts_bytes);
 
     //set CUDA execution parameters
@@ -85,7 +85,7 @@ void op_par_loop_initEta_formula(char const *name, op_set set,
     op_cuda_initEta_formula<<<nblocks,nthread>>>(
       (float *) arg0.data_d,
       (float *) arg1.data_d,
-      (double *) arg2.data_d,
+      (float *) arg2.data_d,
       set->size );
   }
   op_mpi_set_dirtybit_cuda(nargs, args);

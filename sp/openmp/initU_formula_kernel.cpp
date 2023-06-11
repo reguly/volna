@@ -49,7 +49,7 @@ void op_par_loop_initU_formula(char const *name, op_set set,
         initU_formula(
           &((float*)arg0.data)[2*n],
           &((float*)arg1.data)[4*n],
-          (double*)arg2.data);
+          (float*)arg2.data);
       }
     }
   }
