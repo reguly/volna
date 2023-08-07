@@ -19,7 +19,7 @@ OP2_INC = -I$(OP2_INSTALL_PATH)/include -I$(OP2_INSTALL_PATH)/c/include
 OP2_LIB = -L$(OP2_INSTALL_PATH)/lib -L$(OP2_INSTALL_PATH)/c/lib
 
 HDF5_INC = -I$(HDF5_INSTALL_PATH)/include
-HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 -lz
+HDF5_LIB = -L$(HDF5_INSTALL_PATH)/lib -lhdf5_hl -lhdf5 #-lz
 
 MPI_INC = -I$(MPI_INSTALL_PATH)/include
 
@@ -89,8 +89,25 @@ ifeq ($(OP2_COMPILER),intel-sycl)
   MPIFLAGS  = $(CXXFLAGS)
   NVCCFLAGS = -ccbin=$(NVCC_HOST_COMPILER)
   SYCL_LIB   = #-L$(SYCL_INSTALL_PATH)/lib -lOpenCL
-  SYCL_FLAGS = -std=c++17 -fsycl -fsycl-targets=spir64_x86_64 -Xs "-march=avx512" -Ofast -ffast-math -march=native -fp-model fast -fno-alias -std=c++17 -qopenmp #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl
+  SYCL_FLAGS = -std=c++17 -fsycl -Ofast -ffast-math -march=native -fp-model fast -fno-alias -std=c++17 -qopenmp #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl -fsycl-targets=spir64_x86_64 -Xs "-march=avx512"
   #SYCL_FLAGS = -std=c++11 -fsycl #intel sycl
+else
+ifeq ($(OP2_COMPILER),hipsycl)
+  ifdef DEBUG
+    CPPFLAGS  = -g -O0
+  else
+    CPPFLAGS  = -g -O3
+  endif
+  CXX       = clang++
+  SYCLCXX   = syclcc
+  CXXFLAGS  = $(CCFLAGS)
+  MPICXX    = $(MPICPP_PATH)
+  MPICPP    = mpicxx
+  MPISYCLCXX = $(MPICXX)
+  MPIFLAGS  = $(CXXFLAGS)
+  NVCCFLAGS = -ccbin=$(NVCC_HOST_COMPILER)
+  SYCL_LIB   = #-L$(SYCL_INSTALL_PATH)/lib -lOpenCL
+  SYCL_FLAGS = -std=c++17 -Ofast -ffast-math -march=native $(HIPSYCL_FLAGS) #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl -fsycl-targets=spir64_x86_64 -Xs "-march=avx512"
 else
 ifeq ($(OP2_COMPILER),cray)
   ifdef DEBUG
@@ -109,6 +126,7 @@ ifeq ($(OP2_COMPILER),cray)
 else
 print:
 	@echo "unrecognized value for OP2_COMPILER"
+endif
 endif
 endif
 endif
