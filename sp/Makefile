@@ -92,6 +92,23 @@ ifeq ($(OP2_COMPILER),intel-sycl)
   SYCL_FLAGS = -std=c++17 -fsycl -Ofast -ffast-math -march=native -fp-model fast -fno-alias -std=c++17 -qopenmp #-I$(SYCL_INSTALL_PATH)/include -I$(SYCL_INSTALL_PATH)/include #intel sycl -fsycl-targets=spir64_x86_64 -Xs "-march=avx512"
   #SYCL_FLAGS = -std=c++11 -fsycl #intel sycl
 else
+ifeq ($(OP2_COMPILER),clang)
+  ifdef DEBUG
+    CPPFLAGS  = -g -O0
+  else
+    CPPFLAGS  = -g -O2	
+  endif
+  CXX       = clang++
+  SYCLCXX   = clang++
+  CXXFLAGS  = $(CCFLAGS)
+  MPICXX    = $(MPICPP_PATH)
+  MPICPP    = mpicxx
+  MPISYCLCXX = $(MPICXX)
+  MPIFLAGS  = $(CXXFLAGS)
+  NVCCFLAGS = -ccbin=$(NVCC_HOST_COMPILER)
+  SYCL_LIB   = #-L$(SYCL_INSTALL_PATH)/lib -lOpenCL
+  SYCL_FLAGS = -std=c++17 -fsycl -Ofast -ffast-math -munsafe-fp-atomics -fsycl-targets=amdgcn-amd-amdhsa -Xsycl-target-backend --offload-arch=gfx90a
+else
 ifeq ($(OP2_COMPILER),hipsycl)
   ifdef DEBUG
     CPPFLAGS  = -g -O0
@@ -126,6 +143,7 @@ ifeq ($(OP2_COMPILER),cray)
 else
 print:
 	@echo "unrecognized value for OP2_COMPILER"
+endif
 endif
 endif
 endif
@@ -203,24 +221,22 @@ volna_hip:	volna_op.cpp hip/volna_kernels.o volna_simulation_op.cpp volna_init_o
 
 
 cuda/volna_kernels_cu.o:	cuda/volna_kernels.cu \
-	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h cuda/applyConst_kernel.cu cuda/EvolveValuesRK3_1_kernel.cu  cuda/EvolveValuesRK3_2_kernel.cu\
-	cuda/EvolveValuesRK3_3_kernel.cu cuda/EvolveValuesRK3_4_kernel.cu cuda/computeGradient_kernel.cu \
-	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/SpaceDiscretization_kernel.cu cuda/NumericalFluxes_kernel.cu \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h cuda/applyConst_kernel.cu cuda/computeGradient_kernel.cu \
+	cuda/computeFluxes_kernel.cu cuda/limiter_kernel.cu cuda/NumericalFluxes_kernel.cu \
 	cuda/simulation_1_kernel.cu \
 	cuda/values_operation2_kernel.cu Makefile
 
 	nvcc  $(VAR) $(INC) $(NVCCFLAGS) $(OP2_INC) $(HDF5_INC) -I$(MPI_INC) -c -o cuda/volna_kernels_cu.o cuda/volna_kernels.cu
 
 hip/volna_kernels.o:	hip/volna_kernels.cpp \
-	EvolveValuesRK3_1.h EvolveValuesRK3_2.h  EvolveValuesRK3_3.h EvolveValuesRK3_4.h applyConst.h getMaxElevation.h getTotalVol.h \
+	applyConst.h getMaxElevation.h getTotalVol.h \
 	initBathymetry_formula.h initBathymetry_update.h initBore_select.h initEta_formula.h initGaussianLandslide.h \
-	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h SpaceDiscretization.h NumericalFluxes.h simulation_1.h \
-	values_operation2.h hip/applyConst_kernel.cpp hip/EvolveValuesRK3_1_kernel.cpp  hip/EvolveValuesRK3_2_kernel.cpp\
-	hip/EvolveValuesRK3_3_kernel.cpp hip/EvolveValuesRK3_4_kernel.cpp hip/computeGradient_kernel.cpp \
-	hip/computeFluxes_kernel.cpp hip/limiter_kernel.cpp hip/SpaceDiscretization_kernel.cpp hip/NumericalFluxes_kernel.cpp \
+	initU_formula.h initV_formula.h computeGradient.h computeFluxes.h limiter.h NumericalFluxes.h simulation_1.h \
+	values_operation2.h hip/applyConst_kernel.cpp hip/computeGradient_kernel.cpp \
+	hip/computeFluxes_kernel.cpp hip/limiter_kernel.cpp hip/NumericalFluxes_kernel.cpp \
 	hip/simulation_1_kernel.cpp \
 	hip/values_operation2_kernel.cpp Makefile
 
