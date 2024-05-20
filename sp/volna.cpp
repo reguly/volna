@@ -361,6 +361,7 @@ int main(int argc, char **argv) {
   while (timestamp < ftime) {
 		//process post_update==false events (usually Init events)
     if (itercount == 1) {
+      op_reset_power_counters();
 #ifdef PROFILE_ITT
       __itt_resume();
 #endif
