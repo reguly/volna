@@ -218,6 +218,11 @@ int main(int argc, char **argv) {
 
   char const * const file = argv[1];
   spirit::file_iterator<> file_it(file);
+  if (!file_it) {
+    std::cerr << "Unable to open Volna configuration file '" << file
+              << "'.\n";
+    return 1;
+  }
 
   op_printf("Initializing original Volna code... \n");
   Simulation sim;

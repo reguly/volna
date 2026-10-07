@@ -10,11 +10,11 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 */
 #include "volna_util.h"
 #include "volna_common.h"
+#include "op_seq.h"
 #include <vector>
 #include <list>
 #include <set>
 #include <algorithm>
-#include "op_lib_core.h" // To find inverse map in OP_map_list
 
 
 // PT_SCOTCH header - use sequential functions
@@ -1047,5 +1047,4 @@ void op_reorder_dat(op_dat dat, int *iperm, op_set set) {
 ////     op_printf("%d ",adjncy[i]);
 ////  }
 ////  op_printf("\n");
-
 

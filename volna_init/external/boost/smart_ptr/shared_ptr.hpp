@@ -225,6 +225,10 @@ public:
         }
     }
 
+    shared_ptr( shared_ptr const & r ): px( r.px ), pn( r.pn ) // never throws
+    {
+    }
+
     template<class Y>
 #if !defined( BOOST_SP_NO_SP_CONVERTIBLE )
 
