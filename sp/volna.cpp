@@ -386,8 +386,7 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_n, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_WRITE),
-          op_arg_gbl(&EPS, 1, "float", OP_READ));
+          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_WRITE));
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(w_1, 0), normcomp(w_1, 1),normcomp(w_1, 2),normcomp(w_1, 3));
 #endif
@@ -412,17 +411,13 @@ int main(int argc, char **argv) {
           op_arg_dat(Lw_1, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE),
-          op_arg_gbl(&EPS, 1, "float", OP_READ));
+          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
 
 
       timestep=dT;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
-          op_arg_gbl(&Mn,1,"float", OP_READ),
-          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW),
-          op_arg_gbl(&EPS, 1, "float", OP_READ),
-          op_arg_gbl(&g, 1, "float", OP_READ));
+          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW));
 
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),

@@ -1,13 +1,12 @@
-inline void Friction_manning(const float *dT,const float *M_n, //OP_RW, discard
-            float *values, const float *eps, const float *gravity) //OP_WRITE
+inline void Friction_manning(const float *dT, float *values) //OP_WRITE
 
 {
   float Fr;
-  float TruncatedH = values[0] < *eps ? *eps : values[0];
+  float TruncatedH = values[0] < EPS ? EPS : values[0];
   float u = values[1]/TruncatedH;
   float v = values[2]/TruncatedH;
   float speed = sqrt(u*u + v*v);
-  Fr = *gravity * (*M_n * *M_n) *speed;
+  Fr = g * (Mn * Mn) * speed;
   Fr = Fr/(pow(TruncatedH,4.0f/3.0f));
   //float Fx = F*TruncatedH*values[1];
   //float Fy = F*TruncatedH*values[2];

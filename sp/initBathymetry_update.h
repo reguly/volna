@@ -1,9 +1,7 @@
-inline void initBathymetry_update(float *values, const float *z_zero,
-                                  const float *zmin, const int *firstTime,
-                                  const float *eps) {
+inline void initBathymetry_update(float *values, const float *z_zero, const float *zmin, const int *firstTime) {
     if (*firstTime){
       if (*z_zero > 0.0f){
-        values[0] = *eps;
+        values[0] = EPS;
         values[3] = -1.0f* *zmin + *z_zero;
       } else {
         values[0] = -1.0f* *z_zero;

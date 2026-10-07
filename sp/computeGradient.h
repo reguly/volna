@@ -6,10 +6,10 @@ inline void computeGradient(const float *center,
                             const float *nb1Center,
                             const float *nb2Center,
                             const float *nb3Center,
-                            float *q, float *out, const float *eps) //OP_WRITE
+                            float *q, float *out) //OP_WRITE
 {
   // Least-Squares Gradient Reconstruction
-  if(center[0] > *eps){
+  if(center[0] > EPS){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];

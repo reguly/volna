@@ -154,8 +154,7 @@ void OutputSimulation(int writeOption, EventParams *event, TimerParams* timer, o
   op_par_loop(toOutputs, "toOutputs", cells,
       op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
       op_arg_gbl(zmin, 1, "float", OP_READ),
-      op_arg_dat(physical_vars, -1, OP_ID, 5, "float", OP_WRITE),
-      op_arg_gbl(&EPS, 1, "float", OP_READ));
+      op_arg_dat(physical_vars, -1, OP_ID, 5, "float", OP_WRITE));
 
   // 0 - write to HDF5 file
   if(writeOption == 0) {

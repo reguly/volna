@@ -1,8 +1,8 @@
 inline void toOutputs(const float *values,
             const float *zmin,
-            float *output, const float *eps )
+            float *output )
 {
-  float truncatedH = values[0] > *eps ? values[0] : *eps;
+  float truncatedH = values[0] > EPS ? values[0] : EPS;
   output[0] = values[3] + *zmin;
   output[1] = values[1]/truncatedH;
   output[2] = values[2]/truncatedH;
