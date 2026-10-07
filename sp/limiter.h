@@ -3,7 +3,7 @@ inline void limiter(const float *q, float *lim,
                     const float *edgecenter1, const float *edgecenter2,
                     const float *edgecenter3,
                     float *zeroInit,
-                    const float *cellcenter)
+                    const float *cellcenter, const float *eps)
 {
 
   float facevalue[3], dx[3], dy[3];
@@ -16,7 +16,7 @@ inline void limiter(const float *q, float *lim,
   dx[2] = (edgecenter3[0] - cellcenter[0]);
   dy[2] = (edgecenter3[1] - cellcenter[1]);
   // If the cell is not on the wet/dry boundary
-  if(q[0] > EPS){
+  if(q[0] > *eps){
   // The limiter is calculated for all physical variables using the
   // Barth-Jesperson formula and then the minimum limiter is used.
   // q[0] - Hmin , q[1] - Hmax

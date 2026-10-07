@@ -6,10 +6,10 @@ inline void computeGradient(const float *center,
                             const float *nb1Center,
                             const float *nb2Center,
                             const float *nb3Center,
-                            float *q, float *out) //OP_WRITE
+                            float *q, float *out, const float *eps) //OP_WRITE
 {
   // Least-Squares Gradient Reconstruction
-  if(center[0]> EPS){
+  if(center[0] > *eps){
     float total, Rhs[8];
     float dh[3], dz[3],du[3], dv[3], weights[3];
     float Gram[2][2], inverse[2][2], delta[3][2];
@@ -135,31 +135,19 @@ inline void computeGradient(const float *center,
   // q[2] - Umin , q[3] - Umax
   // q[4] - Vmin , q[5] - Vmax
   // q[6] - Zmin , q[7] - Zmax
-  q[0] = center[0] < neighbour1[0] ? center[0] : neighbour1[0];
-  q[0] = q[0] < neighbour2[0] ? q[0] : neighbour2[0];
-  q[0] = q[0] < neighbour3[0] ? q[0] : neighbour3[0];
-  q[1] = center[0] > neighbour1[0] ? center[0] : neighbour1[0];
-  q[1] = q[1] > neighbour2[0] ? q[1] : neighbour2[0];
-  q[1] = q[1] > neighbour3[0] ? q[1] : neighbour3[0];
+  // Keep the reduction in registers and write each q component exactly once.
+  for (int component = 0; component < 4; ++component) {
+    float qmin = center[component];
+    float qmax = center[component];
 
-  q[2] = center[1] < neighbour1[1] ? center[1] : neighbour1[1];
-  q[2] = q[2] < neighbour2[1] ? q[2] : neighbour2[1];
-  q[2] = q[2] < neighbour3[1] ? q[2] : neighbour3[1];
-  q[3] = center[1] > neighbour1[1] ? center[1] : neighbour1[1];
-  q[3] = q[3] > neighbour2[1] ? q[3] : neighbour2[1];
-  q[3] = q[3] > neighbour3[1] ? q[3] : neighbour3[1];
+    qmin = qmin < neighbour1[component] ? qmin : neighbour1[component];
+    qmin = qmin < neighbour2[component] ? qmin : neighbour2[component];
+    qmin = qmin < neighbour3[component] ? qmin : neighbour3[component];
+    qmax = qmax > neighbour1[component] ? qmax : neighbour1[component];
+    qmax = qmax > neighbour2[component] ? qmax : neighbour2[component];
+    qmax = qmax > neighbour3[component] ? qmax : neighbour3[component];
 
-  q[4] = center[2] < neighbour1[2] ? center[2] : neighbour1[2];
-  q[4] = q[4] < neighbour2[2] ? q[4] : neighbour2[2];
-  q[4] = q[4] < neighbour3[2] ? q[4] : neighbour3[2];
-  q[5] = center[2] > neighbour1[2] ? center[2] : neighbour1[2];
-  q[5] = q[5] > neighbour2[2] ? q[5] : neighbour2[2];
-  q[5] = q[5] > neighbour3[2] ? q[5] : neighbour3[2];
-
-  q[6] = center[3] < neighbour1[3] ? center[3] : neighbour1[3];
-  q[6] = q[6] < neighbour2[3] ? q[6] : neighbour2[3];
-  q[6] = q[6] < neighbour3[3] ? q[6] : neighbour3[3];
-  q[7] = center[3] > neighbour1[3] ? center[3] : neighbour1[3];
-  q[7] = q[7] > neighbour2[3] ? q[7] : neighbour2[3];
-  q[7] = q[7] > neighbour3[3] ? q[7] : neighbour3[3];
+    q[2 * component] = qmin;
+    q[2 * component + 1] = qmax;
+  }
 }

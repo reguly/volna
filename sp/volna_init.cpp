@@ -36,7 +36,8 @@ void InitEta(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues,
     op_par_loop(incConst, "incConst", cells,
                 op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                op_arg_gbl(&variable, 1, "int", OP_READ));
+                op_arg_gbl(&variable, 1, "int", OP_READ),
+                op_arg_gbl(&EPS, 1, "float", OP_READ));
   } else {
     //TODO: document the fact that this actually adds to the value of V
     // i.e. user should only access values[2]
@@ -58,7 +59,8 @@ void InitU(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
   op_par_loop(incConst, "incConst", cells,
                 op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                op_arg_gbl(&variable, 1, "int", OP_READ));
+                op_arg_gbl(&variable, 1, "int", OP_READ),
+                op_arg_gbl(&EPS, 1, "float", OP_READ));
   } else {
 
 #ifdef DEBUG
@@ -86,7 +88,8 @@ void InitV(op_set cells, op_dat cellCenters, op_dat values, op_dat initValues, i
   op_par_loop(incConst, "incConst", cells,
                 op_arg_dat(initValues, -1, OP_ID, 1, "float", OP_READ),
                 op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
-                op_arg_gbl(&variable, 1, "int", OP_READ));
+                op_arg_gbl(&variable, 1, "int", OP_READ),
+                op_arg_gbl(&EPS, 1, "float", OP_READ));
 
  } else { 
   op_par_loop(initV_formula, "initV_formula", cells,
@@ -134,7 +137,8 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
                 op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_RW),
                 op_arg_dat(initial_zb, -1, OP_ID, 1, "float", OP_READ),
-                op_arg_gbl(&timestamp, 1, "double", OP_READ));
+                op_arg_gbl(&timestamp, 1, "double", OP_READ),
+                op_arg_gbl(&g, 1, "float", OP_READ));
     } else {
       op_par_loop(initBathymetry_formula, "initBathymetry_formula", cells,
                 op_arg_dat(cellCenters, -1, OP_ID, 2, "float", OP_READ),
@@ -153,7 +157,8 @@ void InitBathymetry(op_set cells, op_dat cellCenters, op_dat values, op_dat init
               op_arg_dat(values, -1, OP_ID, 4, "float", OP_RW),
               op_arg_dat(z_zero, -1, OP_ID, 1, "float", OP_READ),
               op_arg_gbl(zmin, 1, "float", OP_READ),
-              op_arg_gbl(&firstTime, 1, "int", OP_READ));
+              op_arg_gbl(&firstTime, 1, "int", OP_READ),
+              op_arg_gbl(&EPS, 1, "float", OP_READ));
 #ifdef DEBUG
   printf("InitBathymetry executing H: %f Zb: %f\n", normcomp(values, 0), normcomp(values, 3));
 #endif

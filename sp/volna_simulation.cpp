@@ -38,9 +38,10 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 0, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 1, cellsToCells , 2, "float", OP_READ),
-                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_RW),
+                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(q, -1, OP_ID, 8, "float", OP_WRITE),
-                  op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE));
+                  op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE),
+                  op_arg_gbl(&EPS, 1, "float", OP_READ));
     }
    op_par_loop(limiter, "limiter", cells,
                 op_arg_dat(q, -1, OP_ID, 8, "float", OP_READ),
@@ -51,7 +52,8 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                 op_arg_dat(edgeCenters, 1, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 2, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
-                op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ));
+                op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ),
+                op_arg_gbl(&EPS, 1, "float", OP_READ));
 
     {
     op_par_loop(computeFluxes, "computeFluxes", edges,
@@ -70,7 +72,9 @@ void spaceDiscretization(op_dat data_in, op_dat data_out, float *minTimestep,
                   op_arg_dat(bathySource, -1, OP_ID, 4, "float", OP_WRITE),
                   op_arg_dat(edgeFluxes, -1, OP_ID, 3, "float", OP_WRITE),
                   op_arg_dat(maxEdgeEigenvalues, -1, OP_ID, 1, "float", OP_WRITE),
-                  op_arg_gbl(zmin, 1,"float", OP_READ));
+                  op_arg_gbl(zmin, 1,"float", OP_READ),
+                  op_arg_gbl(&g, 1, "float", OP_READ),
+                  op_arg_gbl(&EPS, 1, "float", OP_READ));
 
     }
 
@@ -115,9 +119,10 @@ void spaceDiscretization_sph(op_dat data_in, op_dat data_out, float *minTimestep
                   op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 0, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(cellCenters, 1, cellsToCells , 2, "float", OP_READ),
-                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_RW),
+                  op_arg_dat(cellCenters, 2, cellsToCells , 2, "float", OP_READ),
                   op_arg_dat(q, -1, OP_ID, 8, "float", OP_WRITE),
-                  op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE));
+                  op_arg_dat(GradientatCell, -1, OP_ID, 8, "float", OP_WRITE),
+                  op_arg_gbl(&EPS, 1, "float", OP_READ));
     }
    op_par_loop(limiter, "limiter", cells,
                 op_arg_dat(q, -1, OP_ID, 8, "float", OP_READ),
@@ -128,7 +133,8 @@ void spaceDiscretization_sph(op_dat data_in, op_dat data_out, float *minTimestep
                 op_arg_dat(edgeCenters, 1, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(edgeCenters, 2, cellsToEdges, 2, "float", OP_READ),
                 op_arg_dat(data_out, -1, OP_ID, 4, "float", OP_WRITE),
-                op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ));
+                op_arg_dat(cellCenters, -1, OP_ID , 2, "float", OP_READ),
+                op_arg_gbl(&EPS, 1, "float", OP_READ));
 
     {
     op_par_loop(computeFluxes_sph, "computeFluxes_sph", edges,

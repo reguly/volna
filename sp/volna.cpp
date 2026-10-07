@@ -21,6 +21,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 // Sequential OP2 function declarations
 //
 #include "op_seq.h"
+#include <op_profile.h>
 
 //these are not const, we just don't want to pass them around
 LocationData locationData;
@@ -314,8 +315,8 @@ int main(int argc, char **argv) {
 //  op_partition("PARMETIS", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("PTSCOTCH", "GEOM", NULL, NULL, cellCenters);
 //  op_partition("", "", NULL, NULL, NULL);
-  // op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
- op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
+  op_partition("PARMETIS", "KWAY", NULL, edgesToCells, NULL);
+//  op_partition("PTSCOTCH", "KWAY", NULL, edgesToCells, NULL);
 //  op_partition("PARMETIS", "GEOMKWAY", edges, edgesToCells, cellCenters);
 //  op_partition("PARMETIS", "KWAY", NULL, NULL, NULL);
 //  op_partition("PARMETIS", "KWAY", edges, edgesToCells, cellCenters);
@@ -325,6 +326,7 @@ int main(int argc, char **argv) {
 
   // Timer variables
   double cpu_t1, cpu_t2, wall_t1, wall_t2;
+  op_profile_start("Volna");
   op_timers(&cpu_t1, &wall_t1);
 
   float *tmp_elem = NULL;
@@ -354,7 +356,11 @@ int main(int argc, char **argv) {
   // lim is the limiter value for each physical variable defined on each cell
   op_dat lim = op_decl_dat_temp(cells, 4, "float", tmp_elem, "lim"); //temp - cells - dim 4
   double timestep;
+  const bool isRoot = op_is_root();
   while (timestamp < ftime) {
+    if (isRoot && itercount % 50 == 0)
+      op_printf("Iteration: %d, time: %.6f\n", itercount, timestamp);
+
 		//process post_update==false events (usually Init events)
     processEvents(&timers, &events, 0, 0, 0.0, 0, 0, cells, values, cellVolumes, cellCenters, nodeCoords, cellsToNodes, temp_initEta, temp_initU, temp_initV, bathy_nodes,  lifted_cells, liftedcellsToBathyNodes, liftedcellsToCells, bathy_xy, initial_zb, temp_initBathymetry, z_zero, n_initBathymetry, &zmin, outputLocation_map, outputLocation_dat, writeOption);
     {
@@ -380,7 +386,8 @@ int main(int argc, char **argv) {
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_dat(Lw_n, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_WRITE));
+          op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_WRITE),
+          op_arg_gbl(&EPS, 1, "float", OP_READ));
 #ifdef DEBUG
       printf("Return of SpaceDiscretization #1 midPointConservative H %g U %g V %g Zb %g  \n", normcomp(w_1, 0), normcomp(w_1, 1),normcomp(w_1, 2),normcomp(w_1, 3));
 #endif
@@ -405,14 +412,17 @@ int main(int argc, char **argv) {
           op_arg_dat(Lw_1, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(values, -1, OP_ID, 4, "float", OP_READ),
           op_arg_dat(w_1, -1, OP_ID, 4, "float", OP_READ),
-          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE));
+          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_WRITE),
+          op_arg_gbl(&EPS, 1, "float", OP_READ));
 
 
       timestep=dT;
       op_par_loop(Friction_manning, "Friction_manning", cells,
           op_arg_gbl(&dT,1,"float", OP_READ),
           op_arg_gbl(&Mn,1,"float", OP_READ),
-          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW));
+          op_arg_dat(values_new, -1, OP_ID, 4, "float", OP_RW),
+          op_arg_gbl(&EPS, 1, "float", OP_READ),
+          op_arg_gbl(&g, 1, "float", OP_READ));
 
     op_par_loop(simulation_1, "simulation_1", cells,
         op_arg_dat(values, -1, OP_ID, 4, "float", OP_WRITE),
@@ -548,6 +558,8 @@ int main(int argc, char **argv) {
   op_timing_output();
   op_printf("Max total runtime = \n%lf\n",wall_t2-wall_t1);
 
+  op_profile_end();
+  op_profile_output();
   op_exit();
 
   return 0;
