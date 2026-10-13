@@ -10,16 +10,59 @@ You need to install OP2 (source in [this](https://github.com/OP2/OP2-Common) Git
 
 Check out the Volna-OP2 code from [this](https://github.com/reguly/Volna) GitHub repository. The code comprises of two parts, volna2hdf5 which takes configuration files from the original Volna code and dumps all the necessary information to a h5 file which will be used by the second application volna-OP2.
  * Type 'make' in sp/volna2hdf5 - note that some warnings will show because of dependencies, you can safely ignore these
- * Type make in sp to build all versions of the volna-op2 application
-  * make volna_seq builds the sequential (single-threaded) version
-  * make volna_openmp builds the single node multi-threaded version
-  * make volna_cuda builds the single node GPU version
-  * make volna_mpi builds the sequential MPI version with a single thread executing on each MPI process
-  * make volna_mpi_openmp builds the MPI+OpenMP version
-  * make volna_mpi_cuda builds the MPI+CUDA version
+ * Source the OP2 build environment, then use the shared OP2 build rules in `sp`:
+
+   ```bash
+   source /path/to/OP2-Common/scripts/source_gnuz
+   cd sp
+   make volna_genseq
+   ```
+
+   `volna_genseq` is the current-translator sequential build. `make volna_seq`
+   builds the original sources without code generation, while `make volna_openmp`,
+   `make volna_cuda`, and `make volna_c_cuda` select the corresponding generated
+   backend. MPI variants use the same naming convention, for example
+   `volna_mpi_genseq`, `volna_mpi_openmp`, and `volna_mpi_cuda`. `make all`
+   builds every backend enabled by the OP2 environment; `make clean` removes all
+   build products and the `generated/` directory.
 
 ## Use
 For all details and configuration options please see the documentation.
+
+## Running the Code
+
+Volna requires an input HDF5 file and an output-format argument: `0` for HDF5,
+`1` for ASCII VTK, or `2` for binary VTK. Append `old-format` only for a
+legacy bathymetry input. The supplied mesh can be found in 
+[volna_30m2](https://users.itk.ppke.hu/~regiszo/volna_30m2.h5). 
+The commands below use HDF5 output and write output files
+to the current directory.
+
+```bash
+cd /path/to/Volna-OP2/sp
+MESH=$PWD/volna_30m2.h5
+
+./volna_seq "$MESH" 0 old-format
+./volna_genseq "$MESH" 0 old-format
+OMP_NUM_THREADS=32 ./volna_openmp "$MESH" 0 old-format
+./volna_cuda "$MESH" 0 old-format
+./volna_c_cuda "$MESH" 0 old-format
+./volna_hip "$MESH" 0 old-format
+./volna_c_hip "$MESH" 0 old-format
+
+mpirun -np 64 ./volna_mpi_genseq "$MESH" 0 old-format
+OMP_NUM_THREADS=4 mpirun -np 16 --map-by ppr:16:node:PE=4 ./volna_mpi_openmp "$MESH" 0 old-format
+mpirun -np 4 ./volna_mpi_cuda "$MESH" 0 old-format
+mpirun -np 4 ./volna_mpi_c_cuda "$MESH" 0 old-format
+mpirun -np 4 ./volna_mpi_hip "$MESH" 0 old-format
+mpirun -np 4 ./volna_mpi_c_hip "$MESH" 0 old-format
+```
+
+Build the selected executable first. `volna_seq`, `volna_genseq`, and
+`volna_openmp` are usable with the configured CPU toolchain; CUDA/HIP commands
+require the corresponding OP2 backend and compiler, and MPI commands require
+the parallel HDF5 configuration.
+
 To use volna-OP2 with the *.vln configuration files, first you have to use volna2hdf5, e.g.
  * ./volna2hdf5 gaussian_landslide.vln which will output a gaussian_landslide.h5 file
 Afterwards, call volna-op2 with the above input file, e.g.:

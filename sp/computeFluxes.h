@@ -209,7 +209,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   /*float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
   float sRMinussL = sRPlus - sLMinus;
-  sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
+  sRMinussL = sRMinussL < EPS ? EPS : sRMinussL;
   float t1 = sRPlus / sRMinussL;
   float t2 = ( -1.0 * sLMinus ) / sRMinussL;
   float t3 = ( sRPlus * sLMinus ) / sRMinussL;
@@ -236,7 +236,7 @@ inline void computeFluxes(const float *cellLeft, const float *cellRight,
   float sLMinus = sL < 0.0f ? sL : 0.0f;
   float sRPlus = sR > 0.0f ? sR : 0.0f;
   float sRMinussL = sRPlus - sLMinus;
-  sRMinussL = sRMinussL < EPS ?  EPS : sRMinussL;
+  sRMinussL = sRMinussL < EPS ? EPS : sRMinussL;
   float t1 = sRPlus / sRMinussL;
   float t2 = ( -1.0 * sLMinus ) / sRMinussL;
   float t3 = ( sRPlus * sLMinus ) / sRMinussL;

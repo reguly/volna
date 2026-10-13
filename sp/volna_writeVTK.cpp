@@ -11,6 +11,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include "volna_writeVTK.h"
 #include <stdio.h>
 #include "volna_common.h"
+#include "op_seq.h"
 
 /*
  * Utility function for binary output: swaps byte endianneses

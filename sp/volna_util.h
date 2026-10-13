@@ -1,4 +1,4 @@
-#include "op_lib_cpp.h"
+#include "op_seq.h"
 
 //
 // Prints the max. distance of adjacent cells
